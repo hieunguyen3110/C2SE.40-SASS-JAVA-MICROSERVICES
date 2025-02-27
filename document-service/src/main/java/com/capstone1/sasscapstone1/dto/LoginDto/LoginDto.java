@@ -1,6 +1,5 @@
 package com.capstone1.sasscapstone1.dto.LoginDto;
 
-import com.capstone1.sasscapstone1.entity.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
