@@ -30,5 +30,7 @@ build/
 !**/src/test/**/build/
 
 identity-service/.env
+discovery-server/.env
+api-gateway/.env
 ### VS Code ###
 .vscode/
