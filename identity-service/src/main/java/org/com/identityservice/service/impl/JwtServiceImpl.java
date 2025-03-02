@@ -72,8 +72,9 @@ public class JwtServiceImpl implements JwtService {
         return GeneratorToken(userDetails, new HashMap<>(), expiresToken);
     }
     @Override
-    public Claims DecodeToken(String token){
-        return ExtractClaimsAll(token);
+    public Boolean VerifyToken(String token){
+        Claims validToken= ExtractClaimsAll(token);
+        return validToken != null;
     }
     private Date ExtractExpiration(String token){
         return ExtractClaim(token, Claims::getExpiration);

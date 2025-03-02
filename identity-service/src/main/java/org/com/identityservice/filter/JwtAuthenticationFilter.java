@@ -12,8 +12,6 @@ import org.com.identityservice.entity.Account;
 import org.com.identityservice.enums.ErrorCode;
 import org.com.identityservice.exception.ApiException;
 import org.com.identityservice.mapper.AccountMapper;
-import org.com.identityservice.service.JwtService;
-import org.com.identityservice.service.RedisService;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,8 +25,6 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-        private final JwtService jwtService;
-        private final RedisService redisService;
         private final ObjectMapper objectMapper;
         private String ExtractTokenFromHeader(HttpServletRequest request){
             String header= request.getHeader("Authorization");
@@ -43,11 +39,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                         @NotNull HttpServletResponse response,
                                         @NotNull FilterChain filterChain) throws ServletException, IOException, ApiException {
         try{
-            //authorization
-            String token= ExtractTokenFromHeader(request);
-            if(token!=null && !jwtService.isTokenExpiration(token)){
-                String json= (String) redisService.getData(token);
-                AccountDto extractAccountFromRedis= objectMapper.readValue(json,AccountDto.class);
+            String userInfoJson= request.getHeader("X-User-Info");
+            if(userInfoJson != null){
+                AccountDto extractAccountFromRedis= objectMapper.readValue(userInfoJson,AccountDto.class);
                 Account account= AccountMapper.mapToAccount(extractAccountFromRedis);
                 UsernamePasswordAuthenticationToken authenticationToken= new UsernamePasswordAuthenticationToken(account,account.getPassword(),account.getAuthorities());
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

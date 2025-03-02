@@ -10,6 +10,7 @@ import org.com.identityservice.entity.Account;
 public interface AuthenticationService {
     ApiResponse<AccountDto> login(LoginRequest loginRequest, HttpServletResponse response) throws Exception;
     ApiResponse<AccountDto> autoLogin(HttpServletRequest request) throws Exception;
+    ApiResponse<Boolean> verifyToken(String token) throws Exception;
     ApiResponse<String> refreshToken(HttpServletRequest request, HttpServletResponse response) throws Exception;
     ApiResponse<String> logout(HttpServletRequest request, HttpServletResponse response) throws Exception;
     ApiResponse<String> register(RegisterRequest registerRequest) throws Exception;
