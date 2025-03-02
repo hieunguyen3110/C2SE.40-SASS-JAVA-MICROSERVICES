@@ -69,6 +69,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 String extractToJson=objectMapper.writeValueAsString(loginResponse);
                 redisService.saveData("user"+account.getAccountId(),refreshToken,Long.parseLong(refreshTokenExpires)/1000);
                 redisService.saveData(accessToken,extractToJson,Long.parseLong(accessTokenExpires)/1000);
+                loginResponse.setPassword(null);
                 return CreateApiResponse.createResponse(loginResponse,false);
             }else{
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Email or password incorrect");
@@ -109,6 +110,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
         }catch (ApiException e){
             throw new ApiException(e.getCode(), e.getMessage());
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    public ApiResponse<Boolean> verifyToken(String token) throws Exception {
+        try{
+            return CreateApiResponse.createResponse(jwtService.VerifyToken(token),false);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }

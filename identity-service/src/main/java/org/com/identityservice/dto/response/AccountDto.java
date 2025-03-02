@@ -14,6 +14,7 @@ import java.util.Set;
 public class AccountDto {
     private long accountId;
     private String email;
+    private String password;
     private String firstName;
     private String lastName;
     private String username;

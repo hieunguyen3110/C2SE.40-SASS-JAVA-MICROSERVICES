@@ -29,6 +29,10 @@ public class AuthenticationController {
     public ApiResponse<String> handleRegister(@RequestBody RegisterRequest registerRequest) throws Exception {
         return authenticationService.register(registerRequest);
     }
+    @GetMapping("/verify-token")
+    public ApiResponse<Boolean> handleVerifyToken(@RequestParam("token") String token) throws Exception {
+        return authenticationService.verifyToken(token);
+    }
     @GetMapping("/refresh-token")
     public ApiResponse<String> handleRefreshToken(HttpServletRequest request, HttpServletResponse response) throws Exception {
         return authenticationService.refreshToken(request,response);

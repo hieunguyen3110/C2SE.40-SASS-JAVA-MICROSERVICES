@@ -25,6 +25,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINT={
             "/auth/login",
             "/auth/autoLogin",
+            "/auth/verify-token",
             "/auth/register",
             "/auth/refresh-token",
             "/auth/logout",
@@ -55,9 +56,6 @@ public class SecurityConfig {
                             .requestMatchers(
                                     "/auth/change-password"
                             ).hasAnyRole("STUDENT","LECTURER")
-                            .requestMatchers(
-                                    "/admin/**"
-                            ).hasRole("ADMIN")
                             .anyRequest().authenticated();
                 });
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
