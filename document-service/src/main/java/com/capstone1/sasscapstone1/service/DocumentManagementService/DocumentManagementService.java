@@ -1,9 +1,7 @@
 package com.capstone1.sasscapstone1.service.DocumentManagementService;
 
 import com.capstone1.sasscapstone1.dto.AdminDocumentDto.AdminDocumentDto;
-import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import com.capstone1.sasscapstone1.dto.DocumentListDto.DocumentListDto;
-import com.capstone1.sasscapstone1.entity.Account;
 import org.springframework.data.domain.Page;
 
 import java.util.List;

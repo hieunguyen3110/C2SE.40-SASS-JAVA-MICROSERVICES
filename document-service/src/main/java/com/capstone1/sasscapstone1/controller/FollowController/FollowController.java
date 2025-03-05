@@ -1,8 +1,8 @@
 package com.capstone1.sasscapstone1.controller.FollowController;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.FollowDto.FollowDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.entity.Account;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.service.FollowService.FollowService;
@@ -29,7 +29,7 @@ public class FollowController {
     public ApiResponse<String> followUserByEmail(@RequestParam String email) throws Exception {
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
         if(!(authentication instanceof AnonymousAuthenticationToken)){
-            Account account= (Account) authentication.getPrincipal();
+            AccountDto account= (AccountDto) authentication.getPrincipal();
             return followService.followUserByEmail(email,account);
         }else{
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
@@ -40,7 +40,7 @@ public class FollowController {
     public ApiResponse<String> unfollowUserByEmail(@RequestParam String email) throws Exception {
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
         if(!(authentication instanceof AnonymousAuthenticationToken)){
-            Account account= (Account) authentication.getPrincipal();
+            AccountDto account= (AccountDto) authentication.getPrincipal();
             return followService.unfollowUserByEmail(email,account);
         }else{
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
@@ -51,7 +51,7 @@ public class FollowController {
     public ApiResponse<List<FollowDto>> getFollowers() throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             return followService.getFollowers(account);
         } else {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
@@ -62,7 +62,7 @@ public class FollowController {
     public ApiResponse<List<FollowDto>> getFollowing() throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             return followService.getFollowing(account);
         } else {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");

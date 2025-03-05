@@ -1,27 +1,24 @@
 package com.capstone1.sasscapstone1.controller.DocumentController;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.AdminDocumentDto.AdminDocumentDto;
 import com.capstone1.sasscapstone1.dto.DocumentDetailDto.DocumentDetailDto;
 import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import com.capstone1.sasscapstone1.dto.PopularDocumentDto.PopularDocumentDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.entity.Account;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.service.DocumentService.DocumentService;
-import com.capstone1.sasscapstone1.service.UserDetailService.UserDetailServiceImpl;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Nullable;
@@ -29,12 +26,11 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/document")
+//@RequestMapping("/document")
 @RequiredArgsConstructor
 public class DocumentController {
 
     private final DocumentService documentService;
-    private final UserDetailServiceImpl userDetailService;
 
     // Upload tài liệu với môn học và khoa
     @PostMapping("/upload")
@@ -49,7 +45,7 @@ public class DocumentController {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             try {
                 return documentService.uploadDocument(file, title, description, content, type, subjectCode, facultyName, folderId, account);
             } catch (IOException e) {
@@ -108,7 +104,7 @@ public class DocumentController {
         try{
             Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
             if(!(authentication instanceof AnonymousAuthenticationToken)){
-                Account account= (Account) authentication.getPrincipal();
+                AccountDto account= (AccountDto) authentication.getPrincipal();
                 return documentService.findAllByAccount(account,pageNum,pageSize);
             }else{
                 throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
@@ -127,8 +123,7 @@ public class DocumentController {
         try{
             Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
             if(!(authentication instanceof AnonymousAuthenticationToken)){
-                Account account= (Account) userDetailService.loadUserByUsername(email);
-                return documentService.findAllByAccount(account,pageNum,pageSize);
+                return documentService.findAllByAccount(email,pageNum,pageSize);
             }else{
                 throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
             }

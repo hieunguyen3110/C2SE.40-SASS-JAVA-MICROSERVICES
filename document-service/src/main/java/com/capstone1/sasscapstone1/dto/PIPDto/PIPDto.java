@@ -1,6 +1,5 @@
 package com.capstone1.sasscapstone1.dto.PIPDto;
 
-import com.capstone1.sasscapstone1.entity.Account;
 import lombok.Data;
 
 import java.time.LocalDate;

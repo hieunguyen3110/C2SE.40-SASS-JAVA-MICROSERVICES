@@ -119,6 +119,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     public ApiResponse<Boolean> verifyToken(String token) throws Exception {
         try{
             return CreateApiResponse.createResponse(jwtService.VerifyToken(token),false);
+        }catch (ExpiredJwtException ex){
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires.");
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
@@ -259,28 +261,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         try{
             redisService.deleteData(request.getEmail()+request.getOtp());
             return CreateApiResponse.createResponse("Clear token is success",false);
-        }catch (Exception e){
-            throw new Exception(e.getMessage());
-        }
-    }
-
-    @Override
-    public ApiResponse<String> allowActiveAccount(String email) throws Exception {
-        try{
-            Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
-            if(!(authentication instanceof AnonymousAuthenticationToken)){
-                Optional<Account> findAccount= accountRepository.findAccountByEmail(email.toLowerCase());
-                if (findAccount.isPresent()){
-                    Account account= findAccount.get();
-                    account.setIsActive(true);
-                    accountRepository.save(account);
-                    return CreateApiResponse.createResponse("Update account successful",false);
-                }else{
-                    throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Account not found by email: "+email);
-                }
-            }else{
-                throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Account not allowed");
-            }
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }

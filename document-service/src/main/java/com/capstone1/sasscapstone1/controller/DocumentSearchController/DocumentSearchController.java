@@ -7,7 +7,6 @@ import com.capstone1.sasscapstone1.dto.SubjectDto.SubjectDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.service.DocumentSearchService.DocumentSearchService;
 import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

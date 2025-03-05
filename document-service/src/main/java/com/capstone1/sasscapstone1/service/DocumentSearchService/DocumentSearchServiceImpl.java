@@ -20,8 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -142,7 +140,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
             Folder folder = folderRepository.findById(folderId)
                     .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Folder not found with ID: " + folderId));
 
-            if (!Long.valueOf(folder.getAccount().getAccountId()).equals(userId)) {
+            if (!Long.valueOf(folder.getAccountId()).equals(userId)) {
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Folder does not belong to the user.");
             }
 

@@ -1,6 +1,8 @@
 package com.capstone1.sasscapstone1.util;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
+import com.capstone1.sasscapstone1.dto.RoleDto.RoleDto;
 import com.capstone1.sasscapstone1.dto.UserProfileResponseDTO.UserProfileResponse;
 import com.capstone1.sasscapstone1.entity.*;
 import com.capstone1.sasscapstone1.dto.UpdateUserProfileRequestDto.UpdateUserProfileRequest;
@@ -16,16 +18,9 @@ import java.util.List;
 @Component
 public class UserProfileUtils {
 
-    private final FacultyRepository facultyRepository;
-
-    @Autowired
-    public UserProfileUtils(FacultyRepository facultyRepository) {
-        this.facultyRepository = facultyRepository;
-    }
-
-    public UserProfileResponse mapToUserProfileResponse(Account account, List<Follow> followers, List<Follow> followings) {
+    public UserProfileResponse mapToUserProfileResponse(AccountDto account, List<Follow> followers, List<Follow> followings) {
         List<String> roles = new ArrayList<>();
-        for (Role roleEntity : account.getRoles()) {
+        for (RoleDto roleEntity : account.getRoles()) {
             roles.add(roleEntity.getName());
         }
         UserProfileResponse response = new UserProfileResponse();
@@ -50,9 +45,9 @@ public class UserProfileUtils {
             response.setFollowing(followings.size());
         }
 
-        if (account.getFaculty() != null) {
-            response.setFacultyName(account.getFaculty().getFacultyName());
-        }
+//        if (account.getFaculty() != null) {
+//            response.setFacultyName(account.getFaculty().getFacultyName());
+//        }
         return response;
     }
 
@@ -66,28 +61,5 @@ public class UserProfileUtils {
                 .subjectName(documents.getSubject().getSubjectName())
                 .description(documents.getDescription())
                 .build();
-    }
-
-    public void updatePersonalInfo(Account account, UpdateUserProfileRequest request) {
-        try {
-            account.setFirstName(request.getFirstName());
-            account.setLastName(request.getLastName());
-            account.setBirthDate(request.getBirthDate());
-            account.setGender(request.getGender());
-            account.setHometown(request.getHometown());
-            account.setPhoneNumber(request.getPhoneNumber());
-
-            if (request.getFacultyId() != null) {
-                Faculty faculty = facultyRepository.findById(request.getFacultyId())
-                        .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Faculty not found with ID: " + request.getFacultyId()));
-                account.setFaculty(faculty);
-            }
-
-            account.setMajor(request.getMajor());
-            account.setEnrollmentYear(request.getEnrollmentYear());
-            account.setClassNumber(String.valueOf(request.getClassNumber()));
-        } catch (Exception e) {
-            throw new RuntimeException("Error updating personal info: " + e.getMessage(), e);
-        }
     }
 }

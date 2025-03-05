@@ -65,6 +65,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             }else{
                 return Mono.error(new ApiException(HttpStatus.FORBIDDEN.value(),"Token isn't valid."));
             }
+        }).onErrorResume(ex -> {
+            log.error("error verifying token {}",token);
+            return Mono.error(new ApiException(HttpStatus.FORBIDDEN.value(), "Token verification failed."));
         });
     }
 

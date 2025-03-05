@@ -1,5 +1,6 @@
 package com.capstone1.sasscapstone1.controller.SavedDocumentsController;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.SavedDocumentsDto.SavedDocumentsDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
@@ -8,7 +9,6 @@ import com.capstone1.sasscapstone1.service.SavedDocumentsService.SavedDocumentsS
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -73,6 +73,6 @@ public class SavedDocumentsController {
     // Helper method để lấy accountId từ Authentication
     private Long getAccountIdFromAuthentication(Authentication authentication) {
         // Trích xuất accountId từ principal (nếu principal là kiểu Account)
-        return ((com.capstone1.sasscapstone1.entity.Account) authentication.getPrincipal()).getAccountId();
+        return ((AccountDto) authentication.getPrincipal()).getAccountId();
     }
 }

@@ -1,5 +1,6 @@
 package com.capstone1.sasscapstone1.service.FolderService;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import com.capstone1.sasscapstone1.dto.FolderDownloadStatsDto.FolderDownloadStatsDto;
 import com.capstone1.sasscapstone1.dto.FolderDto.FolderDto;
@@ -7,19 +8,20 @@ import com.capstone1.sasscapstone1.dto.FolderDto.FolderResponse;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.entity.Documents;
 import com.capstone1.sasscapstone1.entity.Folder;
-import com.capstone1.sasscapstone1.entity.Account;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
 import com.capstone1.sasscapstone1.repository.History.HistoryRepository;
+import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,28 +31,19 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class FolderServiceImpl implements FolderService {
-
-    @Autowired
-    private FolderRepository folderRepository;
-
+    private final FolderRepository folderRepository;
     @PersistenceContext
     private EntityManager entityManager;
-
-    @Autowired
-    private DocumentsRepository documentsRepository;
-
-    @Autowired
-    private HistoryRepository historyRepository;
+    private final DocumentsRepository documentsRepository;
+    private final HistoryRepository historyRepository;
+    private final IdentityClient identityClient;
 
     @Override
     @Transactional
-    public FolderDto createFolder(String folderName, String description, Account account) {
+    public FolderDto createFolder(String folderName, String description, AccountDto account) {
         try {
-            Account managedAccount = entityManager.merge(account);
-            if (managedAccount == null) {
-                throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Account not found");
-            }
             Optional<?> findFolderExistOfAccount = folderRepository.findByFolderNameAndAccountId(folderName, account.getAccountId());
             if (findFolderExistOfAccount.isPresent()) {
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Folder name is exist");
@@ -59,10 +52,10 @@ public class FolderServiceImpl implements FolderService {
             Folder folder = new Folder();
             folder.setFolderName(folderName);
             folder.setDescription(description);
-            folder.setAccount(managedAccount);
+            folder.setAccountId(account.getAccountId());
 
             folderRepository.save(folder);
-            return mapToDTO(folder);
+            return mapToDTO(folder,account);
         } catch (Exception e) {
             throw new RuntimeException("Error creating folder: " + e.getMessage(), e);
         }
@@ -76,13 +69,16 @@ public class FolderServiceImpl implements FolderService {
             if (folder == null) {
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Folder not found with id " + folderId);
             }
+            AccountDto accountDto= (AccountDto) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if(accountDto ==null)
+                throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token isn't valid");
 
             folder.setFolderName(folderName);
             folder.setDescription(description);
             folder.setUpdatedAt(java.time.LocalDateTime.now());
 
             entityManager.merge(folder);
-            return mapToDTO(folder);
+            return mapToDTO(folder,accountDto);
         } catch (Exception e) {
             throw new RuntimeException("Error updating folder: " + e.getMessage(), e);
         }
@@ -112,16 +108,17 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FolderDto> getAllFolders(Account account) {
+    public List<FolderDto> getAllFolders(AccountDto account) {
         try {
-            List<Folder> folders = folderRepository.findByAccount_AccountId(account.getAccountId());
-
+            List<Folder> folders = folderRepository.findByAccountId(account.getAccountId());
+            AccountDto accountDto= identityClient.getAccountId(account.getAccountId()).getData();
             return folders.stream().map(folder -> {
                 FolderDto dto = new FolderDto();
                 dto.setFolderId(folder.getFolderId());
                 dto.setFolderName(folder.getFolderName());
                 dto.setDescription(folder.getDescription());
-                dto.setOwnerName(folder.getAccount().getFirstName() + " " + folder.getAccount().getLastName());
+
+                dto.setOwnerName(accountDto.getFirstName() + " " + accountDto.getLastName());
 
                 // Đếm số tài liệu trong thư mục
                 long documentCount = documentsRepository.countByFolder_FolderIdAndIsActiveIsTrue(folder.getFolderId());
@@ -140,9 +137,10 @@ public class FolderServiceImpl implements FolderService {
     }
 
     @Override
-    public ApiResponse<FolderResponse> getFolderById(Long accountId, Long folderId) {
+    public ApiResponse<FolderResponse> getFolderById(String email, Long folderId) {
         try {
-            Optional<Folder> findFolderById = folderRepository.findByFolderIdAndAccountId(folderId, accountId);
+            AccountDto accountDto= identityClient.getAccountEmail(email).getData();
+            Optional<Folder> findFolderById = folderRepository.findByFolderIdAndAccountId(folderId, accountDto.getAccountId());
             if (findFolderById.isPresent()) {
                 Folder getFolder = findFolderById.get();
                 Pageable pageable = PageRequest.of(0, 10);
@@ -157,7 +155,7 @@ public class FolderServiceImpl implements FolderService {
                     documentDtos.add(dto);
                 }
                 return CreateApiResponse.createResponse((FolderResponse.builder()
-                        .authorName(getFolder.getAccount().getFirstName() + " " + getFolder.getAccount().getLastName())
+                        .authorName(accountDto.getFirstName() + " " + accountDto.getLastName())
                         .numberDoc(documents.getTotalElements())
                         .documents(documentDtos)
                         .folderId(getFolder.getFolderId())
@@ -195,9 +193,10 @@ public class FolderServiceImpl implements FolderService {
                             .build();
                     documentDtos.add(dto);
                 }
+                AccountDto accountDto= identityClient.getAccountId(getFolder.getAccountId()).getData();
                 return CreateApiResponse.createResponse((FolderResponse.builder()
-                        .accountId(getFolder.getAccount().getAccountId())
-                        .authorName(getFolder.getAccount().getFirstName() + " " + getFolder.getAccount().getLastName())
+                        .accountId(getFolder.getAccountId())
+                        .authorName(accountDto.getFirstName() + " " + accountDto.getLastName())
                         .numberDoc(documents.getTotalElements())
                         .documents(documentDtos)
                         .folderId(getFolder.getFolderId())
@@ -224,12 +223,12 @@ public class FolderServiceImpl implements FolderService {
         }
     }
 
-    private FolderDto mapToDTO(Folder folder) {
+    private FolderDto mapToDTO(Folder folder, AccountDto accountDto) {
         FolderDto dto = new FolderDto();
         dto.setFolderId(folder.getFolderId());
         dto.setFolderName(folder.getFolderName());
         dto.setDescription(folder.getDescription());
-        dto.setAccountEmail(folder.getAccount().getEmail());
+        dto.setAccountEmail(accountDto.getEmail());
         return dto;
     }
 }

@@ -23,6 +23,6 @@ public class Faculty extends AbstractDefault {
     private String facultyName;
 
     @OneToMany(mappedBy = "faculty",fetch = FetchType.LAZY)
-    private Set<Account> accounts;
+    private Set<Documents> documents;
 
 }

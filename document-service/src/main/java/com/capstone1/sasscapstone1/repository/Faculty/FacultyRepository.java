@@ -14,10 +14,4 @@ public interface FacultyRepository extends JpaRepository<Faculty, Long> {
     Optional<Faculty> findByFacultyName(String facultyName);
 
     List<Faculty> findAllByFacultyNameContainingIgnoreCase(String facultyName);
-
-    @Query("select f from Faculty f " +
-            "inner join Account a " +
-            "on f.facultyId=a.faculty.facultyId " +
-            "where a.accountId=:accountId")
-    Optional<Faculty> findByAccountsId(@Param("accountId") Long accountId);
 }

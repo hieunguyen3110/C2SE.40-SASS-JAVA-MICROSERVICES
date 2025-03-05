@@ -32,9 +32,8 @@ public class Ratings extends AbstractDefault {
     @JoinColumn(name = "doc_id")
     private Documents documents;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "account_id")
-    private Account account;
+    @Column(name = "account_id")
+    private long accountId;
 
     @OneToMany(mappedBy = "ratings", fetch = FetchType.LAZY)
     private Set<Feedbacks> feedbacks= new HashSet<>();

@@ -16,7 +16,7 @@ public class GlobalException {
     public ResponseEntity<ErrorResponse> handleApiException(ApiException exception){
         log.error(exception.getMessage());
         ErrorResponse errorResponse = new ErrorResponse(exception.getCode(),exception.getMessage());
-        return new ResponseEntity<>(errorResponse, HttpStatus.valueOf(errorResponse.getCode()));
+        return ResponseEntity.status(HttpStatus.valueOf(errorResponse.getCode())).body(errorResponse);
     }
 
     @ExceptionHandler(value = UsernameNotFoundException.class)

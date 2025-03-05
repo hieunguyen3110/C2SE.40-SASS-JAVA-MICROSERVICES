@@ -11,12 +11,12 @@ import java.util.Optional;
 
 @Repository
 public interface FolderRepository extends JpaRepository<Folder,Long> {
-    List<Folder> findByAccount_AccountId(Long accountId);
+    List<Folder> findByAccountId(Long accountId);
 
-    @Query("SELECT f FROM Folder f WHERE f.folderName = :folderName AND f.account.accountId = :accountId")
+    @Query("SELECT f FROM Folder f WHERE f.folderName = :folderName AND f.accountId = :accountId")
     Optional<Folder> findByFolderNameAndAccountId(@Param("folderName") String folderName, @Param("accountId") Long accountId);
 
-    @Query("SELECT f FROM Folder f WHERE f.folderId = :folderId AND f.account.accountId = :accountId")
+    @Query("SELECT f FROM Folder f WHERE f.folderId = :folderId AND f.accountId = :accountId")
     Optional<Folder> findByFolderIdAndAccountId(@Param("folderId") Long folderId, @Param("accountId") Long accountId);
 
     Optional<Folder> findByFolderName(String folderName);

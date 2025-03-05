@@ -77,7 +77,7 @@ public class DocumentManagementServiceImpl implements DocumentManagementService 
 
                 // Lưu tài liệu đã duyệt
                 documentsRepository.save(document);
-                kafkaService.sendNotificationFromUserFollower(document.getFileName(),document.getAccount());
+//                kafkaService.sendNotificationFromUserFollower(document.getFileName(),document.getAccount());
             }catch (Exception e) {
                 throw new RuntimeException("An unexpected error occurred with document ID: " + docId + ". " + e.getMessage(), e);
             }
@@ -155,7 +155,7 @@ public class DocumentManagementServiceImpl implements DocumentManagementService 
         dto.setFilePath(document.getFilePath());
         dto.setSubjectName(document.getSubject() != null ? document.getSubject().getSubjectName() : "N/A");
         dto.setFolderName(document.getFolder() != null ? document.getFolder().getFolderName() : "N/A");
-        dto.setAuthorName(document.getAccount() != null ? document.getAccount().getFirstName() + " " + document.getAccount().getLastName() : "N/A");
+//        dto.setAuthorName(document.getAccount() != null ? document.getAccount().getFirstName() + " " + document.getAccount().getLastName() : "N/A");
         dto.setCreatedAt(document.getCreatedAt() != null ? document.getCreatedAt().toString() : "N/A");
         dto.setApprovedBy(document.getApprovedBy());
         dto.setIsActive(document.getIsActive());

@@ -17,6 +17,5 @@ public interface AuthenticationService {
     ApiResponse<String> validateResetPassword(SendOTPRequest request) throws Exception;
     ApiResponse<String> resetPassword(ResetPasswordRequest request) throws Exception;
     ApiResponse<String> clearToken(ClearTokenRequest request) throws Exception;
-    ApiResponse<String> allowActiveAccount(String email) throws Exception;
     ApiResponse<String> changePassword(ChangePasswordRequest request, Account account) throws Exception;
 }

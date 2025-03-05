@@ -1,8 +1,8 @@
 package com.capstone1.sasscapstone1.controller.UserProfileController;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.UserProfileResponseDTO.UserProfileResponse;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.entity.Account;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.service.UserProfileService.UserProfileService;
@@ -29,7 +29,7 @@ public class UserProfileController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         // Kiểm tra người dùng đã đăng nhập
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             UserProfileResponse profile = userProfileService.getUserProfile(account.getEmail());
             return CreateApiResponse.createResponse(profile,false);
         } else {
@@ -41,7 +41,7 @@ public class UserProfileController {
     public ApiResponse<UserProfileResponse> getUserProfile(@RequestParam("email") String email) throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account= (Account) authentication.getPrincipal();
+            AccountDto account= (AccountDto) authentication.getPrincipal();
             UserProfileResponse profile = userProfileService.getUserProfile(email,account);
             return CreateApiResponse.createResponse(profile,false);
         } else {
