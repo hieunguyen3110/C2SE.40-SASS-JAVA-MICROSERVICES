@@ -16,6 +16,7 @@ public interface AccountService {
     Page<AccountDto> listUsers(int page, int size);
     AccountDto getUserDetails(Long accountId);
     AccountDto getUserDetails(String email);
+    Long countStatsByRoleName(String roleName);
     void softDeleteAccounts(List<Long> accountIds);
     ApiResponse<String> approveNewUsers(List<Long> accountIds);
     ApiResponse<String>adminDeleteUserProfilePicture(Long accountId);

@@ -11,4 +11,6 @@ public interface IdentityClient {
     ApiResponse<AccountDto> getAccountId(@PathVariable("accountId") long accountId);
     @GetExchange(url="/account")
     ApiResponse<AccountDto> getAccountEmail(@RequestParam("email") String email);
+    @GetExchange(url="/stats/type")
+    ApiResponse<Long> countStatsByRoleName(@RequestParam("roleName") String roleName);
 }

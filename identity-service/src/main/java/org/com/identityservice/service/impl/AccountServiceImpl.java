@@ -154,6 +154,17 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    public Long countStatsByRoleName(String roleName) {
+        try {
+            return accountRepository.countByRolesName(roleName);
+        } catch (ApiException e) {
+            throw new ApiException(e.getCode(),"Error count stats role: " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("An unexpected error occurred while fetching user details: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public ApiResponse<String> allowActiveAccount(String email) throws Exception {
         try{
             Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
