@@ -1,10 +1,15 @@
 package com.capstone1.sasscapstone1.service.DocumentService;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.AdminDocumentDto.AdminDocumentDto;
 import com.capstone1.sasscapstone1.dto.DocumentDetailDto.DocumentDetailDto;
+import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import com.capstone1.sasscapstone1.dto.PopularDocumentDto.PopularDocumentDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.entity.*;
+import com.capstone1.sasscapstone1.entity.Documents;
+import com.capstone1.sasscapstone1.entity.Faculty;
+import com.capstone1.sasscapstone1.entity.Folder;
+import com.capstone1.sasscapstone1.entity.Subject;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
@@ -12,67 +17,54 @@ import com.capstone1.sasscapstone1.repository.Faculty.FacultyRepository;
 import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
 import com.capstone1.sasscapstone1.repository.History.HistoryRepository;
 import com.capstone1.sasscapstone1.repository.Subject.SubjectRepository;
+import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
 import com.capstone1.sasscapstone1.request.TrainDocumentRequest;
 import com.capstone1.sasscapstone1.service.FirebaseService.FirebaseService;
-import com.capstone1.sasscapstone1.service.KafkaService.KafkaService;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class DocumentServiceImpl implements DocumentService {
-
-
     private final DocumentsRepository documentsRepository;
     private final FolderRepository folderRepository;
     private final FacultyRepository facultyRepository;
     private final FirebaseService firebaseService;
     private final SubjectRepository subjectRepository;
     private final HistoryRepository historyRepository;
-
-    @PersistenceContext
-    private final EntityManager entityManager;
-
     private final RestTemplate restTemplate;
-
-
-    @Autowired
-    public DocumentServiceImpl(DocumentsRepository documentsRepository, FolderRepository folderRepository,
-                               FacultyRepository facultyRepository, FirebaseService firebaseService,
-                               SubjectRepository subjectRepository, EntityManager entityManager,
-                               KafkaService kafkaService, RestTemplate restTemplate, HistoryRepository historyRepository) {
-        this.documentsRepository = documentsRepository;
-        this.folderRepository = folderRepository;
-        this.facultyRepository = facultyRepository;
-        this.firebaseService = firebaseService;
-        this.subjectRepository = subjectRepository;
-        this.entityManager = entityManager;
-        this.restTemplate = restTemplate;
-        this.historyRepository = historyRepository;
-    }
+    private final IdentityClient identityClient;
 
     @Override
-    public ApiResponse<String> uploadDocument(MultipartFile file, String title, String description, String content, String type, String subjectCode, String facultyName, String folderId, Account account) throws Exception {
+    public ApiResponse<String> uploadDocument(MultipartFile file,
+                                              String title,
+                                              String description,
+                                              String content,
+                                              String type,
+                                              String subjectCode,
+                                              String facultyName,
+                                              String folderId,
+                                              AccountDto account) throws Exception {
         try {
             if (file == null || title == null || title.isBlank() || subjectCode == null ) {
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Missing required fields: file, title, subjectName, or facultyName.");
@@ -80,7 +72,7 @@ public class DocumentServiceImpl implements DocumentService {
 
             String originalFileName = file.getOriginalFilename();
 
-            if (originalFileName == null || originalFileName.isBlank()) {
+            if (originalFileName.isBlank()) {
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Invalid file name.");
             }
             String extension= FilenameUtils.getExtension(originalFileName);
@@ -102,8 +94,6 @@ public class DocumentServiceImpl implements DocumentService {
                     .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Subject not found"));
 
 
-            Account managedAccount = entityManager.merge(account);
-
             CompletableFuture<String> fileUploadFuture = firebaseService.save(file, originalFileName);
             String filePath;
             try {
@@ -115,7 +105,7 @@ public class DocumentServiceImpl implements DocumentService {
 
             Folder folder = null;
             if (folderId != null) {
-                folder = folderRepository.findByFolderIdAndAccountId(Long.parseLong(folderId), managedAccount.getAccountId())
+                folder = folderRepository.findByFolderIdAndAccountId(Long.parseLong(folderId), account.getAccountId())
                         .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Folder not found or does not belong to this user."));
             }
 
@@ -130,7 +120,7 @@ public class DocumentServiceImpl implements DocumentService {
             document.setFileName(originalFileName);
             document.setSubject(subject);
             if(faculty!=null) document.setFaculty(faculty);
-            document.setAccount(managedAccount);
+            document.setAccountId(account.getAccountId());
             if (folder != null) document.setFolder(folder);
             document.setIsActive(false);
             documentsRepository.save(document);
@@ -196,10 +186,23 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public ApiResponse<List<DocumentDto>> findAllByAccount(Account account, int pageNum, int pageSize) throws Exception {
+    public ApiResponse<List<DocumentDto>> findAllByAccount(AccountDto account, int pageNum, int pageSize) throws Exception {
         try {
             Pageable pageable = PageRequest.of(pageNum, pageSize);
-            Page<Documents> documentsPage = documentsRepository.findAllByAccountAndIsActiveIsTrue(account, pageable);
+            Page<Documents> documentsPage = documentsRepository.findAllByAccountIdAndIsActiveIsTrue(account.getAccountId(), pageable);
+            List<DocumentDto> documentDtos = documentsPage.map(this::mapToDocumentDto).toList();
+            return CreateApiResponse.createResponse(documentDtos,false);
+        } catch (Exception e) {
+            throw new Exception("Error fetching documents by account: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public ApiResponse<List<DocumentDto>> findAllByAccount(String email, int pageNum, int pageSize) throws Exception {
+        try {
+            Pageable pageable = PageRequest.of(pageNum, pageSize);
+            AccountDto accountDto= identityClient.getAccountEmail(email).getData();
+            Page<Documents> documentsPage = documentsRepository.findAllByAccountIdAndIsActiveIsTrue(accountDto.getAccountId(), pageable);
             List<DocumentDto> documentDtos = documentsPage.map(this::mapToDocumentDto).toList();
             return CreateApiResponse.createResponse(documentDtos,false);
         } catch (Exception e) {
@@ -267,8 +270,11 @@ public class DocumentServiceImpl implements DocumentService {
         dto.setSubjectName(document.getSubject().getSubjectName());
         dto.setFacultyName(document.getFaculty().getFacultyName());
         dto.setCreatedAt(document.getCreatedAt());
-        dto.setAuthorName(document.getAccount().getFirstName() + " " + document.getAccount().getLastName());
-        dto.setProfilePicture(document.getAccount().getProfilePicture());
+        AccountDto getAccount= identityClient.getAccountId(document.getAccountId()).getData();
+        if(getAccount != null){
+            dto.setAuthorName(getAccount.getFirstName() + " " + getAccount.getLastName());
+            dto.setProfilePicture(getAccount.getProfilePicture());
+        }
         return dto;
     }
 
@@ -279,12 +285,13 @@ public class DocumentServiceImpl implements DocumentService {
             Pageable pageable = PageRequest.of(page, size);
             return historyRepository.findAllByOrderByDownloadCountDesc(pageable).map(history -> {
                 Documents document = history.getDocument();
-                String authorName = document.getAccount() != null
-                        ? document.getAccount().getFirstName() + " " + document.getAccount().getLastName()
-                        : "Unknown";
-                String profilePicture = document.getAccount() != null
-                        ? document.getAccount().getProfilePicture()
-                        : "Unknown";
+                AccountDto getAccount= identityClient.getAccountId(document.getAccountId()).getData();
+                String authorName= "Unknown";
+                String profilePicture= "Unknown";
+                if(getAccount != null){
+                    authorName= getAccount.getFirstName() + " " + getAccount.getLastName();
+                    profilePicture= getAccount.getProfilePicture();
+                }
                 return new PopularDocumentDto(
                         document.getDocId(),
                         document.getTitle(),

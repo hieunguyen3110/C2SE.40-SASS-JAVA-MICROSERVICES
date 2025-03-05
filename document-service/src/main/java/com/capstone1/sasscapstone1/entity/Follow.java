@@ -17,11 +17,9 @@ public class Follow extends AbstractDefault {
     @Column(name = "follow_id")
     private Long followId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "follower_id", nullable = false)
-    private Account follower;
+    @Column(name = "follower_id")
+    private long followerId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "following_id", nullable = false)
-    private Account following;
+    @Column(name = "following_id")
+    private long followingId;
 }

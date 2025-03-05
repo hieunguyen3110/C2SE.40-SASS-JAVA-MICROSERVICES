@@ -64,9 +64,8 @@ public class Documents extends AbstractDefault {
     @JoinColumn(name = "faculty_id")
     private Faculty faculty;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    @JoinColumn(name = "account_id")
-    private Account account;
+    @Column(name = "account_id")
+    private long accountId;
 
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "folder_id")

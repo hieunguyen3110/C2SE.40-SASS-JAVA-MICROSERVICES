@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface SavedDocumentsRepository extends JpaRepository<SavedDocuments, Long> {
-    Page<SavedDocuments> findByAccount_AccountId(Long accountId, Pageable pageable);
-    Optional<SavedDocuments> findByAccount_AccountIdAndDocument_DocId(Long accountId, Long docId);
-    void deleteByAccount_AccountIdAndDocument_DocId(Long accountId, Long docId);
+    Page<SavedDocuments> findByAccountId(Long accountId, Pageable pageable);
+    Optional<SavedDocuments> findByAccountIdAndDocument_DocId(Long accountId, Long docId);
+    void deleteByAccountIdAndDocument_DocId(Long accountId, Long docId);
 }

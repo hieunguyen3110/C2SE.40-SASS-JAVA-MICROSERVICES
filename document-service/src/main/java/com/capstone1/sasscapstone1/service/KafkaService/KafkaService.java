@@ -1,12 +1,11 @@
 package com.capstone1.sasscapstone1.service.KafkaService;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.NotificationDto.NotificationDto;
-import com.capstone1.sasscapstone1.entity.Account;
-import com.capstone1.sasscapstone1.entity.Follow;
 import com.capstone1.sasscapstone1.entity.Notification;
-import com.capstone1.sasscapstone1.repository.Account.AccountRepository;
 import com.capstone1.sasscapstone1.repository.Follow.FollowRepository;
 import com.capstone1.sasscapstone1.repository.Notification.NotificationRepository;
+import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -16,7 +15,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,14 +22,14 @@ public class KafkaService {
     private final KafkaTemplate<String,String> kafkaTemplate;
     private final NotificationRepository notificationRepository;
     private final FollowRepository followRepository;
-    private final AccountRepository accountRepository;
+    private final IdentityClient identityClient;
 
-    public void sendNotificationFromUserFollower(String fileName, Account accountFollowing) throws Exception {
+    public void sendNotificationFromUserFollower(String fileName, AccountDto accountFollowing) throws Exception {
         try{
             List<Long> findAllAccountFollower= followRepository.findAllFollowerByFollowingId(accountFollowing.getAccountId());
             String messageAccountFollowing= "Your document has been approved.";
             Notification notificationAccountFollowing= Notification.builder()
-                    .account(accountFollowing)
+                    .accountId(accountFollowing.getAccountId())
                     .isRead(false)
                     .message(messageAccountFollowing)
                     .type("UPLOAD FILE")
@@ -54,9 +52,9 @@ public class KafkaService {
             kafkaTemplate.send("file-upload-topic",String.valueOf(accountFollowing.getAccountId()) ,notificationAccountFollowingJson);
             for(Long followerId : findAllAccountFollower){
                 String message= "User "+ accountFollowing.getFirstName()+" "+accountFollowing.getLastName()+" uploaded a new file: "+ fileName;
-                Account findAccountById= accountRepository.findById(followerId).orElseThrow(()->new RuntimeException("Account not found"));
+                AccountDto findAccountById= identityClient.getAccountId(followerId).getData();
                 Notification notification= Notification.builder()
-                        .account(findAccountById)
+                        .accountId(findAccountById.getAccountId())
                         .isRead(false)
                         .message(message)
                         .type("UPLOAD FILE")
@@ -79,11 +77,11 @@ public class KafkaService {
         }
     }
 
-    public void sendNotificationFromUserFollowing(Account accountFollowing, String name) throws Exception {
+    public void sendNotificationFromUserFollowing(AccountDto accountFollowing, String name) throws Exception {
         try{
             String message= "User "+ name+" just followed you";
             Notification notification= Notification.builder()
-                    .account(accountFollowing)
+                    .accountId(accountFollowing.getAccountId())
                     .isRead(false)
                     .message(message)
                     .type("FOLLOW")

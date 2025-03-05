@@ -1,8 +1,8 @@
 package com.capstone1.sasscapstone1.controller.NotificationController;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.NotificationDto.NotificationDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.entity.Account;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.request.NotificationRequest;
 import com.capstone1.sasscapstone1.service.NotificationService.NotificationService;
@@ -29,7 +29,7 @@ public class NotificationController {
             @RequestParam(defaultValue = "5") int pageSize) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             return notificationService.getNotificationsForUser(account, pageNum,pageSize);
         } else {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
@@ -41,7 +41,7 @@ public class NotificationController {
             @RequestParam(defaultValue = "5") int pageSize) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             return notificationService.getNotificationsSaved(account, pageNum,pageSize);
         } else {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
@@ -54,7 +54,7 @@ public class NotificationController {
             @RequestParam(defaultValue = "5") int pageSize) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             return notificationService.getNotificationsDeleted(account, pageNum,pageSize);
         } else {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
@@ -85,7 +85,7 @@ public class NotificationController {
     public ApiResponse<Map<String, Long>> countNotification(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             return notificationService.countNotificationOfUser(account);
         } else {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");

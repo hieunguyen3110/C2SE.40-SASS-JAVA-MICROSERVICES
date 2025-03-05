@@ -76,6 +76,12 @@ public class JwtServiceImpl implements JwtService {
         Claims validToken= ExtractClaimsAll(token);
         return validToken != null;
     }
+
+    @Override
+    public Claims DecodeToken(String token) {
+        return ExtractClaimsAll(token);
+    }
+
     private Date ExtractExpiration(String token){
         return ExtractClaim(token, Claims::getExpiration);
     }

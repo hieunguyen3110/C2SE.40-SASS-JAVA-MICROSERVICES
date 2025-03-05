@@ -1,9 +1,9 @@
 package com.capstone1.sasscapstone1.service.NotificationService;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.NotificationDto.NotificationDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.entity.Notification;
-import com.capstone1.sasscapstone1.entity.Account;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
@@ -37,7 +37,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public ApiResponse<List<NotificationDto>> getNotificationsForUser(Account account, int pageNum, int pageSize) {
+    public ApiResponse<List<NotificationDto>> getNotificationsForUser(AccountDto account, int pageNum, int pageSize) {
         try {
             PageRequest pageable = PageRequest.of(pageNum, pageSize);
             Page<Notification> notifications = notificationRepository.findByAccountOrderByCreatedAtDesc(account.getAccountId(), pageable);
@@ -49,7 +49,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public ApiResponse<Map<String, Long>> countNotificationOfUser(Account account) {
+    public ApiResponse<Map<String, Long>> countNotificationOfUser(AccountDto account) {
         try {
             Object[] result = notificationRepository.countNotifications(account.getAccountId());
             Object[] innerArray = (Object[]) result[0];
@@ -65,9 +65,9 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public ResponseEntity<?> getUnreadNotificationsForUser(Account account) {
+    public ResponseEntity<?> getUnreadNotificationsForUser(AccountDto account) {
         try {
-            List<Notification> unreadNotifications = notificationRepository.findByAccountAndIsReadFalseOrderByCreatedAtDesc(account);
+            List<Notification> unreadNotifications = notificationRepository.findByAccountIdAndIsReadFalseOrderByCreatedAtDesc(account.getAccountId());
             List<NotificationDto> notificationDtos = unreadNotifications.stream().map(this::mapToDto).toList();
             return ResponseEntity.ok(notificationDtos);
         } catch (Exception e) {
@@ -76,7 +76,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public ApiResponse<List<NotificationDto>> getNotificationsSaved(Account account, int pageNum, int pageSize) {
+    public ApiResponse<List<NotificationDto>> getNotificationsSaved(AccountDto account, int pageNum, int pageSize) {
         try {
             PageRequest pageable = PageRequest.of(pageNum, pageSize);
             Page<Notification> notifications = notificationRepository.findNotifySaveByAccount(account.getAccountId(), pageable);
@@ -88,7 +88,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public ApiResponse<List<NotificationDto>> getNotificationsDeleted(Account account, int pageNum, int pageSize) {
+    public ApiResponse<List<NotificationDto>> getNotificationsDeleted(AccountDto account, int pageNum, int pageSize) {
         try {
             PageRequest pageable = PageRequest.of(pageNum, pageSize);
             Page<Notification> notifications = notificationRepository.findNotifyDeleteFlagByAccount(account.getAccountId(), pageable);
@@ -140,10 +140,10 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public ResponseEntity<Notification> createNotification(Account account, String message, String type) {
+    public ResponseEntity<Notification> createNotification(AccountDto account, String message, String type) {
         try {
             Notification notification = new Notification();
-            notification.setAccount(account);
+            notification.setAccountId(account.getAccountId());
             notification.setMessage(message);
             notification.setType(type);
             notificationRepository.save(notification);

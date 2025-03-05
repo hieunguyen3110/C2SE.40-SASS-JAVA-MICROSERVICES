@@ -30,9 +30,8 @@ public class Folder extends AbstractDefault {
     @Column(name = "description")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
-    private Account account;
+    @Column(name = "account_id")
+    private long accountId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id")

@@ -1,22 +1,19 @@
 package com.capstone1.sasscapstone1.controller.AdminDashboardController;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.AdminDashboardStatsDto.StatsDto;
 import com.capstone1.sasscapstone1.dto.AdminDocumentDto.AdminDocumentDto;
 import com.capstone1.sasscapstone1.dto.DocumentListDto.DocumentListDto;
-import com.capstone1.sasscapstone1.dto.UserListDto.UserListDto;
-import com.capstone1.sasscapstone1.dto.UserProfileResponseDTO.UserProfileResponse;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.entity.Account;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.request.TrainDocumentRequest;
 import com.capstone1.sasscapstone1.service.AdminDashboardService.AdminDashboardService;
-import com.capstone1.sasscapstone1.service.AdminUserManagementService.AdminUserManagementService;
 import com.capstone1.sasscapstone1.service.DocumentCheckService.DocumentCheckService;
 import com.capstone1.sasscapstone1.service.DocumentManagementService.DocumentManagementService;
 import com.capstone1.sasscapstone1.service.DocumentService.DocumentService;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,77 +26,18 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/admin/dashboard")
+@RequiredArgsConstructor
 public class AdminDashboardController {
 
     private final AdminDashboardService dashboardService;
-    private final AdminUserManagementService userManagementService;
     private final DocumentManagementService documentManagementService;
     private final DocumentCheckService documentCheckService;
     private final DocumentService documentService;
-    private final AdminUserManagementService adminUserManagementService;
-
-
-    @Autowired
-    public AdminDashboardController(AdminDashboardService dashboardService, AdminUserManagementService userManagementService,
-                                    DocumentManagementService documentManagementService, DocumentCheckService documentCheckService, DocumentService documentService, AdminUserManagementService adminUserManagementService) {
-        this.dashboardService = dashboardService;
-        this.userManagementService = userManagementService;
-        this.documentManagementService = documentManagementService;
-        this.documentCheckService = documentCheckService;
-        this.documentService= documentService;
-        this.adminUserManagementService = adminUserManagementService;
-    }
 
     @GetMapping("/stats")
     public ApiResponse<StatsDto> getDashboardStats() {
         StatsDto stats = dashboardService.getDashboardStats();
         return CreateApiResponse.createResponse(stats,false);
-    }
-
-    // List users
-    @GetMapping("/users")
-    public ApiResponse<Page<UserListDto>> listUsers(@RequestParam(defaultValue = "0") int page,
-                                                       @RequestParam(defaultValue = "10") int size) {
-        return CreateApiResponse.createResponse(userManagementService.listUsers(page, size),false);
-    }
-
-    // User details
-    @GetMapping("/users/{accountId}")
-    public ApiResponse<UserProfileResponse> getUserDetails(@PathVariable Long accountId) {
-        return CreateApiResponse.createResponse(userManagementService.getUserDetails(accountId),false);
-    }
-
-    // Delete users
-    @DeleteMapping("/delete-users")
-    public ApiResponse<String> softDeleteUsers(@RequestBody List<Long> accountIds) {
-        try {
-            userManagementService.softDeleteAccounts(accountIds);
-            return CreateApiResponse.createResponse("Accounts successfully soft-deleted.",false);
-        } catch (Exception e) {
-            throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),e.getMessage());
-        }
-    }
-
-    // Approve users
-    @PostMapping("/users/approve")
-    public ApiResponse<String> approveNewUsers(@RequestBody List<Long> accountIds) {
-        return userManagementService.approveNewUsers(accountIds);
-    }
-
-    @DeleteMapping("/delete-profile-picture")
-    public ApiResponse<String> adminDeleteUserProfilePicture(@RequestParam Long accountId) {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            try {
-                return adminUserManagementService.adminDeleteUserProfilePicture(accountId);
-            } catch (Exception e) {
-                throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),e.getMessage());
-            }
-        } else {
-            throw new ApiException(ErrorCode.UNAUTHORIZED.getStatusCode().value(),"You are not authorized to perform this action.");
-        }
     }
 
     @GetMapping("/documents")
@@ -130,13 +68,12 @@ public class AdminDashboardController {
         }
 
         // Lấy email của admin từ thông tin đăng nhập
-        Account account = (Account) authentication.getPrincipal();
+        AccountDto account = (AccountDto) authentication.getPrincipal();
         String adminApprove = account.getFirstName() + " " + account.getLastName();
 
         try {
             // Gọi service để duyệt danh sách tài liệu và lấy tên admin
             documentManagementService.approveDocuments(docIds, adminApprove);
-
             return CreateApiResponse.createResponse("Documents approved successfully.",false);
         } catch (ApiException ex) {
             throw new ApiException(ex.getCode(),ex.getMessage());

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class KafkaConsumer {
-    private final SimpMessagingTemplate simpMessagingTemplate;
+//    private final SimpMessagingTemplate simpMessagingTemplate;
 
     @KafkaListener(topics = "file-upload-topic", groupId = "notification-group")
     public void listenFileUploadEvent(ConsumerRecord<String, String> record) throws Exception {
@@ -27,7 +27,7 @@ public class KafkaConsumer {
            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Sử dụng định dạng ISO
            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Bỏ qua thuộc tính không mong muốn
            NotificationDto notificationDto = objectMapper.readValue(messageJson, NotificationDto.class);
-           simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-upload", notificationDto);
+//           simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-upload", notificationDto);
        }catch (Exception e){
            throw new Exception(e.getMessage());
        }
@@ -43,7 +43,7 @@ public class KafkaConsumer {
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Sử dụng định dạng ISO
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Bỏ qua thuộc tính không mong muốn
             NotificationDto notificationDto = objectMapper.readValue(messageJson, NotificationDto.class);
-            simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-follow", notificationDto);
+//            simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-follow", notificationDto);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }

@@ -16,9 +16,8 @@ public class Notification extends AbstractDefault{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long notificationId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
-    private Account account;
+    @Column(name = "account_id")
+    private long accountId;
 
     private String message;
 

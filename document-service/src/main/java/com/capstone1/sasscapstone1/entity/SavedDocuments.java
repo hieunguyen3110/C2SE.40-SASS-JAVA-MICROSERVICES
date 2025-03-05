@@ -14,9 +14,8 @@ public class SavedDocuments extends AbstractDefault{
     @Column(name = "saved_id")
     private Long savedId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
-    private Account account;
+    @Column(name = "account_id")
+    private long accountId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "doc_id", nullable = false)

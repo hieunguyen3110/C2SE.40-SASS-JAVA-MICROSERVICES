@@ -17,12 +17,11 @@ public interface HistoryRepository extends JpaRepository<History, Long> {
     Page<History> findAllByOrderByDownloadCountDesc(Pageable pageable);
 
     @Query("SELECT new com.capstone1.sasscapstone1.dto.FolderDownloadStatsDto.FolderDownloadStatsDto(" +
-            "f.folderId, f.folderName, COUNT(h.historyId), CONCAT(a.firstName, ' ', a.lastName)) " +
+            "f.folderId, f.folderName, COUNT(h.historyId), 'N/A') " +
             "FROM History h " +
             "JOIN h.document d " +
             "JOIN d.folder f " +
-            "JOIN f.account a " +
-            "GROUP BY f.folderId, f.folderName, a.firstName, a.lastName " +
+            "GROUP BY f.folderId, f.folderName " +
             "ORDER BY COUNT(h.historyId) DESC")
     Page<FolderDownloadStatsDto> getTopFoldersByDownloadCount(Pageable pageable);
 

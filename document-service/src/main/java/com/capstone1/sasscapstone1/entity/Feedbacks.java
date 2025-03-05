@@ -24,9 +24,8 @@ public class Feedbacks extends AbstractDefault {
     @Column(name = "content", columnDefinition = "text")
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "account_id")
-    private Account account;
+    @Column(name = "account_id")
+    private long accountId;
 
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "doc_id")

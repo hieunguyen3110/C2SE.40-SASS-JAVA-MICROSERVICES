@@ -1,24 +1,21 @@
 package com.capstone1.sasscapstone1.controller.FolderController;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.FolderDownloadStatsDto.FolderDownloadStatsDto;
 import com.capstone1.sasscapstone1.dto.FolderDto.FolderDto;
 import com.capstone1.sasscapstone1.dto.FolderDto.FolderResponse;
 import com.capstone1.sasscapstone1.dto.FolderRequestDto.FolderRequestDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.entity.Account;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.service.FolderService.FolderService;
-import com.capstone1.sasscapstone1.service.UserDetailService.UserDetailServiceImpl;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,14 +24,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FolderController {
     private final FolderService folderService;
-    private final UserDetailServiceImpl userDetailService;
 
     // Tạo folder mới
     @PostMapping("/create")
     public ApiResponse<FolderDto> createFolder(@RequestBody FolderRequestDto request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             FolderDto folderDto = folderService.createFolder(request.getFolderName(), request.getDescription(), account);
             return CreateApiResponse.createResponse(folderDto,true);
         }
@@ -54,8 +50,7 @@ public class FolderController {
     public ApiResponse<FolderResponse> getFolderByIdOfUserOther(@PathVariable("folderId") Long folderId, @RequestParam("email") String email) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) userDetailService.loadUserByUsername(email);
-            return folderService.getFolderById(account.getAccountId(),folderId);
+            return folderService.getFolderById(email,folderId);
         }
         throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Unauthorized");
     }
@@ -79,7 +74,7 @@ public class FolderController {
     public ApiResponse<List<FolderDto>> getAllFolders() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             List<FolderDto> folders = folderService.getAllFolders(account);
             return CreateApiResponse.createResponse(folders,false);
         }

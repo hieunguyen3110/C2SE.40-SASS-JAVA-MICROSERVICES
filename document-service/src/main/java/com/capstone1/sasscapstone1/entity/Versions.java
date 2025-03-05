@@ -24,9 +24,8 @@ public class Versions {
     @JoinColumn(name = "doc_id")
     private Documents documents;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "account_id")
-    private Account account;
+    @Column(name = "account_id")
+    private long accountId;
 
     @Column(name = "created_at", columnDefinition = "timestamp DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;

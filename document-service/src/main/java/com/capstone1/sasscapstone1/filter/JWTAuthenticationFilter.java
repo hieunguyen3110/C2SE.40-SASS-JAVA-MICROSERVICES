@@ -1,60 +1,53 @@
 package com.capstone1.sasscapstone1.filter;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
-import com.capstone1.sasscapstone1.service.JwtService.JwtService;
-import com.capstone1.sasscapstone1.service.UserDetailService.UserDetailServiceImpl;
+import com.capstone1.sasscapstone1.exception.ApiException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
-    private final JwtService jwtService;
-    private final UserDetailServiceImpl userDetailService;
-    private String ExtractTokenFromHeader(HttpServletRequest request){
-        String header= request.getHeader("Authorization");
-        String token= null;
-        if(StringUtils.hasText(header) && header.startsWith("Bearer ")){
-            token = header.substring(7);
-        }
-        return token;
-    }
+    private final ObjectMapper objectMapper;
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NotNull HttpServletRequest request,
+                                    @NotNull HttpServletResponse response,
+                                    @NotNull FilterChain filterChain) throws ServletException, IOException {
         try{
-            //authorization
-            String token= ExtractTokenFromHeader(request);
-            if(token!=null && !jwtService.isTokenExpiration(token)){
-                String userName= jwtService.ExtractUsername(token);
-                UserDetails userDetails= userDetailService.loadUserByUsername(userName);
-                UsernamePasswordAuthenticationToken authenticationToken= new UsernamePasswordAuthenticationToken(userDetails,userDetails.getPassword(),userDetails.getAuthorities());
+            String userInfoJson= request.getHeader("X-User-Info");
+            if(userInfoJson != null){
+                AccountDto accountDto= objectMapper.readValue(userInfoJson,AccountDto.class);
+                List<GrantedAuthority> authorities = accountDto.getRoles().stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()))
+                        .collect(Collectors.toList());
+                UsernamePasswordAuthenticationToken authenticationToken=
+                        new UsernamePasswordAuthenticationToken(accountDto,accountDto.getPassword(),authorities);
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
         }catch(ExpiredJwtException e){
-//            response.setStatus(403);
-//            response.getWriter().write("token expired");
-            response.sendError(ErrorCode.FORBIDDEN.getStatusCode().value(),"token expired");
-            return;
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"token expired");
         }
         catch (Exception e){
-//            response.setStatus(401);
-//            response.getWriter().write("token isn't valid");
-            response.sendError(ErrorCode.UNAUTHORIZED.getStatusCode().value(),"token isn't valid");
-            return;
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),"INTERNAL SERVER ERROR");
         }
         filterChain.doFilter(request,response);
     }
