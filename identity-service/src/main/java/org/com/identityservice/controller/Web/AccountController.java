@@ -1,5 +1,7 @@
 package org.com.identityservice.controller.Web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
 import org.com.identityservice.dto.response.AccountDto;
@@ -10,7 +12,10 @@ import org.com.identityservice.entity.Account;
 import org.com.identityservice.enums.ErrorCode;
 import org.com.identityservice.exception.ApiException;
 import org.com.identityservice.helpers.CreateApiResponse;
+import org.com.identityservice.producer.UserUpdateProducer;
 import org.com.identityservice.service.AccountService;
+import org.com.identityservice.service.RedisService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +29,23 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AccountController {
     private final AccountService accountService;
+    private final RedisService redisService;
+    private final ObjectMapper objectMapper;
+    private final UserUpdateProducer userUpdateProducer;
+
+    private void updateAccountDto(AccountDto accountDto,UserProfileResponse userProfileResponse){
+        accountDto.setFirstName(userProfileResponse.getFirstName());
+        accountDto.setLastName(userProfileResponse.getLastName());
+        accountDto.setEmail(userProfileResponse.getEmail());
+        accountDto.setProfilePicture(userProfileResponse.getProfilePicture());
+        accountDto.setBirthDate(userProfileResponse.getBirthDate());
+        accountDto.setGender(userProfileResponse.getGender());
+        accountDto.setHometown(userProfileResponse.getHometown());
+        accountDto.setPhoneNumber(userProfileResponse.getPhoneNumber());
+        accountDto.setMajor(userProfileResponse.getMajor());
+        accountDto.setEnrollmentYear(userProfileResponse.getEnrollmentYear());
+        accountDto.setClassNumber(userProfileResponse.getClassNumber());
+    }
 
     @GetMapping("/{accountId}")
     public ApiResponse<AccountDto> getUserDetails(@PathVariable Long accountId) {
@@ -51,14 +73,23 @@ public class AccountController {
     @PutMapping("/update-profile")
     public ApiResponse<UserProfileResponse> updateUserProfile(
             @ModelAttribute UpdateUserProfileRequest request,
-            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture) {
-
+            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture, HttpServletRequest httpServletRequest)
+    {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
             Account account = (Account) authentication.getPrincipal();
             try {
-                return accountService.updateUserProfile(account, request, profilePicture);
+                ApiResponse<UserProfileResponse> response= accountService.updateUserProfile(account, request, profilePicture);
+                String authHeader= httpServletRequest.getHeader("Authorization");
+                if(authHeader != null){
+                    String token= authHeader.substring(7);
+                    String json= (String) redisService.getData(token);
+                    AccountDto extractAccountFromRedis= objectMapper.readValue(json,AccountDto.class);
+                    updateAccountDto(extractAccountFromRedis,response.getData());
+                    userUpdateProducer.sendEventUpdateUser(token,extractAccountFromRedis);
+                }
+                return response;
             } catch (Exception e) {
                 throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),"Error updating profile: " + e.getMessage());
             }

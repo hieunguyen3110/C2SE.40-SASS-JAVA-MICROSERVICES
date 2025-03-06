@@ -2,10 +2,7 @@ package org.com.identityservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
-import org.com.identityservice.dto.response.AccountDto;
-import org.com.identityservice.dto.response.ApiResponse;
-import org.com.identityservice.dto.response.SearchUserResponseDto;
-import org.com.identityservice.dto.response.UserProfileResponse;
+import org.com.identityservice.dto.response.*;
 import org.com.identityservice.entity.Account;
 import org.com.identityservice.entity.Role;
 import org.com.identityservice.enums.ErrorCode;
@@ -14,6 +11,7 @@ import org.com.identityservice.helpers.CreateApiResponse;
 import org.com.identityservice.helpers.UserDetailServiceCustom;
 import org.com.identityservice.mapper.AccountMapper;
 import org.com.identityservice.repository.AccountRepository;
+import org.com.identityservice.repository.httpClient.DocumentClient;
 import org.com.identityservice.service.AccountService;
 import org.com.identityservice.service.FirebaseService;
 import org.springframework.data.domain.Page;
@@ -43,6 +41,7 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final UserDetailServiceCustom userDetailServiceCustom;
     private final FirebaseService firebaseService;
+    private final DocumentClient documentClient;
 
     private String uploadProfilePicture(MultipartFile profilePicture) {
         try {
@@ -75,12 +74,10 @@ public class AccountServiceImpl implements AccountService {
             account.setHometown(request.getHometown());
             account.setPhoneNumber(request.getPhoneNumber());
 
-//            if (request.getFacultyId() != null) {
-//                Faculty faculty = facultyRepository.findById(request.getFacultyId())
-//                        .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Faculty not found with ID: " + request.getFacultyId()));
-//                account.setFaculty(faculty);
-//            }
-
+            if (request.getFacultyId() != null) {
+                FacultyDto facultyDto= documentClient.getFacultyById(request.getFacultyId()).getData();
+                account.setFacultyId(facultyDto.getFacultyId());
+            }
             account.setMajor(request.getMajor());
             account.setEnrollmentYear(request.getEnrollmentYear());
             account.setClassNumber(String.valueOf(request.getClassNumber()));

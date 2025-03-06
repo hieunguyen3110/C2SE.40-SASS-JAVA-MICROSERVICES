@@ -1,6 +1,6 @@
-package com.capstone1.sasscapstone1.repository.Notification;
+package org.com.notificationservice.repository;
 
-import com.capstone1.sasscapstone1.entity.Notification;
+import org.com.notificationservice.entity.Notification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,9 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface NotificationRepository extends JpaRepository<Notification, Long> {
-
-    // Lấy tất cả thông báo cho một người dùng
+public interface NotificationRepository extends JpaRepository<Notification,Long> {
     @Query("select n from Notification n where n.accountId=:accountId and n.isSaved=false and n.deletedFlag=false order by n.isRead asc, n.createdAt desc")
     Page<Notification> findByAccountOrderByCreatedAtDesc(@Param("accountId") Long accountId, Pageable pageable);
 

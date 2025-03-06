@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.*;
 import org.com.identityservice.dto.response.ApiResponse;
 import org.com.identityservice.dto.response.AccountDto;
+import org.com.identityservice.dto.response.LoginResponse;
 import org.com.identityservice.entity.Account;
 import org.com.identityservice.enums.ErrorCode;
 import org.com.identityservice.exception.ApiException;
@@ -22,7 +23,7 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    public ApiResponse<AccountDto> handleLogin(@RequestBody LoginRequest loginRequest, HttpServletResponse response) throws Exception {
+    public ApiResponse<LoginResponse> handleLogin(@RequestBody LoginRequest loginRequest, HttpServletResponse response) throws Exception {
         return authenticationService.login(loginRequest,response);
     }
     @PostMapping("/register")
@@ -38,7 +39,7 @@ public class AuthenticationController {
         return authenticationService.refreshToken(request,response);
     }
     @GetMapping("/autoLogin")
-    ApiResponse<AccountDto> autoLogin(HttpServletRequest httpServletRequest) throws Exception {
+    ApiResponse<LoginResponse> autoLogin(HttpServletRequest httpServletRequest) throws Exception {
         return authenticationService.autoLogin(httpServletRequest);
     }
     @GetMapping("/logout")

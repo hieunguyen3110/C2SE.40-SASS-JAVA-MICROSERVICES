@@ -10,12 +10,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -23,28 +17,9 @@ import java.util.List;
 public class SecurityConfig {
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
     private static final String[] PUBLIC_ENDPOINT={
-            "/auth/login",
-            "/auth/autoLogin",
-            "/auth/register",
-            "/auth/refresh-token",
-            "/auth/logout",
-            "/auth/validate/reset-password",
-            "/auth/update/new-password",
-            "/auth/clear-token",
-            "/ws/**"
+            "/user/count-stats",
+            "/faculty/**"
     };
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource(){
-        CorsConfiguration corsConfiguration= new CorsConfiguration();
-        corsConfiguration.setAllowCredentials(true);
-        corsConfiguration.addAllowedOrigin("http://localhost:5173");
-        corsConfiguration.setAllowedHeaders(List.of("*"));
-        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE","OPTION"));
-        UrlBasedCorsConfigurationSource source= new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", corsConfiguration);
-        return source;
-    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -58,9 +33,7 @@ public class SecurityConfig {
                                     "/folder/**",
                                     "/test/**",
                                     "/download/**",
-                                    "/notification/**",
                                     "/chat-bot/**",
-                                    "/auth/change-password",
                                     "/user/**"
                             ).hasAnyRole("STUDENT","LECTURER")
                             .requestMatchers(
@@ -68,7 +41,6 @@ public class SecurityConfig {
                             ).hasRole("ADMIN")
                             .anyRequest().authenticated();
                 });
-        http.cors((cors)->cors.configurationSource((corsConfigurationSource())));
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

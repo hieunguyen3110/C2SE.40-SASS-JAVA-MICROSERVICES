@@ -61,6 +61,9 @@ public class Account extends AbstractDefault implements UserDetails {
     @Column(name = "class")
     private String classNumber;
 
+    @Column(name = "faculty_id")
+    private Long facultyId;
+
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 

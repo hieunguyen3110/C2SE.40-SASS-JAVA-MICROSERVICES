@@ -9,7 +9,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.*;
 import org.com.identityservice.dto.response.AccountDto;
+import org.com.identityservice.dto.response.AccountStatisticsDto;
 import org.com.identityservice.dto.response.ApiResponse;
+import org.com.identityservice.dto.response.LoginResponse;
 import org.com.identityservice.entity.Account;
 import org.com.identityservice.entity.Role;
 import org.com.identityservice.enums.ErrorCode;
@@ -19,6 +21,7 @@ import org.com.identityservice.helpers.CreateApiResponse;
 import org.com.identityservice.mapper.AccountMapper;
 import org.com.identityservice.repository.AccountRepository;
 import org.com.identityservice.repository.RoleRepository;
+import org.com.identityservice.repository.httpClient.DocumentClient;
 import org.com.identityservice.service.AuthenticationService;
 import org.com.identityservice.service.JwtService;
 import org.com.identityservice.service.RedisService;
@@ -35,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +52,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final EntityManager entityManager;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final DocumentClient documentClient;
     @Value("${jwt.access_token_expires}")
     private String accessTokenExpires;
     @Value("${jwt.refresh_token_expires}")
@@ -56,8 +61,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Optional<Account> existEmail= accountRepository.findAccountByEmail(email);
         return existEmail.isPresent();
     }
+    private LoginResponse convertToLoginResponse(AccountDto accountDto){
+        AccountStatisticsDto accountStatisticsDto= documentClient.countAccountStaticsDto(accountDto.getAccountId()).getData();
+        return LoginResponse.builder()
+                .accountId(accountDto.getAccountId())
+                .listRoles(accountDto.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                .profilePicture(accountDto.getProfilePicture())
+                .username((accountDto.getFirstName()==null || accountDto.getLastName() == null) ? null : accountDto.getFirstName()+" "+accountDto.getLastName())
+                .follower(accountStatisticsDto.getTotalFollowers().intValue())
+                .following(accountStatisticsDto.getTotalFollowing().intValue())
+                .upload(accountStatisticsDto.getTotalUploadedDocuments().intValue())
+                .build();
+    }
     @Override
-    public ApiResponse<AccountDto> login(LoginRequest loginRequest, HttpServletResponse response) throws Exception {
+    public ApiResponse<LoginResponse> login(LoginRequest loginRequest, HttpServletResponse response) throws Exception {
         try{
             Authentication authentication= authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail().toLowerCase(),loginRequest.getPassword()));
             if(!(authentication.getPrincipal() instanceof AnonymousAuthenticationToken)){
@@ -65,11 +82,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 String accessToken= jwtService.GenerateAccessToken(account);
                 String refreshToken= jwtService.GenerateRefreshToken(account);
                 cookieUtils.generatorTokenCookie(response,accessToken,"user"+account.getAccountId());
-                var loginResponse= AccountMapper.mapToAccountDto(account);
-                String extractToJson=objectMapper.writeValueAsString(loginResponse);
+                var accountDto= AccountMapper.mapToAccountDto(account);
+                String extractToJson=objectMapper.writeValueAsString(accountDto);
                 redisService.saveData("user"+account.getAccountId(),refreshToken,Long.parseLong(refreshTokenExpires)/1000);
                 redisService.saveData(accessToken,extractToJson,Long.parseLong(accessTokenExpires)/1000);
-                loginResponse.setPassword(null);
+                LoginResponse loginResponse= convertToLoginResponse(accountDto);
                 return CreateApiResponse.createResponse(loginResponse,false);
             }else{
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Email or password incorrect");
@@ -84,7 +101,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public ApiResponse<AccountDto> autoLogin(HttpServletRequest request) throws Exception {
+    public ApiResponse<LoginResponse> autoLogin(HttpServletRequest request) throws Exception {
         try{
             Cookie[] cookies= request.getCookies();
             String accessToken = null;
@@ -104,7 +121,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             if(!(authentication instanceof AnonymousAuthenticationToken)){
                 Account loadUser= (Account) authentication.getPrincipal();
                 AccountDto accountDto= AccountMapper.mapToAccountDto(loadUser);
-                return CreateApiResponse.createResponse(accountDto,false);
+                LoginResponse loginResponse= convertToLoginResponse(accountDto);
+                return CreateApiResponse.createResponse(loginResponse,false);
             }else{
                 throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token isn't valid");
             }

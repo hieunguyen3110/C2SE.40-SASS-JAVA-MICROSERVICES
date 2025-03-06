@@ -1,15 +1,17 @@
 package com.capstone1.sasscapstone1.service.DocumentManagementService;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.AdminDocumentDto.AdminDocumentDto;
 import com.capstone1.sasscapstone1.dto.DocumentListDto.DocumentListDto;
 import com.capstone1.sasscapstone1.entity.*;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
+import com.capstone1.sasscapstone1.producer.NotificationProducer;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import com.capstone1.sasscapstone1.repository.Faculty.FacultyRepository;
 import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
 import com.capstone1.sasscapstone1.repository.Subject.SubjectRepository;
-import com.capstone1.sasscapstone1.service.KafkaService.KafkaService;
+import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +30,8 @@ public class DocumentManagementServiceImpl implements DocumentManagementService 
     private final SubjectRepository subjectRepository;
     private final FacultyRepository facultyRepository;
     private final FolderRepository folderRepository;
-    private final KafkaService kafkaService;
+    private final IdentityClient identityClient;
+    private final NotificationProducer notificationProducer;
 
     @Override
     public Page<DocumentListDto> listDocuments(int page, int size) {
@@ -77,7 +80,8 @@ public class DocumentManagementServiceImpl implements DocumentManagementService 
 
                 // Lưu tài liệu đã duyệt
                 documentsRepository.save(document);
-//                kafkaService.sendNotificationFromUserFollower(document.getFileName(),document.getAccount());
+                AccountDto accountDto= identityClient.getAccountId(document.getAccountId()).getData();
+                notificationProducer.sendNotificationFromUserFollower(document.getFileName(),accountDto);
             }catch (Exception e) {
                 throw new RuntimeException("An unexpected error occurred with document ID: " + docId + ". " + e.getMessage(), e);
             }
