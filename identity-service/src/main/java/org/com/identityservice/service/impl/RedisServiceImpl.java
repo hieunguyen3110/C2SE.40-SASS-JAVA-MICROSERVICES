@@ -18,6 +18,11 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
+    public void updateData(String key, Object newValue) {
+        redisTemplate.opsForValue().set(key, newValue);
+    }
+
+    @Override
     public Object getData(String key) {
         return redisTemplate.opsForValue().get(key);
     }

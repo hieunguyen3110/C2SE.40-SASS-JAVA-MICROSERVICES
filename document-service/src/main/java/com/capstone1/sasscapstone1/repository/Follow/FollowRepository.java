@@ -21,4 +21,9 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 
     Optional<Follow> findByFollowerIdAndFollowingId(Long followerId, Long followingId);
 
+    @Query("select COUNT(DISTINCT f.followingId) from Follow f where f.followerId=:accountId")
+    Long countFollowingByAccountId(Long accountId);
+    @Query("select COUNT(DISTINCT f.followerId) from Follow f where f.followingId=:accountId")
+    Long countFollowerByAccountId(Long accountId);
+
 }

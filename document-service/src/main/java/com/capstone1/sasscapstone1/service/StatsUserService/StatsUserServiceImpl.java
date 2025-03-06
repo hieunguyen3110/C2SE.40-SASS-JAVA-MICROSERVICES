@@ -1,12 +1,13 @@
 package com.capstone1.sasscapstone1.service.StatsUserService;
 
+import com.capstone1.sasscapstone1.dto.AccountStatisticsDto.AccountStatisticsDto;
 import com.capstone1.sasscapstone1.dto.AdminDashboardStatsDto.StatsDto;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
+import com.capstone1.sasscapstone1.repository.Follow.FollowRepository;
 import com.capstone1.sasscapstone1.repository.Subject.SubjectRepository;
 import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,6 +16,7 @@ public class StatsUserServiceImpl implements StatsUserService {
     private final DocumentsRepository documentsRepository;
     private final FolderRepository folderRepository;
     private final SubjectRepository subjectRepository;
+    private final FollowRepository followRepository;
     private final IdentityClient identityClient;
 
     @Override
@@ -40,6 +42,19 @@ public class StatsUserServiceImpl implements StatsUserService {
             return stats;
         } catch (Exception e) {
             throw new RuntimeException("Error fetching dashboard stats: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public AccountStatisticsDto countAccountStatics(long accountId) throws Exception {
+        try{
+            return AccountStatisticsDto.builder()
+                    .totalFollowers(followRepository.countFollowerByAccountId(accountId))
+                    .totalFollowing(followRepository.countFollowingByAccountId(accountId))
+                    .totalUploadedDocuments(documentsRepository.countDocumentByAccountIdAndIsActive(accountId))
+                    .build();
+        }catch (Exception e){
+            throw new Exception("Error get statics of user");
         }
     }
 }

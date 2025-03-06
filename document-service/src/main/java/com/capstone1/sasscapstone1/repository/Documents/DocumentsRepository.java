@@ -50,4 +50,6 @@ public interface DocumentsRepository extends JpaRepository<Documents,Long> {
     Optional<Documents> findByFilePath(String filePath);
 
     Optional<Documents> findByDocIdAndIsCheckIsTrue(Long docId);
+    @Query("select count(distinct d.docId) from Documents d where d.accountId=:accountId and d.isActive=true")
+    Long countDocumentByAccountIdAndIsActive(Long accountId);
 }

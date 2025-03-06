@@ -1,29 +1,27 @@
-package com.capstone1.sasscapstone1.controller.NotificationController;
+package org.com.notificationservice.controller;
 
-import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
-import com.capstone1.sasscapstone1.dto.NotificationDto.NotificationDto;
-import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.enums.ErrorCode;
-import com.capstone1.sasscapstone1.request.NotificationRequest;
-import com.capstone1.sasscapstone1.service.NotificationService.NotificationService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.com.notificationservice.dto.request.NotificationRequest;
+import org.com.notificationservice.dto.response.AccountDto;
+import org.com.notificationservice.dto.response.ApiResponse;
+import org.com.notificationservice.dto.response.NotificationDto;
+import org.com.notificationservice.enums.ErrorCode;
+import org.com.notificationservice.exception.ApiException;
+import org.com.notificationservice.service.NotificationService;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import com.capstone1.sasscapstone1.exception.ApiException;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/notification")
 @RequiredArgsConstructor
 public class NotificationController {
-
     private final NotificationService notificationService;
     // Lấy tất cả thông báo cho người dùng hiện tại
-    @GetMapping
+    @GetMapping("/all")
     public ApiResponse<List<NotificationDto>> getUserNotifications(
             @RequestParam(defaultValue = "0") int pageNum,
             @RequestParam(defaultValue = "5") int pageSize) {

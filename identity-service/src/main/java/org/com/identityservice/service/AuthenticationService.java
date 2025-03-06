@@ -5,11 +5,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.com.identityservice.dto.request.*;
 import org.com.identityservice.dto.response.ApiResponse;
 import org.com.identityservice.dto.response.AccountDto;
+import org.com.identityservice.dto.response.LoginResponse;
 import org.com.identityservice.entity.Account;
 
 public interface AuthenticationService {
-    ApiResponse<AccountDto> login(LoginRequest loginRequest, HttpServletResponse response) throws Exception;
-    ApiResponse<AccountDto> autoLogin(HttpServletRequest request) throws Exception;
+    ApiResponse<LoginResponse> login(LoginRequest loginRequest, HttpServletResponse response) throws Exception;
+    ApiResponse<LoginResponse> autoLogin(HttpServletRequest request) throws Exception;
     ApiResponse<Boolean> verifyToken(String token) throws Exception;
     ApiResponse<String> refreshToken(HttpServletRequest request, HttpServletResponse response) throws Exception;
     ApiResponse<String> logout(HttpServletRequest request, HttpServletResponse response) throws Exception;

@@ -1,17 +1,19 @@
-package com.capstone1.sasscapstone1.service.NotificationService;
+package org.com.notificationservice.service.impl;
 
-import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
-import com.capstone1.sasscapstone1.dto.NotificationDto.NotificationDto;
-import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.entity.Notification;
-import com.capstone1.sasscapstone1.enums.ErrorCode;
-import com.capstone1.sasscapstone1.exception.ApiException;
-import com.capstone1.sasscapstone1.util.CreateApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.com.notificationservice.dto.response.AccountDto;
+import org.com.notificationservice.dto.response.ApiResponse;
+import org.com.notificationservice.dto.response.NotificationDto;
+import org.com.notificationservice.entity.Notification;
+import org.com.notificationservice.enums.ErrorCode;
+import org.com.notificationservice.exception.ApiException;
+import org.com.notificationservice.helpers.CreateApiResponse;
+import org.com.notificationservice.mapper.NotificationMapper;
+import org.com.notificationservice.repository.NotificationRepository;
+import org.com.notificationservice.service.NotificationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
-import com.capstone1.sasscapstone1.repository.Notification.NotificationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +25,6 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
-
     private final NotificationRepository notificationRepository;
 
     private NotificationDto mapToDto(Notification notification) {
@@ -140,14 +141,14 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public ResponseEntity<Notification> createNotification(AccountDto account, String message, String type) {
+    public ApiResponse<NotificationDto> createNotification(AccountDto account, String message, String type) {
         try {
             Notification notification = new Notification();
             notification.setAccountId(account.getAccountId());
             notification.setMessage(message);
             notification.setType(type);
-            notificationRepository.save(notification);
-            return ResponseEntity.ok(notification);
+            Notification notificationSave=notificationRepository.save(notification);
+            return CreateApiResponse.createResponse(NotificationMapper.mapToNotificationDto(notificationSave),false);
         } catch (Exception e) {
             throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error creating notification: " + e.getMessage());
         }

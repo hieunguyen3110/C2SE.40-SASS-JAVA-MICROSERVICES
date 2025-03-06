@@ -6,6 +6,7 @@ import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.entity.Follow;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
+import com.capstone1.sasscapstone1.producer.NotificationProducer;
 import com.capstone1.sasscapstone1.repository.Follow.FollowRepository;
 import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
@@ -20,6 +21,7 @@ import java.util.List;
 public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final IdentityClient identityClient;
+    private final NotificationProducer notificationProducer;
 
     @Override
     public ApiResponse<String> followUserByEmail(String email, AccountDto account) throws Exception {
@@ -39,7 +41,7 @@ public class FollowServiceImpl implements FollowService {
             followRepository.save(follow);
 
             // send notification with kafka
-//            kafkaService.sendNotificationFromUserFollowing(accountToFollow, account.getLastName());
+            notificationProducer.sendNotificationFromUserFollowing(accountToFollow, account.getLastName());
 
             return CreateApiResponse.createResponse("You are now following " + accountToFollow.getEmail(),false);
         } catch (ApiException e) {
