@@ -119,9 +119,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
             Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
             if(!(authentication instanceof AnonymousAuthenticationToken)){
-                Account loadUser= (Account) authentication.getPrincipal();
-                AccountDto accountDto= AccountMapper.mapToAccountDto(loadUser);
-                LoginResponse loginResponse= convertToLoginResponse(accountDto);
+                AccountDto loadUser= (AccountDto) authentication.getPrincipal();
+                LoginResponse loginResponse= convertToLoginResponse(loadUser);
                 return CreateApiResponse.createResponse(loginResponse,false);
             }else{
                 throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token isn't valid");
