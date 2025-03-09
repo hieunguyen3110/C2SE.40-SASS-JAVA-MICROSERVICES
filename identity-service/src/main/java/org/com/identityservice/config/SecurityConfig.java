@@ -24,7 +24,6 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private static final String[] PUBLIC_ENDPOINT={
             "/auth/login",
-            "/auth/autoLogin",
             "/auth/verify-token",
             "/auth/register",
             "/auth/refresh-token",
