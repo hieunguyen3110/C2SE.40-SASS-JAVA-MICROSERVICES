@@ -1,0 +1,50 @@
+package org.com.studygroupservice.filter;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.com.studygroupservice.dto.response.AccountDto;
+import org.com.studygroupservice.enums.ErrorCode;
+import org.com.studygroupservice.exception.ApiException;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Component
+@RequiredArgsConstructor
+public class JWTAuthenticationFilter extends OncePerRequestFilter {
+    private final ObjectMapper objectMapper;
+    @Override
+    protected void doFilterInternal(@NotNull HttpServletRequest request,
+                                    @NotNull HttpServletResponse response,
+                                    @NotNull FilterChain filterChain) throws ServletException, IOException {
+        try{
+            String userInfoJson= request.getHeader("X-User-Info");
+            if(userInfoJson != null){
+                AccountDto accountDto= objectMapper.readValue(userInfoJson,AccountDto.class);
+                List<GrantedAuthority> authorities = accountDto.getRoles().stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()))
+                        .collect(Collectors.toList());
+                UsernamePasswordAuthenticationToken authenticationToken=
+                        new UsernamePasswordAuthenticationToken(accountDto,accountDto.getPassword(),authorities);
+                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            }
+        }catch (Exception e){
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),"INTERNAL SERVER ERROR");
+        }
+        filterChain.doFilter(request,response);
+    }
+}

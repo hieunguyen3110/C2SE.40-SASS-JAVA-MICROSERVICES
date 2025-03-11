@@ -1,0 +1,102 @@
+package org.com.studygroupservice.config;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.com.studygroupservice.dto.response.AccountDto;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.config.ChannelRegistration;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Configuration
+@EnableWebSocketMessageBroker
+@RequiredArgsConstructor
+public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
+    private final WebClient.Builder webClientBuilder;
+
+    @Value("${allowed.origins:http://localhost:5173}")
+    private String[] allowedOrigins;
+
+    @Value("${identity.service.url:http://identity-service}")
+    private String identityServiceUrl;
+
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins(allowedOrigins)
+                .withSockJS();
+    }
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic"); // Dùng SimpleBroker cho chat realtime
+        registry.setApplicationDestinationPrefixes("/app");
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(new ChannelInterceptor() {
+            @Override
+            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+                    try {
+                        String token = accessor.getFirstNativeHeader("token");
+                        if (token == null || token.isEmpty()) {
+                            throw new IllegalArgumentException("Token is required");
+                        }
+
+                        // Gọi identity-service để xác thực token
+                        WebClient webClient = webClientBuilder.baseUrl(identityServiceUrl).build();
+                        AccountDto accountDto = webClient.get()
+                                .uri("/validate-token?token=" + token) // Giả định endpoint của identity-service
+                                .retrieve()
+                                .onStatus(status -> status.value() == HttpStatus.UNAUTHORIZED.value(),
+                                        response -> response.bodyToMono(String.class)
+                                                .map(body -> new IllegalArgumentException("Invalid or expired token")))
+                                .bodyToMono(AccountDto.class)
+                                .block();
+
+                        if (accountDto == null) {
+                            throw new IllegalArgumentException("Invalid or expired token");
+                        }
+
+                        List<GrantedAuthority> authorities = accountDto.getRoles().stream()
+                                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()))
+                                .collect(Collectors.toList());
+
+                        Authentication authentication = new PreAuthenticatedAuthenticationToken(
+                                accountDto.getAccountId(),
+                                null,
+                                authorities
+                        );
+                        accessor.setUser(authentication);
+                    } catch (Exception e) {
+                        accessor.setLeaveMutable(true);
+                        accessor.setHeader("error", "Authentication failed: " + e.getMessage());
+                        throw new IllegalStateException("WebSocket authentication failed", e);
+                    }
+                }
+                return message;
+            }
+        });
+    }
+}
