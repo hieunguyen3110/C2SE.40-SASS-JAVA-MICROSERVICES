@@ -2,9 +2,13 @@ package org.com.studygroupservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.com.studygroupservice.entity.Message;
+import org.com.studygroupservice.dto.request.ChatMessage;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -13,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StudyGroupController {
     private final StudyGroupService groupService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @PostMapping
     public ResponseEntity<StudyGroup> createGroup(@RequestBody StudyGroup group,
@@ -25,11 +30,9 @@ public class StudyGroupController {
         return ResponseEntity.ok(groupService.getGroupDetails(groupId));
     }
 
-    @PostMapping("/{groupId}/messages")
-    public ResponseEntity<Message> sendMessage(@PathVariable Long groupId,
-                                               @RequestHeader("User-Id") Long userId,
-                                               @RequestBody String content) {
-        return ResponseEntity.ok(groupService.sendMessage(groupId, userId, content));
+    @MessageMapping("/chat.sendMessage")
+    public void sendMessage(@Payload ChatMessage chatMessage) {
+        groupService.sendMessage(chatMessage.getGroupId(), chatMessage.getSenderId(), chatMessage.getContent());
     }
 
     @DeleteMapping("/{groupId}/members/{userId}")

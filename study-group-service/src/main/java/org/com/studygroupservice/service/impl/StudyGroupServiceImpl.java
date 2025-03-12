@@ -1,6 +1,7 @@
 package org.com.studygroupservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.dto.response.AccountDto;
 import org.com.studygroupservice.dto.response.GroupResponse;
@@ -11,12 +12,15 @@ import org.com.studygroupservice.repository.GroupMemberRepository;
 import org.com.studygroupservice.repository.MessageRepository;
 import org.com.studygroupservice.repository.StudyGroupRepository;
 import org.com.studygroupservice.service.StudyGroupService;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudyGroupServiceImpl implements StudyGroupService {
@@ -25,6 +29,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final GroupMemberRepository memberRepository;
     private final MessageRepository messageRepository;
     private final WebClient.Builder webClientBuilder;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public StudyGroup createGroup(StudyGroup group, Long ownerId) {
@@ -48,19 +53,42 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         }
     }
 
+    @Transactional
     @Override
     public Message sendMessage(Long groupId, Long senderId, String content) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            if (content == null || content.trim().isEmpty()) {
+                throw new ApiException(400, "Nội dung tin nhắn không được để trống.");
+            }
+
+            StudyGroup group = groupRepository.findById(groupId)
+                    .orElseThrow(() -> new ApiException(404, "Nhóm học không tồn tại."));
+
+
             Message message = new Message();
             message.setSenderId(senderId);
             message.setContent(content);
             message.setPinned(false);
             message.setGroup(group);
-            return messageRepository.save(message);
+
+            Message savedMessage = messageRepository.save(message);
+
+            try {
+                messagingTemplate.convertAndSend("/topic/group-" + groupId, savedMessage);
+                log.info("Tin nhắn được gửi đến WebSocket: {}", savedMessage);
+            } catch (Exception e) {
+                log.error("Lỗi khi gửi tin nhắn qua WebSocket: {}", e.getMessage(), e);
+                throw new ApiException(500, "Lỗi khi gửi tin nhắn qua WebSocket.");
+            }
+
+            return savedMessage;
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            throw new ApiException(500, "Failed to send message: " + e.getMessage());
+            log.error("Lỗi khi lưu tin nhắn vào database: {}", e.getMessage(), e);
+            throw new ApiException(500, "Không thể gửi tin nhắn, vui lòng thử lại sau.");
         }
+
     }
 
     @Override
@@ -181,6 +209,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         }
     }
 
+    @Transactional
     @Override
     public Message shareDocument(Long groupId, Long senderId, String documentId) {
         try {

@@ -1,6 +1,5 @@
 package org.com.studygroupservice.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.com.studygroupservice.dto.response.AccountDto;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +21,9 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
-    private final WebClient.Builder webClientBuilder;
+    private final WebClient webClient;
 
     @Value("${allowed.origins:http://localhost:5173}")
     private String[] allowedOrigins;
@@ -40,15 +41,15 @@ public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")
-                .setAllowedOrigins(allowedOrigins)
-                .withSockJS();
+        registry.addEndpoint("/ws").setAllowedOrigins(allowedOrigins);
+        registry.addEndpoint("/ws-sockjs").setAllowedOrigins(allowedOrigins).withSockJS();
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic"); // Dùng SimpleBroker cho chat realtime
+        registry.enableSimpleBroker("/topic", "/queue");
         registry.setApplicationDestinationPrefixes("/app");
+        registry.setUserDestinationPrefix("/user");
     }
 
     @Override
@@ -64,15 +65,13 @@ public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
                             throw new IllegalArgumentException("Token is required");
                         }
 
-                        // Gọi identity-service để xác thực token
-                        WebClient webClient = webClientBuilder.baseUrl(identityServiceUrl).build();
                         AccountDto accountDto = webClient.get()
-                                .uri("/validate-token?token=" + token) // Giả định endpoint của identity-service
+                                .uri(identityServiceUrl + "/validate-token?token=" + token)
                                 .retrieve()
-                                .onStatus(status -> status.value() == HttpStatus.UNAUTHORIZED.value(),
-                                        response -> response.bodyToMono(String.class)
-                                                .map(body -> new IllegalArgumentException("Invalid or expired token")))
+                                .onStatus(HttpStatus.UNAUTHORIZED::equals, response ->
+                                        Mono.error(new IllegalArgumentException("Invalid or expired token")))
                                 .bodyToMono(AccountDto.class)
+                                .timeout(Duration.ofSeconds(3))
                                 .block();
 
                         if (accountDto == null) {
@@ -84,15 +83,11 @@ public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
                                 .collect(Collectors.toList());
 
                         Authentication authentication = new PreAuthenticatedAuthenticationToken(
-                                accountDto.getAccountId(),
-                                null,
-                                authorities
-                        );
+                                accountDto.getAccountId(), null, authorities);
                         accessor.setUser(authentication);
                     } catch (Exception e) {
                         accessor.setLeaveMutable(true);
-                        accessor.setHeader("error", "Authentication failed: " + e.getMessage());
-                        throw new IllegalStateException("WebSocket authentication failed", e);
+                        throw new SecurityException("WebSocket authentication failed: " + e.getMessage(), e);
                     }
                 }
                 return message;
