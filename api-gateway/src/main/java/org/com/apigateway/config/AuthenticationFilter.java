@@ -41,7 +41,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private String apiPrefix;
 
     private boolean isPublishEndPoint(ServerHttpRequest request){
-        return Arrays.stream(publicEndpoint).anyMatch(s->request.getURI().getPath().equals(apiPrefix+s));
+        String path = request.getURI().getPath();
+        return Arrays.stream(publicEndpoint).anyMatch(s -> path.startsWith(apiPrefix + s.replace("/**", "")));
     }
 
     @Override

@@ -29,8 +29,6 @@ import java.util.stream.Collectors;
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
-    private final RedisService redisService;
-    private final ObjectMapper objectMapper;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -46,39 +44,39 @@ public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.setUserDestinationPrefix("/user");
     }
 
-    @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(new ChannelInterceptor() {
-            @Override
-            public Message<?> preSend(@Nonnull Message<?> message, @Nonnull MessageChannel channel) {
-                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    try {
-                        String token = accessor.getFirstNativeHeader("token");
-                        if (token != null) {
-                            String json= (String) redisService.getData(token);
-                            AccountDto accountDto= objectMapper.readValue(json,AccountDto.class);
-                            List<GrantedAuthority> authorities = accountDto.getRoles().stream()
-                                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()))
-                                    .collect(Collectors.toList());
-                            @SuppressWarnings("unchecked")
-                            Authentication authentication = new PreAuthenticatedAuthenticationToken(
-                                    accountDto.getAccountId(),
-                                    accountDto.getPassword(),
-                                    authorities
-                            );
-                            accessor.setUser(authentication);
-                        } else {
-                            throw new IllegalArgumentException("Token not found");
-                        }
-                    } catch (Exception e) {
-                        // Log lỗi và trả về null để từ chối kết nối
-                        System.err.println("WebSocket authentication error: " + e.getMessage());
-                        return null;
-                    }
-                }
-                return message;
-            }
-        });
-    }
+//    @Override
+//    public void configureClientInboundChannel(ChannelRegistration registration) {
+//        registration.interceptors(new ChannelInterceptor() {
+//            @Override
+//            public Message<?> preSend(@Nonnull Message<?> message, @Nonnull MessageChannel channel) {
+//                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+//                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+//                    try {
+//                        String token = accessor.getFirstNativeHeader("token");
+//                        if (token != null) {
+//                            String json= (String) redisService.getData(token);
+//                            AccountDto accountDto= objectMapper.readValue(json,AccountDto.class);
+//                            List<GrantedAuthority> authorities = accountDto.getRoles().stream()
+//                                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()))
+//                                    .collect(Collectors.toList());
+//                            @SuppressWarnings("unchecked")
+//                            Authentication authentication = new PreAuthenticatedAuthenticationToken(
+//                                    accountDto.getAccountId(),
+//                                    accountDto.getPassword(),
+//                                    authorities
+//                            );
+//                            accessor.setUser(authentication);
+//                        } else {
+//                            throw new IllegalArgumentException("Token not found");
+//                        }
+//                    } catch (Exception e) {
+//                        // Log lỗi và trả về null để từ chối kết nối
+//                        System.err.println("WebSocket authentication error: " + e.getMessage());
+//                        return null;
+//                    }
+//                }
+//                return message;
+//            }
+//        });
+//    }
 }
