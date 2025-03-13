@@ -1,5 +1,6 @@
 package com.capstone1.sasscapstone1.service.DocumentSharesService;
 
+import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.entity.DocumentShares;
 import com.capstone1.sasscapstone1.entity.Documents;
@@ -8,10 +9,15 @@ import com.capstone1.sasscapstone1.repository.DocumentShares.DocumentSharesRepos
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -20,13 +26,15 @@ public class DocumentSharesServiceImpl implements DocumentSharesService {
     private final DocumentSharesRepository documentShareRepository;
     private final DocumentsRepository documentsRepository;
     private final FolderRepository foldersRepository;
+    private final WebClient studyGroupWebClient;
 
     public DocumentSharesServiceImpl(DocumentSharesRepository documentShareRepository,
                                      DocumentsRepository documentsRepository,
-                                     FolderRepository foldersRepository) {
+                                     FolderRepository foldersRepository, WebClient studyGroupWebClient) {
         this.documentShareRepository = documentShareRepository;
         this.documentsRepository = documentsRepository;
         this.foldersRepository = foldersRepository;
+        this.studyGroupWebClient = studyGroupWebClient;
     }
 
     @Override
@@ -69,5 +77,41 @@ public class DocumentSharesServiceImpl implements DocumentSharesService {
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         }
+    }
+
+    @Override
+    public ApiResponse<String> shareDocumentToGroup(Long documentId, Long groupId, String shareUrl) throws Exception {
+        try {
+            Documents document = documentsRepository.findById(documentId)
+                    .orElseThrow(() -> new RuntimeException("Document not found"));
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                throw new RuntimeException("Người dùng chưa đăng nhập.");
+            }
+            AccountDto accountDto = (AccountDto) authentication.getPrincipal();
+            Long senderId = accountDto.getAccountId();
+
+            Map<String, Object> requestBody = createRequestBody(documentId, shareUrl, senderId);
+
+            String response = studyGroupWebClient.post()
+                    .uri("/groups/{groupId}/share-document", groupId)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            return CreateApiResponse.createResponse(response, false);
+        } catch (Exception e) {
+            throw new Exception("Lỗi khi chia sẻ tài liệu vào nhóm: " + e.getMessage());
+        }
+    }
+
+    private Map<String, Object> createRequestBody(Long documentId, String shareUrl, Long senderId) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("documentId", documentId);
+        requestBody.put("shareUrl", shareUrl);
+        requestBody.put("senderId", senderId);
+        return requestBody;
     }
 }

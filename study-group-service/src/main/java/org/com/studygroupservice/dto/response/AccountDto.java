@@ -17,6 +17,7 @@ public class AccountDto {
     private String firstName;
     private String lastName;
     private String username;
+    private Long falcultyId;
     private String profilePicture;
     private LocalDate birthDate;
     private String gender;
