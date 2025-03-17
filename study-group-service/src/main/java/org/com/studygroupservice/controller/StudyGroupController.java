@@ -24,8 +24,9 @@ public class StudyGroupController {
     private final StudyGroupService groupService;
 
     @PostMapping
-    public ResponseEntity<StudyGroup> createGroup(@RequestBody StudyGroup group,
-                                                  @RequestHeader("User-Id") Long userId) {
+    public ResponseEntity<StudyGroup> createGroup(@RequestBody Map<String, Object> requestBody) {
+        Long userId = Long.valueOf(requestBody.get("userId").toString());
+        StudyGroup group = new StudyGroup();
         return ResponseEntity.ok(groupService.createGroup(group, userId));
     }
 
@@ -42,21 +43,24 @@ public class StudyGroupController {
     @DeleteMapping("/{groupId}/members/{userId}")
     public ResponseEntity<Void> removeMember(@PathVariable Long groupId,
                                              @PathVariable Long userId,
-                                             @RequestHeader("User-Id") Long requesterId) {
+                                             @RequestBody Map<String, Object> requestBody) {
+        Long requesterId = Long.valueOf(requestBody.get("requesterId").toString());
         groupService.removeMember(groupId, userId, requesterId);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/messages/{messageId}/pin")
     public ResponseEntity<Void> pinMessage(@PathVariable Long messageId,
-                                           @RequestHeader("User-Id") Long requesterId) {
+                                           @RequestBody Map<String, Object> requestBody) {
+        Long requesterId = Long.valueOf(requestBody.get("requesterId").toString());
         groupService.pinMessage(messageId, requesterId);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{groupId}")
     public ResponseEntity<Void> deleteGroup(@PathVariable Long groupId,
-                                            @RequestHeader("User-Id") Long requesterId) {
+                                            @RequestBody Map<String, Object> requestBody) {
+        Long requesterId = Long.valueOf(requestBody.get("requesterId").toString());
         groupService.deleteGroup(groupId, requesterId);
         return ResponseEntity.ok().build();
     }
@@ -71,8 +75,9 @@ public class StudyGroupController {
 
     @PutMapping("/{groupId}")
     public ResponseEntity<StudyGroup> editGroup(@PathVariable Long groupId,
-                                                @RequestBody StudyGroup group,
-                                                @RequestHeader("User-Id") Long requesterId) {
+                                                @RequestBody Map<String, Object> requestBody) {
+        Long requesterId = Long.valueOf(requestBody.get("requesterId").toString());
+        StudyGroup group = new StudyGroup();
         return ResponseEntity.ok(groupService.editGroup(groupId, group, requesterId));
     }
 
@@ -86,13 +91,10 @@ public class StudyGroupController {
 
     @PostMapping("/{groupId}/documents")
     public ResponseEntity<Message> shareDocument(@PathVariable Long groupId,
-                                                 @RequestHeader("User-Id") Long userId,
-                                                 @RequestBody Map<String, String> requestBody) throws Exception {
-        String documentId = requestBody.get("documentId");
-        String shareUrl = requestBody.get("shareUrl");
-        if (documentId == null || shareUrl == null) {
-            throw new IllegalArgumentException("documentId and shareUrl are required");
-        }
+                                                 @RequestBody Map<String, Object> requestBody) throws Exception {
+        Long userId = Long.valueOf(requestBody.get("userId").toString());
+        String documentId = requestBody.get("documentId").toString();
+        String shareUrl = requestBody.get("shareUrl").toString();
         return ResponseEntity.ok(groupService.shareDocumentToGroup(groupId, userId, documentId, shareUrl));
     }
 }

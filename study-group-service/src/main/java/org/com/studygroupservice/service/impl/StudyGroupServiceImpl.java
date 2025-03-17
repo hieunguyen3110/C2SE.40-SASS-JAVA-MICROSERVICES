@@ -39,14 +39,15 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     public StudyGroup createGroup(StudyGroup group, Long ownerId) {
         try {
             group.setOwnerId(ownerId);
-            StudyGroup savedGroup = groupRepository.save(group);
-            addMember(savedGroup.getId(), ownerId);
-            return savedGroup;
+            group = groupRepository.save(group);
+            addMember(group.getId(), ownerId);
+            return group;
         } catch (Exception e) {
             log.error("Failed to create group: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to create group: " + e.getMessage());
         }
     }
+
 
     @Override
     public StudyGroup getGroupDetails(Long groupId) {
@@ -107,7 +108,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         try {
             StudyGroup group = getGroupDetails(groupId);
 
-            // Kiểm tra xem người dùng đã là thành viên của nhóm chưa
             if (isMember(groupId, userId)) {
                 throw new ApiException(400, "Người dùng đã là thành viên của nhóm.");
             }
@@ -115,7 +115,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             GroupMember member = new GroupMember(null, userId, group);
             memberRepository.save(member);
 
-            // Thông báo cho nhóm về thành viên mới
             notifyGroupMemberChange(groupId, userId, "join");
         } catch (ApiException e) {
             throw e;
@@ -129,7 +128,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public void joinGroup(Long groupId, Long userId) {
         try {
-            // Kiểm tra xem người dùng đã là thành viên của nhóm chưa
             if (isMember(groupId, userId)) {
                 throw new ApiException(400, "Người dùng đã là thành viên của nhóm.");
             }
@@ -155,7 +153,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     public void removeMember(Long groupId, Long userId, Long requesterId) {
         try {
             StudyGroup group = getGroupDetails(groupId);
-            // Kiểm tra xem người dùng có phải là chủ sở hữu nhóm hoặc tự rời nhóm
             if (!group.getOwnerId().equals(requesterId) && !userId.equals(requesterId)) {
                 throw new ApiException(403, "Only owner can remove members or user can leave group");
             }
@@ -165,7 +162,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
             memberRepository.delete(member);
 
-            // Thông báo cho nhóm về thành viên đã rời đi
             notifyGroupMemberChange(groupId, userId, "leave");
         } catch (ApiException e) {
             throw e;
@@ -188,7 +184,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             message.setPinned(true);
             messageRepository.save(message);
 
-            // Thông báo cho nhóm về tin nhắn đã được ghim
             messagingTemplate.convertAndSend("/topic/group-" + group.getId() + "/pin", message);
         } catch (ApiException e) {
             throw e;

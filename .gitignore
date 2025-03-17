@@ -36,3 +36,5 @@ discovery-server/.env
 api-gateway/.env
 ### VS Code ###
 .vscode/
+
+
