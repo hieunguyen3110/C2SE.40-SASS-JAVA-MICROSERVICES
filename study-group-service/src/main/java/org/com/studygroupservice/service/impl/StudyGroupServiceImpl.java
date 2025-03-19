@@ -7,6 +7,7 @@ import org.com.studygroupservice.dto.response.AccountDto;
 import org.com.studygroupservice.dto.response.GroupResponse;
 import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.StudyGroup;
+import org.com.studygroupservice.enums.GroupMemberRole;
 import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.repository.GroupMemberRepository;
 import org.com.studygroupservice.repository.MessageRepository;
@@ -14,11 +15,14 @@ import org.com.studygroupservice.repository.StudyGroupRepository;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,22 +36,34 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final GroupMemberRepository memberRepository;
     private final MessageRepository messageRepository;
     private final WebClient.Builder webClientBuilder;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final KafkaTemplate<String, Map<String, Object>> kafkaTemplate;
 
     @Transactional
     @Override
-    public StudyGroup createGroup(StudyGroup group, Long ownerId) {
+    public StudyGroup createGroup(String groupName) {
         try {
-            group.setOwnerId(ownerId);
-            group = groupRepository.save(group);
-            addMember(group.getId(), ownerId);
-            return group;
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto ownerId = (AccountDto) authentication.getPrincipal();
+
+            StudyGroup saveGroup = new StudyGroup();
+            saveGroup.setName(groupName);
+            saveGroup.setOwnerId(ownerId.getAccountId());
+            saveGroup = groupRepository.save(saveGroup);
+
+            GroupMember groupMember = new GroupMember();
+            groupMember.setAccountId(ownerId.getAccountId());
+            groupMember.setStudyGroup(saveGroup);
+            groupMember.setRole(GroupMemberRole.OWNER);
+            memberRepository.save(groupMember);
+
+            sendNotificationToKafka(saveGroup.getId(), ownerId.getAccountId(), "created");
+
+            return saveGroup;
         } catch (Exception e) {
             log.error("Failed to create group: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to create group: " + e.getMessage());
         }
     }
-
 
     @Override
     public StudyGroup getGroupDetails(Long groupId) {
@@ -64,7 +80,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public void sendMessage(Long groupId, Long senderId, String content) {
+    public void sendMessage(Long groupId, String content) {
         try {
             if (content == null || content.trim().isEmpty()) {
                 throw new ApiException(400, "Nội dung tin nhắn không được để trống.");
@@ -73,31 +89,26 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             StudyGroup group = groupRepository.findById(groupId)
                     .orElseThrow(() -> new ApiException(404, "Nhóm học không tồn tại."));
 
-            // Kiểm tra xem người gửi có phải là thành viên của nhóm không
-            if (!isMember(groupId, senderId)) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto senderId = (AccountDto)(authentication.getPrincipal());
+
+            if (!isMember(groupId, senderId.getAccountId())) {
                 throw new ApiException(403, "Người dùng không phải là thành viên của nhóm.");
             }
 
             Message message = new Message();
-            message.setSenderId(senderId);
+            message.setSenderId(senderId.getAccountId());
             message.setContent(content);
             message.setPinned(false);
             message.setGroup(group);
 
             Message savedMessage = messageRepository.save(message);
 
-            try {
-                messagingTemplate.convertAndSend("/topic/group-" + groupId, savedMessage);
-                log.info("Tin nhắn được gửi đến WebSocket: {}", savedMessage);
-            } catch (Exception e) {
-                log.error("Lỗi khi gửi tin nhắn qua WebSocket: {}", e.getMessage(), e);
-                throw new ApiException(500, "Lỗi khi gửi tin nhắn qua WebSocket.");
-            }
-
+            sendNotificationToKafka(groupId, senderId.getAccountId(), "send_message", savedMessage.getId(), content);
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Lỗi khi lưu tin nhắn vào database: {}", e.getMessage(), e);
+            log.error("Lỗi khi gửi tin nhắn: {}", e.getMessage(), e);
             throw new ApiException(500, "Không thể gửi tin nhắn, vui lòng thử lại sau.");
         }
     }
@@ -113,9 +124,16 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             }
 
             GroupMember member = new GroupMember(null, userId, group);
+
+            if (group.getOwnerId().equals(userId)) {
+                member.setRole(GroupMemberRole.OWNER);
+            } else {
+                member.setRole(GroupMemberRole.MEMBER);
+            }
+
             memberRepository.save(member);
 
-            notifyGroupMemberChange(groupId, userId, "join");
+            sendNotificationToKafka(groupId, userId, "join");
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -132,14 +150,12 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 throw new ApiException(400, "Người dùng đã là thành viên của nhóm.");
             }
 
-            // Kiểm tra xem nhóm có tồn tại không
             StudyGroup group = getGroupDetails(groupId);
 
             GroupMember member = new GroupMember(null, userId, group);
             memberRepository.save(member);
 
-            // Thông báo cho nhóm về thành viên mới
-            notifyGroupMemberChange(groupId, userId, "join");
+            sendNotificationToKafka(groupId, userId, "join");
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -150,11 +166,19 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public void removeMember(Long groupId, Long userId, Long requesterId) {
+    public void removeMember(Long groupId, Long userId) {
         try {
             StudyGroup group = getGroupDetails(groupId);
-            if (!group.getOwnerId().equals(requesterId) && !userId.equals(requesterId)) {
-                throw new ApiException(403, "Only owner can remove members or user can leave group");
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUserId = (AccountDto) (authentication.getPrincipal());
+
+            if (!group.getOwnerId().equals(currentUserId.getAccountId()) && !userId.equals(currentUserId.getAccountId())) {
+                GroupMember membership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUserId.getAccountId())
+                        .orElseThrow(() -> new ApiException(403, "User is not a member of this group"));
+                if (!membership.getRole().equals(GroupMemberRole.ADMIN)) {
+                    throw new ApiException(403, "Only owner or admin can remove members, or user can leave group");
+                }
             }
 
             GroupMember member = memberRepository.findByStudyGroupIdAndAccountId(groupId, userId)
@@ -162,7 +186,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
             memberRepository.delete(member);
 
-            notifyGroupMemberChange(groupId, userId, "leave");
+            sendNotificationToKafka(groupId, userId, "leave");
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -173,18 +197,24 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public void pinMessage(Long messageId, Long requesterId) {
+    public void pinMessage(Long messageId) {
         try {
             Message message = messageRepository.findById(messageId)
                     .orElseThrow(() -> new ApiException(404, "Message not found"));
+
             StudyGroup group = message.getGroup();
-            if (!group.getOwnerId().equals(requesterId)) {
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUserId = (AccountDto) (authentication.getPrincipal());
+
+            if (!group.getOwnerId().equals(currentUserId.getAccountId())) {
                 throw new ApiException(403, "Only owner can pin messages");
             }
+
             message.setPinned(true);
             messageRepository.save(message);
 
-            messagingTemplate.convertAndSend("/topic/group-" + group.getId() + "/pin", message);
+            sendNotificationToKafka(group.getId(), currentUserId.getAccountId(), "pin_message", messageId);
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -195,18 +225,24 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public void unpinMessage(Long messageId, Long requesterId) {
+    public void unpinMessage(Long messageId) {
         try {
             Message message = messageRepository.findById(messageId)
                     .orElseThrow(() -> new ApiException(404, "Message not found"));
+
             StudyGroup group = message.getGroup();
-            if (!group.getOwnerId().equals(requesterId)) {
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUserId = (AccountDto) (authentication.getPrincipal());
+
+            if (!group.getOwnerId().equals(currentUserId.getAccountId())) {
                 throw new ApiException(403, "Only owner can unpin messages");
             }
+
             message.setPinned(false);
             messageRepository.save(message);
 
-            messagingTemplate.convertAndSend("/topic/group-" + group.getId() + "/unpin", message);
+            sendNotificationToKafka(group.getId(), currentUserId.getAccountId(), "unpin_message", messageId);
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -217,25 +253,27 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public void deleteGroup(Long groupId, Long requesterId) {
+    public void deleteGroup(Long groupId) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
-            if (!group.getOwnerId().equals(requesterId)) {
-                throw new ApiException(403, "Only owner can delete group");
+            StudyGroup group = groupRepository.findById(groupId)
+                    .orElseThrow(() -> new ApiException(404, "Group not found"));
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUserId = (AccountDto) (authentication.getPrincipal());
+
+            if (!group.getOwnerId().equals(currentUserId.getAccountId())) {
+                GroupMember requesterMembership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUserId.getAccountId())
+                        .orElseThrow(() -> new ApiException(403, "User is not a member of this group"));
+                if (!requesterMembership.getRole().equals(GroupMemberRole.OWNER)) {
+                    throw new ApiException(403, "Only owner or admin can delete group");
+                }
             }
 
-            // Xóa tất cả tin nhắn của nhóm trước
             messageRepository.deleteByGroupId(groupId);
-
-            // Xóa tất cả thành viên của nhóm
             memberRepository.deleteByStudyGroupId(groupId);
-
-            // Xóa nhóm
             groupRepository.delete(group);
 
-            // Thông báo cho tất cả thành viên về việc nhóm đã bị xóa
-            messagingTemplate.convertAndSend("/topic/group-" + groupId + "/delete",
-                    Map.of("message", "Group has been deleted", "groupId", groupId));
+            sendNotificationToKafka(groupId, currentUserId.getAccountId(), "delete");
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -270,7 +308,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     return new GroupResponse(member.getId(), account.getUsername(), account.getEmail());
                 } catch (Exception e) {
                     log.error("Error fetching account details: {}", e.getMessage(), e);
-                    throw new ApiException(500, "Error fetching account details for member ID " + member.getAccountId() + ": " + e.getMessage());
+                    throw new ApiException(500, "Error fetching account details for member ID " + member.getAccountId());
                 }
             });
         } catch (ApiException e) {
@@ -283,19 +321,25 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public StudyGroup editGroup(Long groupId, StudyGroup updatedGroup, Long requesterId) {
+    public StudyGroup editGroup(Long groupId, String groupName) {
         try {
             StudyGroup group = getGroupDetails(groupId);
-            if (!group.getOwnerId().equals(requesterId)) {
-                throw new ApiException(403, "Only owner can edit group");
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUserId = (AccountDto) (authentication.getPrincipal());
+
+            if (!group.getOwnerId().equals(currentUserId.getAccountId())) {
+                GroupMember membership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUserId.getAccountId())
+                        .orElseThrow(() -> new ApiException(403, "User is not a member of this group"));
+                if (!membership.getRole().equals(GroupMemberRole.ADMIN)) {
+                    throw new ApiException(403, "Only owner or admin can edit group");
+                }
             }
 
-            group.setName(updatedGroup.getName());
-            group.setDescription(updatedGroup.getDescription());
-
+            group.setName(groupName);
             StudyGroup savedGroup = groupRepository.save(group);
 
-            messagingTemplate.convertAndSend("/topic/group-" + groupId + "/update", savedGroup);
+            sendNotificationToKafka(groupId, currentUserId.getAccountId(), "update_group");
 
             return savedGroup;
         } catch (ApiException e) {
@@ -338,21 +382,22 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         }
     }
 
+    @Transactional
     @Override
-    public Message shareDocumentToGroup(Long groupId, Long senderId, String documentId, String shareUrl) throws Exception {
+    public Message shareDocumentToGroup(Long groupId, String documentId, String shareUrl) {
         try {
-            // Kiểm tra nhóm có tồn tại không
             StudyGroup group = groupRepository.findById(groupId)
-                    .orElseThrow(() -> new Exception("Nhóm học không tồn tại."));
+                    .orElseThrow(() -> new ApiException(404, "Nhóm học không tồn tại."));
 
-            // Kiểm tra senderId có phải thành viên nhóm không (giả định có phương thức isMember)
-            if (!isMember(groupId, senderId)) {
-                throw new Exception("Người dùng không phải là thành viên của nhóm.");
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto senderId = (AccountDto) (authentication.getPrincipal());
+
+            if (!isMember(groupId, senderId.getAccountId())) {
+                throw new ApiException(403, "Người dùng không phải là thành viên của nhóm.");
             }
 
-            // Tạo tin nhắn chia sẻ
             Message message = new Message();
-            message.setSenderId(senderId);
+            message.setSenderId(senderId.getAccountId());
             message.setContent("Đã chia sẻ tài liệu: " + shareUrl);
             message.setPinned(false);
             message.setDocumentLink(true);
@@ -361,14 +406,14 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
             Message savedMessage = messageRepository.save(message);
 
-            // Gửi tin nhắn qua WebSocket
-            messagingTemplate.convertAndSend("/topic/group-" + groupId, savedMessage);
-            log.info("Tin nhắn chia sẻ tài liệu được gửi đến WebSocket: {}", savedMessage);
+            sendNotificationToKafka(groupId, senderId.getAccountId(), "share_document", savedMessage.getId());
 
             return savedMessage;
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Lỗi khi chia sẻ tài liệu vào nhóm: {}", e.getMessage());
-            throw new Exception("Không thể chia sẻ tài liệu: " + e.getMessage());
+            log.error("Lỗi khi chia sẻ tài liệu vào nhóm: {}", e.getMessage(), e);
+            throw new ApiException(500, "Không thể chia sẻ tài liệu: " + e.getMessage());
         }
     }
 
@@ -381,27 +426,33 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         }
     }
 
-    private void notifyGroupMemberChange(Long groupId, Long userId, String action) {
+    private void sendNotificationToKafka(Long groupId, Long userId, String action, Long messageId, Object additionalData) {
         try {
-            WebClient webClient = webClientBuilder.baseUrl("http://identity-service").build();
-            AccountDto account = webClient.get()
-                    .uri("/admin/account/users/" + userId)
-                    .retrieve()
-                    .bodyToMono(AccountDto.class)
-                    .block();
-
-            if (account != null) {
-                Map<String, Object> notification = Map.of(
-                        "userId", userId,
-                        "username", account.getUsername(),
-                        "action", action
-                );
-
-                messagingTemplate.convertAndSend("/topic/group-" + groupId + "/member", notification);
+            Map<String, Object> notification = new HashMap<>();
+            notification.put("groupId", groupId);
+            notification.put("userId", userId);
+            notification.put("action", action);
+            if(messageId != null){
+                notification.put("messageId", messageId);
             }
+            if(additionalData != null){
+                notification.put("data", additionalData);
+            }
+            notification.put("timestamp", System.currentTimeMillis());
+
+            kafkaTemplate.send("study-group-topic", String.valueOf(userId), notification);
+            log.info("Notification sent to Kafka: {}", notification);
         } catch (Exception e) {
-            log.error("Failed to notify group about member change: {}", e.getMessage(), e);
+            log.error("Failed to send notification to Kafka: {}", e.getMessage(), e);
         }
+    }
+
+    private void sendNotificationToKafka(Long groupId, Long userId, String action) {
+        sendNotificationToKafka(groupId, userId, action, null, null);
+    }
+
+    private void sendNotificationToKafka(Long groupId, Long userId, String action, Long messageId) {
+        sendNotificationToKafka(groupId, userId, action, messageId, null);
     }
 
     @Override
@@ -423,12 +474,16 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         }
     }
 
+    @Transactional
     @Override
-    public void transferOwnership(Long groupId, Long newOwnerId, Long currentOwnerId) {
+    public void transferOwnership(Long groupId, Long newOwnerId) {
         try {
             StudyGroup group = getGroupDetails(groupId);
 
-            if (!group.getOwnerId().equals(currentOwnerId)) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentOwnerId = (AccountDto) (authentication.getPrincipal());
+
+            if (!group.getOwnerId().equals(currentOwnerId.getAccountId())) {
                 throw new ApiException(403, "Only current owner can transfer ownership");
             }
 
@@ -437,16 +492,13 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             }
 
             group.setOwnerId(newOwnerId);
-            StudyGroup updatedGroup = groupRepository.save(group);
+            groupRepository.save(group);
 
-            Map<String, Object> notification = Map.of(
-                    "action", "ownership_transfer",
-                    "groupId", groupId,
+            Map<String, Object> additionalData = Map.of(
                     "newOwnerId", newOwnerId,
-                    "previousOwnerId", currentOwnerId
+                    "previousOwnerId", currentOwnerId.getAccountId()
             );
-
-            messagingTemplate.convertAndSend("/topic/group-" + groupId + "/ownership", notification);
+            sendNotificationToKafka(groupId, currentOwnerId.getAccountId(), "ownership_transfer", null, additionalData);
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -455,22 +507,25 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         }
     }
 
+    @Transactional
     @Override
-    public void deleteMessage(Long messageId, Long requesterId) {
+    public void deleteMessage(Long messageId) {
         try {
             Message message = messageRepository.findById(messageId)
                     .orElseThrow(() -> new ApiException(404, "Message not found"));
 
             StudyGroup group = message.getGroup();
 
-            if (!message.getSenderId().equals(requesterId) && !group.getOwnerId().equals(requesterId)) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUserId = (AccountDto) (authentication.getPrincipal());
+
+            if (!message.getSenderId().equals(currentUserId.getAccountId()) && !group.getOwnerId().equals(currentUserId.getAccountId())) {
                 throw new ApiException(403, "Only message sender or group owner can delete messages");
             }
 
             messageRepository.delete(message);
 
-            messagingTemplate.convertAndSend("/topic/group-" + group.getId() + "/delete-message",
-                    Map.of("messageId", messageId));
+            sendNotificationToKafka(group.getId(), currentUserId.getAccountId(), "delete_message", messageId);
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {

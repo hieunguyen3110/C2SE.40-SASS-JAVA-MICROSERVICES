@@ -1,50 +1,61 @@
 package org.com.studygroupservice.service;
 
+import org.com.studygroupservice.dto.request.CreateGroupRequest;
 import org.com.studygroupservice.dto.response.GroupResponse;
-import org.com.studygroupservice.entity.StudyGroup;
 import org.com.studygroupservice.entity.Message;
+import org.com.studygroupservice.entity.StudyGroup;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 public interface StudyGroupService {
 
-    StudyGroup createGroup(StudyGroup group, Long ownerId);
+    @Transactional
+    StudyGroup createGroup(String groupName);
 
     StudyGroup getGroupDetails(Long groupId);
 
-    void sendMessage(Long groupId, Long senderId, String content);
+    void sendMessage(Long groupId, String content);
 
+    @Transactional
     void addMember(Long groupId, Long userId);
 
+    @Transactional
     void joinGroup(Long groupId, Long userId);
 
-    void removeMember(Long groupId, Long userId, Long requesterId);
+    void removeMember(Long groupId, Long userId);
 
-    void pinMessage(Long messageId, Long requesterId);
+    @Transactional
+    void pinMessage(Long messageId);
 
-    void unpinMessage(Long messageId, Long requesterId);
+    @Transactional
+    void unpinMessage(Long messageId);
 
-    void deleteGroup(Long groupId, Long requesterId);
+    @Transactional
+    void deleteGroup(Long groupId);
 
     Page<GroupResponse> listMembers(Long groupId, Pageable pageable);
 
-    StudyGroup editGroup(Long groupId, StudyGroup updatedGroup, Long requesterId);
+    @Transactional
+    StudyGroup editGroup(Long groupId, String groupName);
 
     Page<Message> getPinnedMessages(Long groupId, Pageable pageable);
 
     Page<Message> getGroupMessages(Long groupId, Pageable pageable);
 
+    @Transactional
+    Message shareDocumentToGroup(Long groupId, String documentId, String shareUrl);
+
     List<StudyGroup> findUserGroups(Long userId);
 
-    void transferOwnership(Long groupId, Long newOwnerId, Long currentOwnerId);
+    void transferOwnership(Long groupId, Long newOwnerId);
 
-    void deleteMessage(Long messageId, Long requesterId);
+    @Transactional
+    void deleteMessage(Long messageId);
 
     List<StudyGroup> searchGroups(String keyword);
 
     boolean isGroupOwner(Long groupId, Long userId);
-
-    Message shareDocumentToGroup(Long groupId, Long senderId, String documentId, String shareUrl) throws Exception;
 }

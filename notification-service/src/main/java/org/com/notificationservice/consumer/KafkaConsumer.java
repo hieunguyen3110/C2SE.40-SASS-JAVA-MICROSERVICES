@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.com.notificationservice.dto.request.NotificationEventRequest;
 import org.com.notificationservice.dto.response.AccountDto;
+import org.com.notificationservice.dto.response.GroupNotification;
 import org.com.notificationservice.dto.response.NotificationDto;
 import org.com.notificationservice.entity.Notification;
 import org.com.notificationservice.mapper.NotificationMapper;
@@ -16,11 +17,16 @@ import org.com.notificationservice.service.RedisService;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.util.Map;
+
+
 @RequiredArgsConstructor
 public class KafkaConsumer {
     private final SimpMessagingTemplate simpMessagingTemplate;
     private final NotificationRepository notificationRepository;
     private final RedisService redisService;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private Notification convertToNotification(NotificationEventRequest request){
         return Notification.builder()
@@ -82,6 +88,25 @@ public class KafkaConsumer {
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Bỏ qua thuộc tính không mong muốn
             String json= objectMapper.writeValueAsString(accountDto);
             redisService.updateData(token,json);
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "study-group-topic", groupId = "notification-group")
+    public void listenUserDeleteEvent(ConsumerRecord<String, Object> record) throws Exception {
+        try{
+            objectMapper.registerModule(new JavaTimeModule());
+            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            String userId = record.key();
+            Object notificationData = record.value();
+
+            GroupNotification groupNotification = objectMapper.convertValue(notificationData, GroupNotification.class);
+
+            String destination = "/topic/group-notification/" + groupNotification.getGroupId();
+            messagingTemplate.convertAndSend(destination, groupNotification);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }

@@ -1,8 +1,14 @@
 package org.com.studygroupservice.dto.request;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChatMessage {
     private Long groupId;
     private Long senderId;

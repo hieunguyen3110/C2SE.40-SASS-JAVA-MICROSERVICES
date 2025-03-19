@@ -3,90 +3,88 @@ package org.com.studygroupservice.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.com.studygroupservice.dto.request.*;
+import org.com.studygroupservice.dto.response.ApiResponse;
 import org.com.studygroupservice.dto.response.GroupResponse;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
+import org.com.studygroupservice.helpers.CreateApiResponse;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/study-groups")
 @RequiredArgsConstructor
 public class StudyGroupController {
     private final StudyGroupService groupService;
 
     @PostMapping
-    public ResponseEntity<StudyGroup> createGroup(@Valid @RequestBody CreateGroupRequest request) {
-        StudyGroup group = new StudyGroup();
-        group.setName(request.getGroupName());
-        return ResponseEntity.ok(groupService.createGroup(group, request.getUserId()));
+    public ApiResponse<StudyGroup> createGroup(@Valid @RequestBody CreateGroupRequest request) {
+        StudyGroup group = groupService.createGroup(request.getGroupName());
+        return CreateApiResponse.createResponse(group, true);
     }
 
     @GetMapping("/{groupId}")
-    public ResponseEntity<StudyGroup> getGroupDetails(@PathVariable Long groupId) {
-        return ResponseEntity.ok(groupService.getGroupDetails(groupId));
+    public ApiResponse<StudyGroup> getGroupDetails(@PathVariable Long groupId) {
+        StudyGroup group = groupService.getGroupDetails(groupId);
+        return CreateApiResponse.createResponse(group, false);
     }
 
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload ChatMessage chatMessage) {
-        groupService.sendMessage(chatMessage.getGroupId(), chatMessage.getSenderId(), chatMessage.getContent());
+        groupService.sendMessage(chatMessage.getGroupId(), chatMessage.getContent());
     }
 
     @DeleteMapping("/{groupId}/members/{userId}")
-    public ResponseEntity<Void> removeMember(@PathVariable Long groupId,
-                                             @PathVariable Long userId,
-                                             @Valid @RequestBody RequesterDTO request) {
-        groupService.removeMember(groupId, userId, request.getRequesterId());
-        return ResponseEntity.ok().build();
+    public ApiResponse<Void> removeMember(@PathVariable Long groupId, @PathVariable Long userId) {
+        groupService.removeMember(groupId, userId);
+        return CreateApiResponse.createResponse(null, false);
     }
 
     @PostMapping("/messages/{messageId}/pin")
-    public ResponseEntity<Void> pinMessage(@PathVariable Long messageId,
-                                           @Valid @RequestBody RequesterDTO request) {
-        groupService.pinMessage(messageId, request.getRequesterId());
-        return ResponseEntity.ok().build();
+    public ApiResponse<Void> pinMessage(@PathVariable Long messageId) {
+        groupService.pinMessage(messageId);
+        return CreateApiResponse.createResponse(null, false);
     }
 
     @DeleteMapping("/{groupId}")
-    public ResponseEntity<Void> deleteGroup(@PathVariable Long groupId,
-                                            @Valid @RequestBody RequesterDTO request) {
-        groupService.deleteGroup(groupId, request.getRequesterId());
-        return ResponseEntity.ok().build();
+    public ApiResponse<Void> deleteGroup(@PathVariable Long groupId) {
+        groupService.deleteGroup(groupId);
+        return CreateApiResponse.createResponse(null, false);
     }
 
     @GetMapping("/{groupId}/members")
-    public ResponseEntity<Page<GroupResponse>> listMembers(@PathVariable Long groupId,
-                                                           @RequestParam(defaultValue = "0") int page,
-                                                           @RequestParam(defaultValue = "10") int size) {
+    public ApiResponse<Page<GroupResponse>> listMembers(@PathVariable Long groupId,
+                                                        @RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(groupService.listMembers(groupId, pageable));
+        Page<GroupResponse> members = groupService.listMembers(groupId, pageable);
+        return CreateApiResponse.createResponse(members, false);
     }
 
     @PutMapping("/{groupId}")
-    public ResponseEntity<StudyGroup> editGroup(@PathVariable Long groupId,
-                                                @Valid @RequestBody CreateGroupRequest request) {
-        StudyGroup group = new StudyGroup();
-        group.setName(request.getGroupName());
-        return ResponseEntity.ok(groupService.editGroup(groupId, group, request.getUserId()));
+    public ApiResponse<StudyGroup> editGroup(@PathVariable Long groupId,
+                                             @Valid @RequestBody CreateGroupRequest request) {
+        StudyGroup updatedGroup = groupService.editGroup(groupId, request.getGroupName());
+        return CreateApiResponse.createResponse(updatedGroup, false);
     }
 
     @GetMapping("/{groupId}/pinned-messages")
-    public ResponseEntity<Page<Message>> getPinnedMessages(@PathVariable Long groupId,
-                                                           @RequestParam(defaultValue = "0") int page,
-                                                           @RequestParam(defaultValue = "10") int size) {
+    public ApiResponse<Page<Message>> getPinnedMessages(@PathVariable Long groupId,
+                                                        @RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(groupService.getPinnedMessages(groupId, pageable));
+        Page<Message> pinnedMessages = groupService.getPinnedMessages(groupId, pageable);
+        return CreateApiResponse.createResponse(pinnedMessages, false);
     }
 
     @PostMapping("/{groupId}/documents")
-    public ResponseEntity<Message> shareDocument(@PathVariable Long groupId,
-                                                 @Valid @RequestBody ShareDocumentRequest request) throws Exception {
-        return ResponseEntity.ok(groupService.shareDocumentToGroup(groupId, request.getUserId(), request.getDocumentId(), request.getShareUrl()));
+    public ApiResponse<Message> shareDocument(@PathVariable Long groupId,
+                                              @Valid @RequestBody ShareDocumentRequest request) throws Exception {
+        Message message = groupService.shareDocumentToGroup(groupId, request.getDocumentId(), request.getShareUrl());
+        return CreateApiResponse.createResponse(message, true);
     }
 }

@@ -1,19 +1,23 @@
 package org.com.studygroupservice.dto.request;
 
-
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ShareDocumentRequest {
-    @NotNull
+    @NotNull(message = "User ID cannot be null")
     private Long userId;
 
-    @NotNull
+    @NotBlank(message = "Document ID cannot be empty")
     private String documentId;
 
-    @NotNull
+    @NotBlank(message = "Share URL cannot be empty")
     private String shareUrl;
 }
