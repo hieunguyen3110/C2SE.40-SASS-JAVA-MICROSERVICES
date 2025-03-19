@@ -1,16 +1,19 @@
 package org.com.studygroupservice.dto.request;
 
+
 import lombok.Getter;
 import lombok.Setter;
 import jakarta.validation.constraints.NotNull;
 
 @Getter
 @Setter
-public class CreateGroupRequest {
-
+public class ShareDocumentRequest {
     @NotNull
     private Long userId;
 
     @NotNull
-    private String groupName;
+    private String documentId;
+
+    @NotNull
+    private String shareUrl;
 }

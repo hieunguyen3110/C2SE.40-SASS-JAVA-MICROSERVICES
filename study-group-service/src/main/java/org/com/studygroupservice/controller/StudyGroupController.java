@@ -1,7 +1,8 @@
 package org.com.studygroupservice.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.com.studygroupservice.dto.request.ChatMessage;
+import org.com.studygroupservice.dto.request.*;
 import org.com.studygroupservice.dto.response.GroupResponse;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
@@ -14,9 +15,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/study-groups")
 @RequiredArgsConstructor
@@ -24,10 +22,10 @@ public class StudyGroupController {
     private final StudyGroupService groupService;
 
     @PostMapping
-    public ResponseEntity<StudyGroup> createGroup(@RequestBody Map<String, Object> requestBody) {
-        Long userId = Long.valueOf(requestBody.get("userId").toString());
+    public ResponseEntity<StudyGroup> createGroup(@Valid @RequestBody CreateGroupRequest request) {
         StudyGroup group = new StudyGroup();
-        return ResponseEntity.ok(groupService.createGroup(group, userId));
+        group.setName(request.getGroupName());
+        return ResponseEntity.ok(groupService.createGroup(group, request.getUserId()));
     }
 
     @GetMapping("/{groupId}")
@@ -43,25 +41,22 @@ public class StudyGroupController {
     @DeleteMapping("/{groupId}/members/{userId}")
     public ResponseEntity<Void> removeMember(@PathVariable Long groupId,
                                              @PathVariable Long userId,
-                                             @RequestBody Map<String, Object> requestBody) {
-        Long requesterId = Long.valueOf(requestBody.get("requesterId").toString());
-        groupService.removeMember(groupId, userId, requesterId);
+                                             @Valid @RequestBody RequesterDTO request) {
+        groupService.removeMember(groupId, userId, request.getRequesterId());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/messages/{messageId}/pin")
     public ResponseEntity<Void> pinMessage(@PathVariable Long messageId,
-                                           @RequestBody Map<String, Object> requestBody) {
-        Long requesterId = Long.valueOf(requestBody.get("requesterId").toString());
-        groupService.pinMessage(messageId, requesterId);
+                                           @Valid @RequestBody RequesterDTO request) {
+        groupService.pinMessage(messageId, request.getRequesterId());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{groupId}")
     public ResponseEntity<Void> deleteGroup(@PathVariable Long groupId,
-                                            @RequestBody Map<String, Object> requestBody) {
-        Long requesterId = Long.valueOf(requestBody.get("requesterId").toString());
-        groupService.deleteGroup(groupId, requesterId);
+                                            @Valid @RequestBody RequesterDTO request) {
+        groupService.deleteGroup(groupId, request.getRequesterId());
         return ResponseEntity.ok().build();
     }
 
@@ -75,10 +70,10 @@ public class StudyGroupController {
 
     @PutMapping("/{groupId}")
     public ResponseEntity<StudyGroup> editGroup(@PathVariable Long groupId,
-                                                @RequestBody Map<String, Object> requestBody) {
-        Long requesterId = Long.valueOf(requestBody.get("requesterId").toString());
+                                                @Valid @RequestBody CreateGroupRequest request) {
         StudyGroup group = new StudyGroup();
-        return ResponseEntity.ok(groupService.editGroup(groupId, group, requesterId));
+        group.setName(request.getGroupName());
+        return ResponseEntity.ok(groupService.editGroup(groupId, group, request.getUserId()));
     }
 
     @GetMapping("/{groupId}/pinned-messages")
@@ -91,10 +86,7 @@ public class StudyGroupController {
 
     @PostMapping("/{groupId}/documents")
     public ResponseEntity<Message> shareDocument(@PathVariable Long groupId,
-                                                 @RequestBody Map<String, Object> requestBody) throws Exception {
-        Long userId = Long.valueOf(requestBody.get("userId").toString());
-        String documentId = requestBody.get("documentId").toString();
-        String shareUrl = requestBody.get("shareUrl").toString();
-        return ResponseEntity.ok(groupService.shareDocumentToGroup(groupId, userId, documentId, shareUrl));
+                                                 @Valid @RequestBody ShareDocumentRequest request) throws Exception {
+        return ResponseEntity.ok(groupService.shareDocumentToGroup(groupId, request.getUserId(), request.getDocumentId(), request.getShareUrl()));
     }
 }
