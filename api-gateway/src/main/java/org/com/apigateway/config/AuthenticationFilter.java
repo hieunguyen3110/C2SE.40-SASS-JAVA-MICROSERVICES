@@ -33,7 +33,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             "/identity/auth/validate/reset-password",
             "/identity/auth/update/new-password",
             "/identity/auth/delete/clear-token",
-            "/identity/ws/**"
+            "/ws/**",
+            "/eureka/web/**"
     };
     private final IdentityService identityService;
     private final RedisService redisService;
@@ -42,12 +43,16 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isPublishEndPoint(ServerHttpRequest request){
         String path = request.getURI().getPath();
+        if(path.startsWith("/eureka") || path.startsWith("/ws")){
+            return true;
+        }
         return Arrays.stream(publicEndpoint).anyMatch(s -> path.startsWith(apiPrefix + s.replace("/**", "")));
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Starter filter api gateway...");
+        System.out.println("result: "+isPublishEndPoint(exchange.getRequest()));
         if(isPublishEndPoint(exchange.getRequest()))
             return chain.filter(exchange);
 

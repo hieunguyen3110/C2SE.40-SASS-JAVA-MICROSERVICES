@@ -1,9 +1,11 @@
-package org.com.identityservice.config;
+package org.com.websocketserver.config;
 
-import io.jsonwebtoken.Claims;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
-import org.com.identityservice.service.JwtService;
+import lombok.extern.slf4j.Slf4j;
+import org.com.websocketserver.dto.response.AccountDto;
+import org.com.websocketserver.service.RedisService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -14,23 +16,28 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
+@Slf4j
 public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
-    private final JwtService jwtService;
-
+    private final ObjectMapper objectMapper;
+    private final RedisService redisService;
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:5173")
+                .setAllowedOrigins("http://localhost:5173", "http://localhost:8080")
+                .setAllowedOriginPatterns("*")
                 .withSockJS();
     }
 
@@ -51,28 +58,32 @@ public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
                     try {
                         String token = accessor.getFirstNativeHeader("token");
                         if (token != null) {
-//                            String email = jwtService.DecodeToken(token).getSubject();
-                            Claims claims = jwtService.DecodeToken(token);
-                            @SuppressWarnings("unchecked")
-                            List<String> listAccount= (List<String>) claims.get("accountId");
-                            String accountId= listAccount.get(0);
+                            String json = (String) redisService.getData(token);
+                            if (json == null) {
+                                throw new IllegalArgumentException("Invalid token");
+                            }
+                            AccountDto accountDto = objectMapper.readValue(json, AccountDto.class);
+
+                            // Tạo danh sách quyền cho User
+                            List<GrantedAuthority> authorities = accountDto.getRoles().stream()
+                                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()))
+                                    .collect(Collectors.toList());
+
+                            // Xác thực người dùng
                             Authentication authentication = new PreAuthenticatedAuthenticationToken(
-                                    accountId,
-                                    null,
-                                    List.of() // Thêm quyền nếu có
-                            );
+                                    accountDto.getAccountId(), null, authorities);
                             accessor.setUser(authentication);
                         } else {
                             throw new IllegalArgumentException("Token not found");
                         }
                     } catch (Exception e) {
-                        // Log lỗi và trả về null để từ chối kết nối
-                        System.err.println("WebSocket authentication error: " + e.getMessage());
-                        return null;
+                        log.error("WebSocket authentication error: " + e.getMessage());
+                        return null; // Từ chối kết nối WebSocket nếu lỗi xác thực
                     }
                 }
                 return message;
             }
         });
     }
+
 }

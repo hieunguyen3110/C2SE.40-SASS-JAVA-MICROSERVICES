@@ -1,5 +1,7 @@
 from mimetypes import guess_extension
 import os
+from xmlrpc.client import Error
+
 from flask import Flask, jsonify, request, abort
 from dotenv import load_dotenv
 import requests
@@ -50,7 +52,7 @@ productRoute = Route(name=PRODUCT_ROUTE_NAME, samples=productsSample)
 chitchatRoute = Route(name=CHITCHAT_ROUTE_NAME, samples=chitchatSample)
 semanticRouter = SemanticRouter(embedding=SentenceTransformerEmbedding(config=embeddingConfig), routes=[productRoute, chitchatRoute])
 
-with open("/Users/pro/Documents/CAPSTONE1/chatbotRAG/resources/sensitive-words.txt", "r", encoding="utf-8") as f:
+with open("/Users/pro/Documents/CAPSTONE2/sass-microservice/Chatbot-service/resources/sensitive-words.txt", "r", encoding="utf-8") as f:
     sensitive_words = set(line.strip().lower() for line in f if line.strip())
 # --- End Semantic Router Setup --- #
 
@@ -76,6 +78,7 @@ rag = RAG(
     dbCollection=DB_COLLECTION,
     embeddingName=EMBEDDING_MODEL,
     llm=llm,
+    importance_feature=None
 )
 
 query_db= QueryDB(mongodbUri=MONGODB_URI,
@@ -87,7 +90,15 @@ def process_query(query):
     return query.lower()
 
 
+def call_llm_query(user_query, prompt):
+    data_with_roles = [
+        {"role": "user", "parts": [{"text": user_query}]},
+        # Add role to original user message
+        {"role": "user", "parts": [{"text": prompt}]}
+    ]
+    response = rag.generate_content(data_with_roles)
 
+    return response
 
 
 @app.route('/api/search', methods=['POST'])
@@ -119,12 +130,7 @@ def handle_query():
             query = reflected_query
             source_information = rag.enhance_prompt(query, file_source).replace('<br>', '\n')
             combined_information = f"Hãy trở thành chuyên gia trợ lý ảo hỗ trợ học tập. Câu hỏi của người dùng: {query}\nTrả lời câu hỏi dựa vào các thông tin dưới đây: {source_information}."
-            data_with_roles = [
-                {"role": "user", "parts": [{"text": data[-1]["parts"][0]["text"]}]},
-                # Add role to original user message
-                {"role": "user", "parts": [{"text": combined_information}]}
-            ]
-            response = rag.generate_content(data_with_roles)
+            response = call_llm_query(data[-1]["parts"][0]["text"], combined_information)
         else:
             # Guide to LLMs
             print("Guide to LLMs")
@@ -240,7 +246,35 @@ def check_file():
     except Exception as e:
         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
 
+@app.route("/api/v1/get-solutions", methods=['POST'])
+def handle_offer_improved_solutions():
+    try:
+        data = request.get_json()
+        # Tách Final Grade ra
+        final_grade = data.pop("Final Grade")
 
+        # Chuyển đổi thành key: value
+        flattened_data = {key: list(value.values())[0] for key, value in data.items()}
+
+        print(flattened_data)
+
+        strengths, weakness = rag.identify_strengths_weaknesses(flattened_data)
+
+        print(strengths, weakness)
+
+        prompt = rag.create_prompt_predict_score(flattened_data, final_grade, strengths, weakness)
+
+        response = call_llm_query("get solution for student", prompt)
+
+        return jsonify(
+            {
+                "code": 200,
+                "message": "success",
+                "data": response.text
+            }
+        )
+    except Error as e:
+        abort(400, "Error when providing solutions for students.")
 
 
 if __name__ == '__main__':
