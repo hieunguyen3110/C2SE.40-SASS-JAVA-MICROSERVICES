@@ -33,7 +33,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             "/identity/auth/validate/reset-password",
             "/identity/auth/update/new-password",
             "/identity/auth/delete/clear-token",
-            "/identity/ws/**",
+            "/ws/**",
             "/eureka/web/**"
     };
     private final IdentityService identityService;
@@ -43,7 +43,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isPublishEndPoint(ServerHttpRequest request){
         String path = request.getURI().getPath();
-        if(path.startsWith("/eureka")){
+        if(path.startsWith("/eureka") || path.startsWith("/ws")){
             return true;
         }
         return Arrays.stream(publicEndpoint).anyMatch(s -> path.startsWith(apiPrefix + s.replace("/**", "")));
