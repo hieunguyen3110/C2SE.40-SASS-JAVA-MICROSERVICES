@@ -40,6 +40,7 @@
         <module>study-group-service</module>
         <module>notification-service</module>
         <module>discovery-server</module>
+        <module>websocket-server</module>
     </modules>
     <dependencyManagement>
         <dependencies>
