@@ -22,6 +22,7 @@ public class AccountDto {
     private String gender;
     private String hometown;
     private String phoneNumber;
+    private Long facultyId;
     private String major;
     private Integer enrollmentYear;
     private String classNumber;

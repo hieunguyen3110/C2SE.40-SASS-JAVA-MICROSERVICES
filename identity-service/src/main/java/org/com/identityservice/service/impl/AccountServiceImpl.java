@@ -65,7 +65,7 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
-    private void updatePersonalInfo(Account account, UpdateUserProfileRequest request) {
+    private void updatePersonalInfo(AccountDto account, UpdateUserProfileRequest request) {
         try {
             account.setFirstName(request.getFirstName());
             account.setLastName(request.getLastName());
@@ -248,26 +248,26 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public ApiResponse<UserProfileResponse> updateUserProfile(Account account, UpdateUserProfileRequest request, MultipartFile profilePicture) {
+    public ApiResponse<UserProfileResponse> updateUserProfile(AccountDto accountDto, UpdateUserProfileRequest request, MultipartFile profilePicture) {
         try {
             // Cập nhật thông tin cá nhân
-            updatePersonalInfo(account, request);
+            updatePersonalInfo(accountDto, request);
 
             // Xử lý ảnh đại diện nếu có
             if (profilePicture != null && !profilePicture.isEmpty()) {
                 // Xóa ảnh đại diện cũ nếu có
-                String oldProfilePictureUrl = account.getProfilePicture();
+                String oldProfilePictureUrl = accountDto.getProfilePicture();
                 if (oldProfilePictureUrl != null && !oldProfilePictureUrl.isEmpty()) {
-                    deleteProfilePicture(account.getAccountId());
+                    deleteProfilePicture(accountDto.getAccountId());
                 }
 
                 // Tải ảnh đại diện mới lên
                 String profilePictureUrl = uploadProfilePicture(profilePicture);
-                account.setProfilePicture(profilePictureUrl);
+                accountDto.setProfilePicture(profilePictureUrl);
             }
-
+            Account mapToAccount= AccountMapper.mapToAccount(accountDto);
             // Lưu tài khoản sau khi cập nhật
-            Account updatedAccount = accountRepository.save(account);
+            Account updatedAccount = accountRepository.save(mapToAccount);
             return CreateApiResponse.createResponse(mapToUserProfileResponse(updatedAccount),false);
         } catch (ApiException e) {
             throw new ApiException(e.getCode(),"Update failed: " + e.getMessage());

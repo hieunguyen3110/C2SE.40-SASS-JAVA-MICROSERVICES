@@ -21,6 +21,6 @@ public interface AccountService {
     ApiResponse<String> approveNewUsers(List<Long> accountIds);
     ApiResponse<String>adminDeleteUserProfilePicture(Long accountId);
     ApiResponse<List<SearchUserResponseDto>> searchUsersByName(String name, Long accountId, int pageNum, int pageSize);
-    ApiResponse<UserProfileResponse> updateUserProfile(Account account, UpdateUserProfileRequest request, MultipartFile profilePicture);
+    ApiResponse<UserProfileResponse> updateUserProfile(AccountDto account, UpdateUserProfileRequest request, MultipartFile profilePicture);
     void deleteProfilePicture(Long accountId);
 }

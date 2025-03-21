@@ -2,7 +2,6 @@ package com.capstone1.sasscapstone1.dto.AccountDto;
 
 import com.capstone1.sasscapstone1.dto.RoleDto.RoleDto;
 import lombok.*;
-
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -23,6 +22,7 @@ public class AccountDto {
     private String gender;
     private String hometown;
     private String phoneNumber;
+    private Long facultyId;
     private String major;
     private Integer enrollmentYear;
     private String classNumber;

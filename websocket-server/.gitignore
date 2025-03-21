@@ -29,18 +29,5 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-document-service/src/main/resources/serviceAccountKey.json
-identity-service/src/main/resources/serviceAccountKey.json
-
-identity-service/.env
-discovery-server/.env
-api-gateway/.env
-notification-service/.env
-websocket-server/.env
-study-group-service/.env
-
-Recommendation-system-service/
 ### VS Code ###
 .vscode/
-
-

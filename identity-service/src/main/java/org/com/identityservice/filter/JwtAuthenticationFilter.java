@@ -14,12 +14,16 @@ import org.com.identityservice.exception.ApiException;
 import org.com.identityservice.mapper.AccountMapper;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -32,9 +36,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try{
             String userInfoJson= request.getHeader("X-User-Info");
             if(userInfoJson != null){
-                AccountDto extractAccountFromRedis= objectMapper.readValue(userInfoJson,AccountDto.class);
-                Account account= AccountMapper.mapToAccount(extractAccountFromRedis);
-                UsernamePasswordAuthenticationToken authenticationToken= new UsernamePasswordAuthenticationToken(account,account.getPassword(),account.getAuthorities());
+                AccountDto accountDto= objectMapper.readValue(userInfoJson,AccountDto.class);
+                List<GrantedAuthority> authorities = accountDto.getRoles().stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()))
+                        .collect(Collectors.toList());
+                UsernamePasswordAuthenticationToken authenticationToken= new UsernamePasswordAuthenticationToken(accountDto,accountDto.getPassword(),authorities);
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }

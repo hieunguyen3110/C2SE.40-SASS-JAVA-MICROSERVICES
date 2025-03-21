@@ -78,7 +78,7 @@ public class AccountController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             try {
                 ApiResponse<UserProfileResponse> response= accountService.updateUserProfile(account, request, profilePicture);
                 String authHeader= httpServletRequest.getHeader("Authorization");
@@ -103,7 +103,7 @@ public class AccountController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
-            Account account = (Account) authentication.getPrincipal();
+            AccountDto account = (AccountDto) authentication.getPrincipal();
             Long accountId = account.getAccountId();
 
             accountService.deleteProfilePicture(accountId);

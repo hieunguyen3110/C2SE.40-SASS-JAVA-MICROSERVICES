@@ -1,7 +1,6 @@
-package org.com.identityservice.dto.response;
+package org.com.websocketserver.dto.response;
 
 import lombok.*;
-import org.com.identityservice.entity.Role;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -29,5 +28,5 @@ public class AccountDto {
     private String classNumber;
     private Boolean isDeleted;
     private Boolean isActive;
-    private Set<Role> roles;
+    private Set<RoleDto> roles;
 }

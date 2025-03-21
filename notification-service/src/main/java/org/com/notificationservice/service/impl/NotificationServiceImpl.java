@@ -55,10 +55,10 @@ public class NotificationServiceImpl implements NotificationService {
             Object[] result = notificationRepository.countNotifications(account.getAccountId());
             Object[] innerArray = (Object[]) result[0];
             Map<String, Long> counts = new HashMap<>();
-            counts.put("total", ((Number) innerArray[0]).longValue());
-            counts.put("saved", ((Number) innerArray[1]).longValue());
-            counts.put("deleted", ((Number) innerArray[2]).longValue());
-            counts.put("unRead", ((Number) innerArray[3]).longValue());
+            counts.put("total", innerArray[0] != null ? ((Number) innerArray[0]).longValue() : 0);
+            counts.put("saved", innerArray[1] != null ? ((Number) innerArray[1]).longValue() : 0);
+            counts.put("deleted", innerArray[2] != null ? ((Number) innerArray[2]).longValue() : 0);
+            counts.put("unRead", innerArray[3] != null ? ((Number) innerArray[3]).longValue() : 0);
             return CreateApiResponse.createResponse(counts,false);
         } catch (Exception e) {
             throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),e.getMessage());

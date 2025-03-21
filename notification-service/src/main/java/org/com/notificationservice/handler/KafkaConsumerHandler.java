@@ -8,25 +8,24 @@ import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.com.notificationservice.dto.request.NotificationEventRequest;
 import org.com.notificationservice.dto.response.AccountDto;
-import org.com.notificationservice.dto.response.GroupNotification;
 import org.com.notificationservice.dto.response.NotificationDto;
 import org.com.notificationservice.entity.Notification;
 import org.com.notificationservice.mapper.NotificationMapper;
 import org.com.notificationservice.repository.NotificationRepository;
 import org.com.notificationservice.service.RedisService;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.Map;
 
 
 @RequiredArgsConstructor
-public class KafkaConsumer {
-    private final SimpMessagingTemplate simpMessagingTemplate;
+public class KafkaConsumerHandler {
     private final NotificationRepository notificationRepository;
     private final RedisService redisService;
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     private Notification convertToNotification(NotificationEventRequest request){
         return Notification.builder()
