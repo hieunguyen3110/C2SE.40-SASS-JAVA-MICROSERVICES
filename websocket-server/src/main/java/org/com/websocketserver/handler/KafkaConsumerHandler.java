@@ -38,4 +38,29 @@ public class KafkaConsumerHandler {
             log.error("Error: "+ e.getMessage());
         }
     }
+
+    @KafkaListener(topics = "study-group-ws-topic", groupId = "websocket-group")
+    public void sendNotificationStudyGroupForClient(ConsumerRecord<String, String> records) {
+        try {
+            if (records.key() == null || records.value() == null) {
+                log.error("Received null key or value from Kafka");
+                return;
+            }
+
+            String followerId = records.key();
+            String json = records.value();
+            NotificationDto notificationDto = objectMapper.readValue(json, NotificationDto.class);
+
+            if (notificationDto != null) {
+                simpMessagingTemplate.convertAndSendToUser(
+                        followerId, "/queue/notifications-with-studygroup", notificationDto
+                );
+                log.info("Sent WebSocket notification to user: " + followerId);
+            } else {
+                log.error("NotificationDto is null after parsing JSON");
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Error parsing JSON: " + e.getMessage());
+        }
+    }
 }

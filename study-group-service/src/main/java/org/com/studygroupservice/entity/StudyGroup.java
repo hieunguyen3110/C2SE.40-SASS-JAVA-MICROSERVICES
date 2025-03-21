@@ -3,9 +3,13 @@ package org.com.studygroupservice.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "study_groups")
 @Data
@@ -24,4 +28,10 @@ public class StudyGroup extends AbstractDefault{
 
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
     private List<Message> messages;
+
+    @Column(nullable = false)
+    private boolean isPrivate;
+
+    @OneToMany(mappedBy = "studyGroup", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<JoinRequest> joinRequests = new ArrayList<>();
 }

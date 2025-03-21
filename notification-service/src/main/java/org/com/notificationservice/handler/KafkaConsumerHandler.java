@@ -1,4 +1,4 @@
-package org.com.notificationservice.consumer;
+package org.com.notificationservice.handler;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.com.notificationservice.dto.request.NotificationEventRequest;
 import org.com.notificationservice.dto.response.AccountDto;
+import org.com.notificationservice.dto.response.GroupNotification;
 import org.com.notificationservice.dto.response.NotificationDto;
 import org.com.notificationservice.entity.Notification;
 import org.com.notificationservice.mapper.NotificationMapper;
@@ -15,6 +16,7 @@ import org.com.notificationservice.repository.NotificationRepository;
 import org.com.notificationservice.service.RedisService;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.Map;
 
@@ -51,7 +53,7 @@ public class KafkaConsumerHandler {
             Notification notification= convertToNotification(notificationEventRequest);
             notification= notificationRepository.save(notification);
             NotificationDto notificationDto= NotificationMapper.mapToNotificationDto(notification);
-           simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-upload", notificationDto);
+            messagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-upload", notificationDto);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
@@ -70,7 +72,7 @@ public class KafkaConsumerHandler {
             Notification notification= convertToNotification(notificationEventRequest);
             notification= notificationRepository.save(notification);
             NotificationDto notificationDto= NotificationMapper.mapToNotificationDto(notification);
-            simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-follow", notificationDto);
+            messagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-follow", notificationDto);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }

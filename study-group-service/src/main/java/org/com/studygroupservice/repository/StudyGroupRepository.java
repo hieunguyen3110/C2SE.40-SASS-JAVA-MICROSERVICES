@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
     List<StudyGroup> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String nameKeyword, String descriptionKeyword);
+    List<StudyGroup> findByIsPrivateFalse();
+    List<StudyGroup> findByIsPrivateTrue();
 }

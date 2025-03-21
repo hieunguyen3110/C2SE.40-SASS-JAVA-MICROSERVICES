@@ -23,7 +23,7 @@ public class StudyGroupController {
 
     @PostMapping
     public ApiResponse<StudyGroup> createGroup(@Valid @RequestBody CreateGroupRequest request) {
-        StudyGroup group = groupService.createGroup(request.getGroupName());
+        StudyGroup group = groupService.createGroup(request.getGroupName(), request.isPrivate(), request.getMemberIds());
         return CreateApiResponse.createResponse(group, true);
     }
 

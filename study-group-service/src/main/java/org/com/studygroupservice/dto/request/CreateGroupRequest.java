@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,8 +17,10 @@ public class CreateGroupRequest {
     @NotBlank(message = "Group name cannot be empty")
     private String groupName;
 
-    @NotNull(message = "User ID cannot be null")
-    private Long userId;
+    @NotNull(message = "Member list cannot be null.")
+    private List<Long> memberIds;
 
     private String description;
+
+    private boolean isPrivate;
 }

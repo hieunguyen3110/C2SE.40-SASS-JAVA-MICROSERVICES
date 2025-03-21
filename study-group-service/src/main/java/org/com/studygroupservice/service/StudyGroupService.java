@@ -13,7 +13,7 @@ import java.util.List;
 public interface StudyGroupService {
 
     @Transactional
-    StudyGroup createGroup(String groupName);
+    StudyGroup createGroup(String groupName, boolean isPrivate, List<Long> memberIds);
 
     StudyGroup getGroupDetails(Long groupId);
 
