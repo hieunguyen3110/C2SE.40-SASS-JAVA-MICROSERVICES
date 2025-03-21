@@ -54,7 +54,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             StudyGroup studyGroup = new StudyGroup();
             studyGroup.setName(groupName);
             studyGroup.setOwnerId(owner.getAccountId());
-            studyGroup.setPrivate(isPrivate); // Cập nhật trạng thái nhóm
+            studyGroup.setPrivate(isPrivate);
             studyGroup = groupRepository.save(studyGroup);
 
             final StudyGroup finalStudyGroup = studyGroup;
@@ -156,7 +156,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
             memberRepository.save(member);
 
-            // Gửi sự kiện Kafka
             kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, userId, "add-member", null, null));
         } catch (ApiException e) {
             throw e;
@@ -503,7 +502,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     "newOwnerId", newOwnerId,
                     "previousOwnerId", currentOwnerId.getAccountId()
             );
-            kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, currentOwnerId.getAccountId(), "ownership_transfer", null, null));
+
+            kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, currentOwnerId.getAccountId(), "ownership_transfer", null, additionalData.toString()));
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {

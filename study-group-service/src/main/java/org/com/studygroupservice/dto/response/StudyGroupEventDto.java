@@ -1,9 +1,6 @@
 package org.com.studygroupservice.dto.response;
 
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
@@ -14,5 +11,9 @@ public class StudyGroupEventDto {
     private String isPrivate;
 
     public StudyGroupEventDto(Long groupId, Long userId, String message, String isPrivate) {
+        this.groupId = groupId;
+        this.userId = userId;
+        this.message = message;
+        this.isPrivate = isPrivate;
     }
 }

@@ -55,12 +55,12 @@ public class KafkaConsumerHandler {
                 simpMessagingTemplate.convertAndSendToUser(
                         followerId, "/queue/notifications-with-studygroup", notificationDto
                 );
-                log.info("Sent WebSocket notification to user: " + followerId);
+                log.info("Sent WebSocket notification to user: {}", followerId);
             } else {
                 log.error("NotificationDto is null after parsing JSON");
             }
         } catch (JsonProcessingException e) {
-            log.error("Error parsing JSON: " + e.getMessage());
+            log.error("Error parsing JSON: {}", e.getMessage());
         }
     }
 }
