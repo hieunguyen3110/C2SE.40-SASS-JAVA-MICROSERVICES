@@ -21,11 +21,13 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @RequiredArgsConstructor
 public class WebClientConfig {
     private final ObjectMapper objectMapper;
+
     @Bean
     @LoadBalanced
     public WebClient.Builder webClientBuilder() {
         return WebClient.builder();
     }
+
     @Bean
     @LoadBalanced
     IdentityClient identityClient(WebClient.Builder builder){
@@ -46,5 +48,13 @@ public class WebClientConfig {
                 .build();
         HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
         return httpServiceProxyFactory.createClient(IdentityClient.class);
+    }
+
+    @Bean
+    @LoadBalanced
+    public WebClient studyGroupWebClient(WebClient.Builder builder) {
+        return builder
+                .baseUrl("http://study-group-service")
+                .build();
     }
 }
