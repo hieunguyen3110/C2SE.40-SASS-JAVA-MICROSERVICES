@@ -38,6 +38,7 @@ api-gateway/.env
 notification-service/.env
 websocket-server/.env
 study-group-service/.env
+e-learning-service/.env
 
 Recommendation-system-service/
 ### VS Code ###

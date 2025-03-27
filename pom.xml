@@ -72,6 +72,33 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
             </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.4.5</version>
+                <configuration>
+                    <from>
+                        <image>eclipse-temurin:17.0.4.1_1-jre</image>
+                    </from>
+                    <to>
+                        <image>registry.hub.docker.com/hieu3110/${artifactId}</image>
+                        <tags>
+                            <tag>1.0</tag>
+                        </tags>
+                    </to>
+<!--                    <extraDirectories>-->
+<!--                        <paths>-->
+<!--                            <path>${project.basedir}/env</path>-->
+<!--                        </paths>-->
+<!--                        <permissions>-->
+<!--                            <permission>-->
+<!--                                <file>/app/.env</file>-->
+<!--                                <mode>644</mode>-->
+<!--                            </permission>-->
+<!--                        </permissions>-->
+<!--                    </extraDirectories>-->
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

@@ -51,7 +51,7 @@ public class AccountController {
     public ApiResponse<AccountDto> getUserDetails(@PathVariable Long accountId) {
         return CreateApiResponse.createResponse(accountService.getUserDetails(accountId),false);
     }
-    @GetMapping("")
+    @GetMapping("/search-by-email")
     public ApiResponse<AccountDto> getUserDetailsByEmail(@RequestParam("email") String email) {
         return CreateApiResponse.createResponse(accountService.getUserDetails(email),false);
     }
