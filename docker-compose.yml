@@ -1,0 +1,149 @@
+  version: '3'
+  services:
+    zookeeper:
+      image: confluentinc/cp-zookeeper:7.4.4
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+      ports:
+        - "22181:2181"
+    kafka:
+      image: confluentinc/cp-kafka:7.4.4
+      depends_on:
+        - zookeeper
+      ports:
+        - "29092:29092"
+      environment:
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    redis:
+      image: redis:6.0.7
+      container_name: redis
+      restart: always
+      volumes:
+        - redis_volume_data:/data
+      hostname: redis
+      command: ["redis-server", "--bind", "0.0.0.0"]
+      ports:
+        - "6379:6379"
+    redis_insight:
+      image: redislabs/redisinsight:1.14.0
+      container_name: redis_insight
+      restart: always
+      ports:
+        - "8001:8001"
+      volumes:
+        - redis_insight_volume_data:/db
+    front-end:
+      image: hieu3110/sass-capstone2-fe:1.0
+      container_name: front-end
+      restart: always
+      ports:
+        - "5173:5173"
+    discovery-server:
+      image: hieu3110/discovery-server:1.0
+      container_name: discovery-server
+      restart: always
+      ports:
+        - "8761:8761"
+      environment:
+        SPRING_SERVER_PORT: 8761
+        EUREKA_HOST_NAME: discovery-server
+        EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+    api-gateway:
+      image: hieu3110/api-gateway:1.0
+      container_name: api-gateway
+      ports:
+        - "8080:8080"
+      environment:
+        SPRING_SERVER_PORT: 8080
+        EUREKA_CLIENT_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+        DISCOVERY_SERVER_HOST: discovery-server
+        SPRING_REDIS_HOST: redis
+        SPRING_REDIS_PORT: 6379
+      depends_on:
+        - discovery-server
+        - redis
+    document-service:
+      image: hieu3110/document-service:1.0
+      container_name: document-service
+      ports:
+        - "8088:8088"
+      environment:
+        SPRING_DATASOURCE_URL: jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?prepareThreshold=0
+        SPRING_DATASOURCE_USERNAME: postgres.omaxmarjrojnviyfypdj
+        SPRING_DATASOURCE_PASSWORD: SASS-capstone1
+        SPRING_SERVER_PORT: 8088
+        SPRING_MAX_FILE_SIZE: 10MB
+        SPRING_REQUEST_SIZE: 10MB
+        SPRING_JWT_SECRET_KEY: cYrKLUh8sOVzCGVLu3HCVww0CnVY5AfpILmtEowYjnHK2ZYLsB8fzvBfqMdNeXbu
+        SPRING_JWT_ACCESS_TOKEN_EXPIRES: 900000
+        SPRING_JWT_REFRESH_TOKEN_EXPIRES: 172800000
+        FIREBASE_BUCKET_NAME: popsocket-c5b28.appspot.com
+        FIREBASE_IMAGE_URL: https://storage.googleapis.com/popsocket-c5b28.appspot.com/%s
+        EUREKA_CLIENT_DEFAULT_ZONE: http://discovery-server:8761/eureka
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      depends_on:
+        - discovery-server
+        - api-gateway
+    identity-service:
+      image: hieu3110/identity-service:1.0
+      container_name: identity-service
+      ports:
+        - "8081:8081"
+      environment:
+        SPRING_DATASOURCE_URL: jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?prepareThreshold=0
+        SPRING_DATASOURCE_USERNAME: postgres.fqqgewowstnwsbcufuta
+        SPRING_DATASOURCE_PASSWORD: SASS-capstone1
+        SPRING_SERVER_PORT: 8081
+        SPRING_JWT_SECRET_KEY: cYrKLUh8sOVzCGVLu3HCVww0CnVY5AfpILmtEowYjnHK2ZYLsB8fzvBfqMdNeXbu
+        SPRING_JWT_ACCESS_TOKEN_EXPIRES: 900000
+        SPRING_JWT_REFRESH_TOKEN_EXPIRES: 172800000
+        SPRING_REDIS_HOST: redis
+        SPRING_REDIS_PORT: 6379
+        FIREBASE_BUCKET_NAME: popsocket-c5b28.appspot.com
+        FIREBASE_IMAGE_URL: https://storage.googleapis.com/popsocket-c5b28.appspot.com/%s
+        EUREKA_CLIENT_DEFAULT_ZONE: http://discovery-server:8761/eureka
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      depends_on:
+        - discovery-server
+        - api-gateway
+        - document-service
+    notification-service:
+      image: hieu3110/notification-service:1.0
+      container_name: notification-service
+      ports:
+        - "8082:8082"
+      environment:
+        SPRING_DATASOURCE_URL: jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?prepareThreshold=0
+        SPRING_DATASOURCE_USERNAME: postgres.skywhsfbuoykqpdzuohz
+        SPRING_DATASOURCE_PASSWORD: SASS-capstone2
+        SPRING_SERVER_PORT: 0
+        SPRING_KAFKA_CONSUMER_GROUP_ID: notification-group
+        EUREKA_CLIENT_DEFAULT_ZONE: http://discovery-server:8761/eureka
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      depends_on:
+        - discovery-server
+        - api-gateway
+    websocket-server:
+      image: hieu3110/websocket-server:1.0
+      container_name: websocket-server
+      ports:
+        - "8083:8083"
+      environment:
+        SPRING_SERVER_PORT: 0
+        SPRING_KAFKA_CONSUMER_GROUP_ID: websocket-group
+        EUREKA_CLIENT_DEFAULT_ZONE: http://discovery-server:8761/eureka
+        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      depends_on:
+        - discovery-server
+        - api-gateway
+
+
+  volumes:
+    redis_volume_data:
+    redis_insight_volume_data:

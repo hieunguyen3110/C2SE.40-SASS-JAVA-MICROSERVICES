@@ -41,6 +41,7 @@ study-group-service/.env
 e-learning-service/.env
 
 Recommendation-system-service/
+Chatbot-service/
 ### VS Code ###
 .vscode/
 
