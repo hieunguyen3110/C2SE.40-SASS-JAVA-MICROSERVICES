@@ -1,15 +1,13 @@
 package com.capstone1.sasscapstone1.service.DocumentService;
 
 import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
+import com.capstone1.sasscapstone1.dto.AccountRatingDto.AccountRatingDto;
 import com.capstone1.sasscapstone1.dto.AdminDocumentDto.AdminDocumentDto;
 import com.capstone1.sasscapstone1.dto.DocumentDetailDto.DocumentDetailDto;
 import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import com.capstone1.sasscapstone1.dto.PopularDocumentDto.PopularDocumentDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
-import com.capstone1.sasscapstone1.entity.Documents;
-import com.capstone1.sasscapstone1.entity.Faculty;
-import com.capstone1.sasscapstone1.entity.Folder;
-import com.capstone1.sasscapstone1.entity.Subject;
+import com.capstone1.sasscapstone1.entity.*;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
@@ -20,7 +18,10 @@ import com.capstone1.sasscapstone1.repository.Subject.SubjectRepository;
 import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
 import com.capstone1.sasscapstone1.request.TrainDocumentRequest;
 import com.capstone1.sasscapstone1.service.FirebaseService.FirebaseService;
+import com.capstone1.sasscapstone1.service.RedisService.RedisService;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.data.domain.Page;
@@ -35,10 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -54,6 +52,8 @@ public class DocumentServiceImpl implements DocumentService {
     private final HistoryRepository historyRepository;
     private final RestTemplate restTemplate;
     private final IdentityClient identityClient;
+    private final RedisService redisService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public ApiResponse<String> uploadDocument(MultipartFile file,
@@ -158,7 +158,24 @@ public class DocumentServiceImpl implements DocumentService {
         try {
             Documents document = documentsRepository.findById(docId)
                     .orElseThrow(() -> new RuntimeException("Document not found"));
-            return mapToDocumentDetailDto(document);
+            Set<Ratings> ratings= document.getRatings();
+            String key= document.getTitle()+"_"+document.getDocId();
+            String json= (String) redisService.getData(key);
+            DocumentDetailDto documentDetailDto= mapToDocumentDetailDto(document);
+            if(json == null){
+                List<Long> accountIds= new ArrayList<>();
+                for(Ratings rating : ratings){
+                    if(rating.getIsChecked()){
+                        accountIds.add(rating.getAccountId());
+                    }
+                }
+                List<AccountRatingDto> accountRatingDtos= identityClient.getAllAccountByRatingDocId(accountIds,document.getTitle(),document.getDocId()).getData();
+                documentDetailDto.setAccountRatingDtos(accountRatingDtos);
+            }else{
+                List<AccountRatingDto> accountRatingDtos= objectMapper.readValue(json,new TypeReference<>() {});
+                documentDetailDto.setAccountRatingDtos(accountRatingDtos);
+            }
+            return documentDetailDto;
         } catch (Exception e) {
             throw new RuntimeException("Error fetching document by ID: " + e.getMessage(), e);
         }
