@@ -1,5 +1,6 @@
 package org.com.identityservice.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
 import org.com.identityservice.dto.response.*;
@@ -14,6 +15,7 @@ import org.com.identityservice.repository.AccountRepository;
 import org.com.identityservice.repository.httpClient.DocumentClient;
 import org.com.identityservice.service.AccountService;
 import org.com.identityservice.service.FirebaseService;
+import org.com.identityservice.service.RedisService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +44,8 @@ public class AccountServiceImpl implements AccountService {
     private final UserDetailServiceCustom userDetailServiceCustom;
     private final FirebaseService firebaseService;
     private final DocumentClient documentClient;
+    private final RedisService redisService;
+    private final ObjectMapper objectMapper;
 
     private String uploadProfilePicture(MultipartFile profilePicture) {
         try {
@@ -194,6 +198,27 @@ public class AccountServiceImpl implements AccountService {
             accountRepository.saveAll(accounts);
         } catch (Exception e) {
             throw new RuntimeException("Error performing soft delete: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public ApiResponse<List<AccountRatingDto>> getAccountByAccountIds(List<Long> accountIds,String docTitle, long docId) throws Exception {
+        try{
+            List<Account> getAllAccount= accountRepository.findAllByAccountIdIn(accountIds);
+            List<AccountRatingDto> accountRatingDtos= getAllAccount.stream().map(account->
+                 AccountRatingDto.builder()
+                        .accountId(account.getAccountId())
+                        .firstName(account.getFirstName())
+                        .lastName(account.getLastName())
+                        .profilePicture(account.getProfilePicture())
+                        .build()
+            ).toList();
+            String key= docTitle+"_"+docId;
+            String json= objectMapper.writeValueAsString(accountRatingDtos);
+            redisService.saveData(key,json,864000);
+            return CreateApiResponse.createResponse(accountRatingDtos,false);
+        }catch (Exception e){
+            throw new Exception("Error when get all account with accountIds: "+ accountIds.toString());
         }
     }
 

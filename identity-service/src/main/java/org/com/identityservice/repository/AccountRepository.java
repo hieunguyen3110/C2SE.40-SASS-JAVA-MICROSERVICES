@@ -44,4 +44,6 @@ public interface AccountRepository extends JpaRepository<Account,Long> {
 //    AccountStatisticsDto getAccountStatistics(@Param("accountId") Long accountId);
     @Query("select count(*) from Account a join a.roles r where r.name=:roleName ")
     Long countByRolesName(@Param("roleName") String roleName);
+
+    List<Account> findAllByAccountIdIn(List<Long> accountIds);
 }

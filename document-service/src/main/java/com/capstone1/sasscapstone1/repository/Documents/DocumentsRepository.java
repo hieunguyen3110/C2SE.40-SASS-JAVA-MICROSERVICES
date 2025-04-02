@@ -47,6 +47,8 @@ public interface DocumentsRepository extends JpaRepository<Documents,Long> {
 
     Optional<Documents> findByDocIdAndIsCheckTrue(Long docId) throws Exception;
 
+    Optional<Documents> findByDocIdAndIsCheckTrueAndIsActiveTrue(Long docId) throws Exception;
+
     Optional<Documents> findByFilePath(String filePath);
 
     Optional<Documents> findByDocIdAndIsCheckIsTrue(Long docId);

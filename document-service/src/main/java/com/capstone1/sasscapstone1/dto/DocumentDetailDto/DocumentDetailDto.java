@@ -1,8 +1,10 @@
 package com.capstone1.sasscapstone1.dto.DocumentDetailDto;
 
+import com.capstone1.sasscapstone1.dto.AccountRatingDto.AccountRatingDto;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -18,4 +20,5 @@ public class DocumentDetailDto {
     private String authorName;
     private String filePath;
     private String profilePicture;
+    private List<AccountRatingDto> accountRatingDtos;
 }

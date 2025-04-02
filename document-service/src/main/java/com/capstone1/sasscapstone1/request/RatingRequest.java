@@ -1,0 +1,13 @@
+package com.capstone1.sasscapstone1.request;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public class RatingRequest {
+    private long docId;
+    private String content;
+    private int rating;
+    private float viewTime;
+}
