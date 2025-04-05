@@ -2,6 +2,7 @@ package org.com.studygroupservice.service;
 
 import org.com.studygroupservice.dto.request.CreateGroupRequest;
 import org.com.studygroupservice.dto.response.GroupResponse;
+import org.com.studygroupservice.dto.response.SubjectDto;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.springframework.data.domain.Page;
@@ -13,7 +14,12 @@ import java.util.List;
 public interface StudyGroupService {
 
     @Transactional
-    StudyGroup createGroup(String groupName, boolean isPrivate, List<Long> memberIds);
+    StudyGroup createGroup(String groupName, String description, Long subjectId, boolean isPrivate, int memberLimited, List<Long> memberIds);
+
+    List<SubjectDto> searchSubjectsByName(String subjectName);
+
+    // Lấy danh sách SubjectDto từ Redis, fallback sang document-service nếu cần
+    List<SubjectDto> fetchSubjects();
 
     StudyGroup getGroupDetails(Long groupId);
 
@@ -39,7 +45,10 @@ public interface StudyGroupService {
     Page<GroupResponse> listMembers(Long groupId, Pageable pageable);
 
     @Transactional
-    StudyGroup editGroup(Long groupId, String groupName);
+    StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited);
+
+    @Transactional
+    StudyGroup updatePrivacySetting(Long groupId, boolean isPrivate);
 
     Page<Message> getPinnedMessages(Long groupId, Pageable pageable);
 

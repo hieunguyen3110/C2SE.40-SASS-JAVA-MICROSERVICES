@@ -10,6 +10,9 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 public class SubjectDto {
+    private Long subjectId;
     private String subjectCode;
     private String subjectName;
+
+    public SubjectDto() {};
 }

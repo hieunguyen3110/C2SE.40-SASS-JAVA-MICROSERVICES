@@ -12,4 +12,5 @@ public interface SubjectRepository extends JpaRepository<Subject,Long> {
     List<Subject> findAllBySubjectNameContainingIgnoreCase(String subjectName);
     Optional<Subject> findBySubjectCode(String subjectCode);
     Optional<Subject> findBySubjectName(String subjectName);
+    Optional<Subject> findBySubjectId(Long id);
 }
