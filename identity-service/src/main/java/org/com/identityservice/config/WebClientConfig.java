@@ -10,6 +10,7 @@ import org.com.identityservice.repository.httpClient.DocumentClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +30,7 @@ public class WebClientConfig {
 
     @Bean
     @LoadBalanced
+    @Primary
     DocumentClient documentClient(WebClient.Builder builder){
         WebClient webClient = builder
                 .baseUrl("http://document-service/api/v1/document")

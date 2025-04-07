@@ -31,7 +31,8 @@ public class SecurityConfig {
             "/auth/validate/reset-password",
             "/auth/update/new-password",
             "/auth/clear-token",
-            "/ws/**"
+            "/ws/**",
+            "/cronjob/**"
     };
     @Bean
     public PasswordEncoder passwordEncoder(){

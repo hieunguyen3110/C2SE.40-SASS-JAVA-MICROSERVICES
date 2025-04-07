@@ -1,5 +1,6 @@
 package org.com.identityservice.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
@@ -205,18 +206,63 @@ public class AccountServiceImpl implements AccountService {
     public ApiResponse<List<AccountRatingDto>> getAccountByAccountIds(List<Long> accountIds,String docTitle, long docId) throws Exception {
         try{
             List<Account> getAllAccount= accountRepository.findAllByAccountIdIn(accountIds);
-            List<AccountRatingDto> accountRatingDtos= getAllAccount.stream().map(account->
-                 AccountRatingDto.builder()
-                        .accountId(account.getAccountId())
-                        .firstName(account.getFirstName())
-                        .lastName(account.getLastName())
-                        .profilePicture(account.getProfilePicture())
-                        .build()
-            ).toList();
             String key= docTitle+"_"+docId;
+            String isExistJson= (String) redisService.getData(key);
+            List<AccountRatingDto> accountRatingDtos;
+            if(isExistJson!=null){
+                accountRatingDtos= objectMapper.readValue(isExistJson, new TypeReference<>() {});
+                getAllAccount.forEach(account->{
+                    accountRatingDtos.add(
+                            AccountRatingDto.builder()
+                                    .accountId(account.getAccountId())
+                                    .firstName(account.getFirstName())
+                                    .lastName(account.getLastName())
+                                    .profilePicture(account.getProfilePicture())
+                                    .build()
+                    );
+                });
+            }else{
+                accountRatingDtos = getAllAccount.stream().map(account->
+                        AccountRatingDto.builder()
+                                .accountId(account.getAccountId())
+                                .firstName(account.getFirstName())
+                                .lastName(account.getLastName())
+                                .profilePicture(account.getProfilePicture())
+                                .build()
+                ).toList();
+            }
             String json= objectMapper.writeValueAsString(accountRatingDtos);
             redisService.saveData(key,json,864000);
             return CreateApiResponse.createResponse(accountRatingDtos,false);
+        }catch (Exception e){
+            throw new Exception("Error when get all account with accountIds: "+ accountIds.toString());
+        }
+    }
+
+    @Override
+    public ApiResponse<String> updateListAccountRatingAtRedis(List<Long> accountIds, String docTitle, long docId) throws Exception {
+        try{
+            String key= docTitle+"_"+docId;
+            String isExistJson= (String) redisService.getData(key);
+            List<AccountRatingDto> accountRatingDtos;
+            if(isExistJson!=null){
+                List<Account> getAllAccount= accountRepository.findAllByAccountIdIn(accountIds);
+                accountRatingDtos= objectMapper.readValue(isExistJson, new TypeReference<>() {});
+                getAllAccount.forEach(account->{
+                    accountRatingDtos.add(
+                            AccountRatingDto.builder()
+                                    .accountId(account.getAccountId())
+                                    .firstName(account.getFirstName())
+                                    .lastName(account.getLastName())
+                                    .profilePicture(account.getProfilePicture())
+                                    .build()
+                    );
+                });
+                Long ttl= redisService.getTtl(key);
+                String json= objectMapper.writeValueAsString(accountRatingDtos);
+                redisService.saveData(key,json,ttl);
+            }
+            return CreateApiResponse.createResponse("Update account rating in redis is successful",false);
         }catch (Exception e){
             throw new Exception("Error when get all account with accountIds: "+ accountIds.toString());
         }

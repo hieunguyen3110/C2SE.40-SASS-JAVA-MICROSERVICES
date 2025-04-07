@@ -6,6 +6,7 @@ import com.capstone1.sasscapstone1.dto.DocumentDetailDto.DocumentDetailDto;
 import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import com.capstone1.sasscapstone1.dto.PopularDocumentDto.PopularDocumentDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
+import com.capstone1.sasscapstone1.dto.response.DocumentData;
 import com.capstone1.sasscapstone1.request.TrainDocumentRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,4 +32,5 @@ public interface DocumentService {
     void updateDocument(Long docId, AdminDocumentDto documentDto);
 
     Page<PopularDocumentDto> getPopularDocuments(int page, int size);
+    List<DocumentDto> getAllDocumentByDay() throws Exception;
 }

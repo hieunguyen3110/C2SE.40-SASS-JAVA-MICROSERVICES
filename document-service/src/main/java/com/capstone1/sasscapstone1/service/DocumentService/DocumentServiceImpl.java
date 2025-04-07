@@ -7,6 +7,7 @@ import com.capstone1.sasscapstone1.dto.DocumentDetailDto.DocumentDetailDto;
 import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import com.capstone1.sasscapstone1.dto.PopularDocumentDto.PopularDocumentDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
+import com.capstone1.sasscapstone1.dto.response.DocumentData;
 import com.capstone1.sasscapstone1.entity.*;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -54,6 +56,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final IdentityClient identityClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private List<Documents> documents;
 
     @Override
     public ApiResponse<String> uploadDocument(MultipartFile file,
@@ -79,8 +82,6 @@ public class DocumentServiceImpl implements DocumentService {
             if (!extension.equalsIgnoreCase("pdf")) {
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Only pdf files are accepted.");
             }
-
-
             String lowerCaseType = type.toLowerCase();
             if (!lowerCaseType.equals("trắc nghiệm") && !lowerCaseType.equals("tự luận")) {
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Invalid document type. Only 'trắc nghiệm' and 'tự luận' are accepted.");
@@ -323,6 +324,24 @@ public class DocumentServiceImpl implements DocumentService {
             });
         } catch (Exception e) {
             throw new RuntimeException("Error fetching popular documents: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<DocumentDto> getAllDocumentByDay() throws Exception {
+        try{
+            LocalDateTime endDate = LocalDateTime.now();
+            LocalDateTime startDate= endDate.minusDays(1);
+            documents= documentsRepository.findAllByCreatedAtAndIsCheckFalseAndIsTrainFalse(startDate,endDate);
+            return documents.stream().map(document->DocumentDto.builder()
+                            .docId(document.getDocId())
+                            .filePath(document.getFilePath())
+                            .description(document.getDescription())
+                            .title(document.getTitle())
+                            .build()
+                    ).toList();
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
         }
     }
 }

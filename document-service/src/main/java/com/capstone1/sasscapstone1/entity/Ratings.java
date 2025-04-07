@@ -32,7 +32,7 @@ public class Ratings extends AbstractDefault {
     @Column(name = "is_checked")
     private Boolean isChecked;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "doc_id")
     private Documents documents;
 
