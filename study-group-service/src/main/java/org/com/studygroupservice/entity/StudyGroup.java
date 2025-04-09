@@ -1,5 +1,6 @@
 package org.com.studygroupservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,15 +23,21 @@ public class StudyGroup extends AbstractDefault{
     private String name;
     private String description;
     private Long ownerId;
+    private String picture;
+    private int memberLimited;
 
-    @OneToMany(mappedBy = "studyGroup", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(name = "subject_id")
+    private Long subjectId;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "studyGroup", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<GroupMember> members;
 
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
     private List<Message> messages;
 
     @Column(nullable = false)
-    private boolean isPrivate;
+    private Boolean isPrivate;
 
     @OneToMany(mappedBy = "studyGroup", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JoinRequest> joinRequests = new ArrayList<>();

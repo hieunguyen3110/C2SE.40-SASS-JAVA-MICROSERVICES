@@ -1,13 +1,12 @@
 package org.com.studygroupservice.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.com.studygroupservice.dto.response.MessageEventDto;
-import org.com.studygroupservice.dto.response.StudyGroupEventDto;
+import org.com.studygroupservice.dto.response.*;
 import org.com.studygroupservice.entity.JoinRequest;
 import org.com.studygroupservice.entity.Message;
-import org.com.studygroupservice.dto.response.AccountDto;
-import org.com.studygroupservice.dto.response.GroupResponse;
 import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.com.studygroupservice.enums.GroupMemberRole;
@@ -17,6 +16,7 @@ import org.com.studygroupservice.repository.GroupMemberRepository;
 import org.com.studygroupservice.repository.JoinRequestRepository;
 import org.com.studygroupservice.repository.MessageRepository;
 import org.com.studygroupservice.repository.StudyGroupRepository;
+import org.com.studygroupservice.service.RedisService;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.com.studygroupservice.constant.AppConstant.SUBJECT_KEY;
+import static org.com.studygroupservice.constant.AppConstant.TTL_IN_SECONDS;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -43,18 +46,29 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final WebClient.Builder webClientBuilder;
     private final KafkaProducerService kafkaProducerService;
     private final JoinRequestRepository joinRequestRepository;
+    private final RedisService redisService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     @Override
-    public StudyGroup createGroup(String groupName, boolean isPrivate, List<Long> memberIds) {
+    public StudyGroup createGroup(String groupName, String description, Long subjectId, boolean isPrivate, int memberLimited, List<Long> memberIds) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto owner = (AccountDto) authentication.getPrincipal();
 
+            SubjectDto subjectDto = fetchSubjectById(subjectId);
+            if (subjectDto == null) {
+                throw new ApiException(404, "Subject with ID " + subjectId + " not found.");
+            }
+
             StudyGroup studyGroup = new StudyGroup();
             studyGroup.setName(groupName);
+            studyGroup.setDescription(description);
+            studyGroup.setSubjectId(subjectId);
+            studyGroup.setPicture(null);
+            studyGroup.setMemberLimited(memberLimited);
             studyGroup.setOwnerId(owner.getAccountId());
-            studyGroup.setPrivate(isPrivate);
+            studyGroup.setIsPrivate(isPrivate);
             studyGroup = groupRepository.save(studyGroup);
 
             final StudyGroup finalStudyGroup = studyGroup;
@@ -71,7 +85,11 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
             memberRepository.saveAll(groupMembers);
 
-            StudyGroupEventDto event = new StudyGroupEventDto(studyGroup.getId(), owner.getAccountId(), "Study group '" + groupName + "' has been created!", isPrivate ? "Private" : "Public"
+            StudyGroupEventDto event = new StudyGroupEventDto(
+                    studyGroup.getId(),
+                    owner.getAccountId(),
+                    "Study group '" + groupName + "' has been created!",
+                    isPrivate ? "Private" : "Public"
             );
             kafkaProducerService.sendStudyGroupEvent(event);
 
@@ -79,6 +97,82 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         } catch (Exception e) {
             log.error("Failed to create group: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to create group: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<SubjectDto> searchSubjectsByName(String subjectName) {
+        try {
+            List<SubjectDto> allSubjects = fetchSubjects();
+            if (allSubjects == null || allSubjects.isEmpty()) {
+                throw new ApiException(404, "No subjects available. Please try again later.");
+            }
+
+            return allSubjects.stream()
+                    .filter(subject -> subject.getSubjectName().toLowerCase().contains(subjectName.toLowerCase()))
+                    .collect(Collectors.toList());
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to fetch subjects: {}", e.getMessage(), e);
+            throw new ApiException(500, "Failed to fetch subjects: " + e.getMessage());
+        }
+    }
+
+    // Lấy SubjectDto theo subjectId với fallback
+    private SubjectDto fetchSubjectById(Long subjectId) {
+        List<SubjectDto> allSubjects = fetchSubjects();
+        if (allSubjects == null || allSubjects.isEmpty()) {
+            return null;
+        }
+        return allSubjects.stream()
+                .filter(subject -> subject.getSubjectId().equals(subjectId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    // Lấy danh sách SubjectDto từ Redis, fallback sang document-service nếu cần
+    @Override
+    public List<SubjectDto> fetchSubjects() {
+        try {
+            Object cachedValue = redisService.getData(SUBJECT_KEY);
+            if (cachedValue != null) {
+                return objectMapper.readValue(
+                        cachedValue.toString(),
+                        new TypeReference<List<SubjectDto>>() {}
+                );
+            }
+
+            // Fallback: Gọi document-service nếu dữ liệu không có trong Redis
+            log.warn("Subjects not found in Redis. Fetching from document-service via Eureka.");
+            List<SubjectDto> subjects = webClientBuilder
+                    .baseUrl("http://document-service")
+                    .build()
+                    .get()
+                    .uri("/api/v1/document/subjects")
+                    .retrieve()
+                    .bodyToFlux(SubjectDto.class)
+                    .collectList()
+                    .block();
+
+            if (subjects != null && !subjects.isEmpty()) {
+                cacheSubjectsInRedis(subjects); // Lưu lại vào Redis với TTL
+            }
+            return subjects;
+        } catch (Exception e) {
+            log.error("Failed to fetch subjects from Redis or document-service: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    // Lưu danh sách SubjectDto vào Redis với TTL
+    private void cacheSubjectsInRedis(List<SubjectDto> subjects) {
+        try {
+            String jsonSubjects = objectMapper.writeValueAsString(subjects);
+            redisService.saveData(SUBJECT_KEY, jsonSubjects, TTL_IN_SECONDS);
+            log.info("Cached {} subjects in Redis with TTL {} seconds (30 days)", subjects.size(), TTL_IN_SECONDS);
+        } catch (Exception e) {
+            log.error("Failed to cache subjects in Redis: {}", e.getMessage(), e);
         }
     }
 
@@ -174,7 +268,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             throw new ApiException(400, "User is already a member of the group.");
         }
 
-        if (group.isPrivate()) {
+        if (group.getIsPrivate()) {
             // Kiểm tra nếu đã có yêu cầu đang chờ
             if (joinRequestRepository.findByStudyGroupIdAndUserId(groupId, userId).isPresent()) {
                 throw new ApiException(400, "You have already sent a request to join this private group.");
@@ -354,25 +448,44 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public StudyGroup editGroup(Long groupId, String groupName) {
+    public StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited) {
         try {
             StudyGroup group = getGroupDetails(groupId);
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            AccountDto currentUserId = (AccountDto) (authentication.getPrincipal());
+            AccountDto currentUser = (AccountDto) (authentication.getPrincipal());
 
-            if (!group.getOwnerId().equals(currentUserId.getAccountId())) {
-                GroupMember membership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUserId.getAccountId())
+            if (!group.getOwnerId().equals(currentUser.getAccountId())) {
+                GroupMember membership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUser.getAccountId())
                         .orElseThrow(() -> new ApiException(403, "User is not a member of this group"));
                 if (!membership.getRole().equals(GroupMemberRole.ADMIN)) {
                     throw new ApiException(403, "Only owner or admin can edit group");
                 }
             }
 
-            group.setName(groupName);
+            if (groupName != null) {
+                group.setName(groupName);
+            }
+
+            if (description != null) {
+                group.setDescription(description);
+            }
+
+            if (subjectId != null) {
+                group.setSubjectId(subjectId);
+            }
+
+            if (picture != null) {
+                group.setPicture(picture);
+            }
+
+            if(memberLimited > 0) {
+                group.setMemberLimited(memberLimited);
+            }
+
             StudyGroup savedGroup = groupRepository.save(group);
 
-            kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, currentUserId.getAccountId(), "update-group", null, null));
+            kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, currentUser.getAccountId(), "update-group", null, null));
 
             return savedGroup;
         } catch (ApiException e) {
@@ -380,6 +493,39 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         } catch (Exception e) {
             log.error("Failed to edit group: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to edit group: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    @Override
+    public StudyGroup updatePrivacySetting(Long groupId, boolean isPrivate) {
+        try {
+            StudyGroup group = getGroupDetails(groupId);
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUser = (AccountDto) (authentication.getPrincipal());
+
+            if (!group.getOwnerId().equals(currentUser.getAccountId())) {
+                throw new ApiException(403, "Only owner can change privacy settings");
+            }
+
+            group.setIsPrivate(isPrivate);
+            StudyGroup savedGroup = groupRepository.save(group);
+
+            kafkaProducerService.sendMessageEvent(new MessageEventDto(
+                    groupId,
+                    currentUser.getAccountId(),
+                    "privacy-update",
+                    null,
+                    "Group privacy setting changed to " + (isPrivate ? "Private" : "Public")
+            ));
+
+            return savedGroup;
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to update privacy setting: {}", e.getMessage(), e);
+            throw new ApiException(500, "Failed to update privacy setting: " + e.getMessage());
         }
     }
 

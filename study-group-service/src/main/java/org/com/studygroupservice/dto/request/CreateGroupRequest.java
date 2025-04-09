@@ -23,4 +23,7 @@ public class CreateGroupRequest {
     private String description;
 
     private boolean isPrivate;
+    private int memberLimited;
+    private Long subjectId;
+    private String picture;
 }
