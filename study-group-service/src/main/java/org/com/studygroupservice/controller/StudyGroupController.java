@@ -21,7 +21,6 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/study-group")
 public class StudyGroupController {
     private final StudyGroupService groupService;
 

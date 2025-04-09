@@ -20,7 +20,6 @@ import org.com.studygroupservice.service.RedisService;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -31,8 +30,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static org.com.studygroupservice.constant.AppConstant.SUBJECT_KEY;
+import static org.com.studygroupservice.constant.AppConstant.TTL_IN_SECONDS;
 
 @Slf4j
 @Service
@@ -47,9 +48,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final JoinRequestRepository joinRequestRepository;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
-
-    private static final String SUBJECT_KEY = "subject";
-    private static final long TTL_IN_SECONDS = 30 * 24 * 60 * 60;
 
     @Transactional
     @Override

@@ -2,7 +2,6 @@ package org.com.studygroupservice.controller;
 
 import org.com.studygroupservice.dto.response.ApiResponse;
 import org.com.studygroupservice.dto.response.SearchGroupResponse;
-import org.com.studygroupservice.entity.StudyGroup;
 import org.com.studygroupservice.helpers.CreateApiResponse;
 import org.com.studygroupservice.service.SearchStudyGroupService;
 import org.springframework.web.bind.annotation.GetMapping;

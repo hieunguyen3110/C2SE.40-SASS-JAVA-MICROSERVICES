@@ -39,8 +39,7 @@ public class SubjectServiceImpl implements SubjectService {
         }
     }
 
-    // Làm mới dữ liệu trong Redis mỗi 24 giờ
-    @Scheduled(fixedRate = 24 * 60 * 60 * 1000) // 24 giờ = 86,400,000 ms
+    @Scheduled(fixedRate = 30L * 24 * 60 * 60 * 1000)
     public void refreshSubjectsInRedis() {
         try {
             List<SubjectDto> subjects = fetchSubjectsFromDatabase();
