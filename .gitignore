@@ -40,6 +40,7 @@ websocket-server/.env
 study-group-service/.env
 
 Recommendation-system-service/
+Chatbot-service/
 ### VS Code ###
 .vscode/
 
