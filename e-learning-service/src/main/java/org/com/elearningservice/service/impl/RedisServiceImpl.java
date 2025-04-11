@@ -19,8 +19,8 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public void updateData(String key, Object newValue) {
-        redisTemplate.opsForValue().set(key, newValue);
+    public void updateData(String key, Object newValue, long timeout, TimeUnit timeUnit) {
+        redisTemplate.opsForValue().set(key, newValue, timeout, timeUnit);
     }
 
     @Override
@@ -31,5 +31,10 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public void deleteData(String key) {
         redisTemplate.delete(key);
+    }
+
+    @Override
+    public boolean exists(String key) {
+        return redisTemplate.hasKey(key);
     }
 }

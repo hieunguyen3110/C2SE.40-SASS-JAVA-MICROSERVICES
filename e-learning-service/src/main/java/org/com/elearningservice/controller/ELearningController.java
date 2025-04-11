@@ -6,6 +6,7 @@ import org.com.elearningservice.dto.request.AssignmentRequest;
 import org.com.elearningservice.dto.request.CreateTestRequest;
 import org.com.elearningservice.dto.response.ApiResponse;
 import org.com.elearningservice.dto.response.QuestionDto;
+import org.com.elearningservice.dto.response.QuizSession;
 import org.com.elearningservice.helper.CreateApiResponse;
 import org.com.elearningservice.service.ELearningService;
 import org.springframework.web.bind.annotation.*;
@@ -34,5 +35,20 @@ public class ELearningController {
     public ApiResponse<List<QuestionDto>> createAssignmentFromDocument(@RequestBody AssignmentRequest request) {
         List<QuestionDto> questions = eLearningService.createAssignmentFromDocument(request);
         return CreateApiResponse.createResponse(questions, true);
+    }
+
+    @GetMapping("/quiz-session")
+    public ApiResponse<QuizSession> getQuizSession(
+            @RequestParam Long userId,
+            @RequestParam Long quizId) {
+        QuizSession quizSession = eLearningService.getQuizSession(userId, quizId);
+        return CreateApiResponse.createResponse(quizSession, true);
+    }
+
+    @PostMapping("/update-quiz-answer")
+    public ApiResponse<String> updateQuizAnswer(@RequestParam Long userId, @RequestParam Long quizId,
+                                                @RequestParam Integer questionId, @RequestParam String answer) {
+        eLearningService.updateQuizAnswer(userId, quizId, questionId, answer);
+        return CreateApiResponse.createResponse("Answer updated successfully", true);
     }
 }
