@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +31,7 @@ public class WebClientConfig {
 
     @Bean
     @LoadBalanced
+    @Primary
     IdentityClient identityClient(WebClient.Builder builder){
         WebClient webClient = builder
                 .baseUrl("http://identity-service/api/v1/identity")
@@ -48,6 +50,20 @@ public class WebClientConfig {
                 .build();
         HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
         return httpServiceProxyFactory.createClient(IdentityClient.class);
+    }
+
+    @Bean(name = "identityClientWithoutSecurity")
+    @LoadBalanced
+    public IdentityClient identityClientWithoutSecurity(WebClient.Builder builder) {
+        WebClient webClient = builder
+                .baseUrl("http://identity-service/api/v1/identity")
+                .defaultRequest(request->{
+                    request.header("origin", "batch-service");
+                })
+                .build();
+
+        HttpServiceProxyFactory factory = HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
+        return factory.createClient(IdentityClient.class);
     }
 
     @Bean

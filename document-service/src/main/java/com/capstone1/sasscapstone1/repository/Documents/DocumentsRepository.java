@@ -5,8 +5,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,9 +49,13 @@ public interface DocumentsRepository extends JpaRepository<Documents,Long> {
 
     Optional<Documents> findByDocIdAndIsCheckTrue(Long docId) throws Exception;
 
+    Optional<Documents> findByDocIdAndIsCheckTrueAndIsActiveTrue(Long docId) throws Exception;
+
     Optional<Documents> findByFilePath(String filePath);
 
     Optional<Documents> findByDocIdAndIsCheckIsTrue(Long docId);
     @Query("select count(distinct d.docId) from Documents d where d.accountId=:accountId and d.isActive=true")
     Long countDocumentByAccountIdAndIsActive(Long accountId);
+    @Query("select d from Documents d where (d.createdAt between :startDate and :endDate) and d.isCheck=false and d.isTrain=false")
+    List<Documents> findAllByCreatedAtAndIsCheckFalseAndIsTrainFalse(@Param("startDate") LocalDateTime startDate,@Param("endDate") LocalDateTime endDate);
 }

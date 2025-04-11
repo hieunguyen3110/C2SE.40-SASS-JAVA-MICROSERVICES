@@ -1,0 +1,20 @@
+package org.com.batchservice;
+
+import io.github.cdimascio.dotenv.Dotenv;
+import org.com.batchservice.constant.AppConstant;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class BatchServiceApplication {
+
+    public static void main(String[] args) {
+        Dotenv dotenv = Dotenv.configure()
+                .filename(".env")
+                .directory(AppConstant.SERVICE_NAME)
+                .load();
+        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+        SpringApplication.run(BatchServiceApplication.class, args);
+    }
+
+}

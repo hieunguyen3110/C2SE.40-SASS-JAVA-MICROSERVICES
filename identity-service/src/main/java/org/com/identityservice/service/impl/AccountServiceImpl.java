@@ -1,5 +1,7 @@
 package org.com.identityservice.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
 import org.com.identityservice.dto.response.*;
@@ -14,6 +16,7 @@ import org.com.identityservice.repository.AccountRepository;
 import org.com.identityservice.repository.httpClient.DocumentClient;
 import org.com.identityservice.service.AccountService;
 import org.com.identityservice.service.FirebaseService;
+import org.com.identityservice.service.RedisService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +46,9 @@ public class AccountServiceImpl implements AccountService {
     private final UserDetailServiceCustom userDetailServiceCustom;
     private final FirebaseService firebaseService;
     private final DocumentClient documentClient;
+    private final RedisService redisService;
+    private final ObjectMapper objectMapper;
+    private List<Account> newAccounts;
 
     private String uploadProfilePicture(MultipartFile profilePicture) {
         try {
@@ -122,6 +129,24 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    public List<AccountDto> getAllNewUserByDay() throws Exception {
+        try{
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startDate= now.minusDays(2);
+            newAccounts=accountRepository.findAllByCreatedAtAndIsActiveIsFalse(startDate,now);
+            return newAccounts.stream()
+                    .map(account->{
+                        AccountDto accountDto= AccountMapper.mapToAccountDto(account);
+                        accountDto.setPassword(null);
+                        return accountDto;
+                    })
+                    .toList();
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
     public AccountDto getUserDetails(Long accountId) {
         try {
             Account account = accountRepository.findById(accountId)
@@ -198,6 +223,72 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    public ApiResponse<List<AccountRatingDto>> getAccountByAccountIds(List<Long> accountIds,String docTitle, long docId) throws Exception {
+        try{
+            List<Account> getAllAccount= accountRepository.findAllByAccountIdIn(accountIds);
+            String key= docTitle+"_"+docId;
+            String isExistJson= (String) redisService.getData(key);
+            List<AccountRatingDto> accountRatingDtos;
+            if(isExistJson!=null){
+                accountRatingDtos= objectMapper.readValue(isExistJson, new TypeReference<>() {});
+                getAllAccount.forEach(account->{
+                    accountRatingDtos.add(
+                            AccountRatingDto.builder()
+                                    .accountId(account.getAccountId())
+                                    .firstName(account.getFirstName())
+                                    .lastName(account.getLastName())
+                                    .profilePicture(account.getProfilePicture())
+                                    .build()
+                    );
+                });
+            }else{
+                accountRatingDtos = getAllAccount.stream().map(account->
+                        AccountRatingDto.builder()
+                                .accountId(account.getAccountId())
+                                .firstName(account.getFirstName())
+                                .lastName(account.getLastName())
+                                .profilePicture(account.getProfilePicture())
+                                .build()
+                ).toList();
+            }
+            String json= objectMapper.writeValueAsString(accountRatingDtos);
+            redisService.saveData(key,json,864000);
+            return CreateApiResponse.createResponse(accountRatingDtos,false);
+        }catch (Exception e){
+            throw new Exception("Error when get all account with accountIds: "+ accountIds.toString());
+        }
+    }
+
+    @Override
+    public ApiResponse<String> updateListAccountRatingAtRedis(List<Long> accountIds, String docTitle, long docId) throws Exception {
+        try{
+            String key= docTitle+"_"+docId;
+            String isExistJson= (String) redisService.getData(key);
+            List<AccountRatingDto> accountRatingDtos;
+            if(isExistJson!=null){
+                List<Account> getAllAccount= accountRepository.findAllByAccountIdIn(accountIds);
+                accountRatingDtos= objectMapper.readValue(isExistJson, new TypeReference<>() {});
+                getAllAccount.forEach(account->{
+                    accountRatingDtos.add(
+                            AccountRatingDto.builder()
+                                    .accountId(account.getAccountId())
+                                    .firstName(account.getFirstName())
+                                    .lastName(account.getLastName())
+                                    .profilePicture(account.getProfilePicture())
+                                    .build()
+                    );
+                });
+                Long ttl= redisService.getTtl(key);
+                String json= objectMapper.writeValueAsString(accountRatingDtos);
+                redisService.saveData(key,json,ttl);
+            }
+            return CreateApiResponse.createResponse("Update account rating in redis is successful",false);
+        }catch (Exception e){
+            throw new Exception("Error when get all account with accountIds: "+ accountIds.toString());
+        }
+    }
+
+    @Override
     public ApiResponse<String> approveNewUsers(List<Long> accountIds) {
         try {
             List<Account> accounts = accountRepository.findAllById(accountIds);
@@ -208,6 +299,23 @@ public class AccountServiceImpl implements AccountService {
             throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error approving users: " + e.getMessage());
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String approveNewUsers(Long accountId) {
+        try {
+            newAccounts.forEach(account->{
+                if(account.getAccountId()==accountId){
+                    account.setIsActive(true);
+                    accountRepository.save(account);
+                }
+            });
+            return "Users approved successfully.";
+        } catch (Exception e) {
+            throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error approving users: " + e.getMessage());
+        }
+    }
+
     @Override
     @Transactional
     public ApiResponse<String> adminDeleteUserProfilePicture(Long accountId) {

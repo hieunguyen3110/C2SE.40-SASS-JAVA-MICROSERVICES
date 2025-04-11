@@ -18,7 +18,8 @@ public class SecurityConfig {
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
     private static final String[] PUBLIC_ENDPOINT={
             "/user/count-stats",
-            "/faculty/**"
+            "/faculty/**",
+            "/cronjob/**"
     };
 
     @Bean

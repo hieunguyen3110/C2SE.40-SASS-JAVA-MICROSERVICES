@@ -1,10 +1,7 @@
 package com.capstone1.sasscapstone1.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -12,6 +9,7 @@ import java.util.Set;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -28,7 +26,13 @@ public class Ratings extends AbstractDefault {
     @Column(name = "content", columnDefinition = "text")
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @Column(name = "view_time")
+    private float viewTime;
+
+    @Column(name = "is_checked")
+    private Boolean isChecked;
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "doc_id")
     private Documents documents;
 

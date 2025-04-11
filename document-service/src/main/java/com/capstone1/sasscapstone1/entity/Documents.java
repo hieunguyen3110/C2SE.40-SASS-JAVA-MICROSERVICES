@@ -79,5 +79,8 @@ public class Documents extends AbstractDefault {
     private Set<Versions> versions= new HashSet<>();
 
     @OneToMany(mappedBy = "documents", fetch = FetchType.LAZY)
+    private Set<Ratings> ratings= new HashSet<>();
+
+    @OneToMany(mappedBy = "documents", fetch = FetchType.LAZY)
     private Set<Feedbacks> feedbacks= new HashSet<>();
 }
