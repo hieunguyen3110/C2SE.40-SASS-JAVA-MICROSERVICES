@@ -3,6 +3,7 @@ package org.com.elearningservice.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.com.elearningservice.dto.response.QuizSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.com.elearningservice.constant.AppConstant;
 import org.com.elearningservice.dto.request.AssessmentRequest;
@@ -22,7 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +38,7 @@ public class ELearningServiceImpl implements ELearningService {
     private final AssignmentRepository assignmentRepository;
     private final GradeRepository gradeRepository;
     private final ObjectMapper objectMapper;
+    private final RedisServiceImpl redisService;
 
     @Value("${app.ai-service.url}")
     private String aiServiceUrl;
@@ -45,7 +49,7 @@ public class ELearningServiceImpl implements ELearningService {
             
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if(auth == null || auth.getPrincipal() == null) {
-                throw new ApiException(ErrorCode.UNAUTHORIZED.getStatusCode().value(), "Unauthorized access");
+                throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(), "Unauthorized access");
             }
 
             AccountDto account = (AccountDto) auth.getPrincipal();
@@ -226,29 +230,79 @@ public class ELearningServiceImpl implements ELearningService {
         }
     }
 
+    @Override
+    public QuizSession getQuizSession(Long userId, Long quizId) {
+        try {
+            String redisKey = "quiz-session:" + userId + ":" + quizId;
+            Object session = redisService.getData(redisKey);
+            if (session == null) {
+                throw new ApiException(ErrorCode.NOT_FOUND.getStatusCode().value(),
+                        "Quiz session not found for user " + userId + " and quiz " + quizId);
+            }
+            return (QuizSession) session;
+        } catch (Exception e) {
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),
+                    "Error retrieving quiz session: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void saveQuizSession(QuizSession quizSession) {
+        try {
+            String redisKey = "quiz-session:" + quizSession.getAccountId() + ":" + quizSession.getQuizId();
+            redisService.updateData(redisKey, quizSession, quizSession.getTestDuration() + 10, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),
+                    "Error saving quiz session: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void updateQuizAnswer(Long userId, Long quizId, Integer questionId, String answer) {
+        try {
+            QuizSession quizSession = getQuizSession(userId, quizId);
+            Map<Integer, String> answers = quizSession.getAnswers();
+            answers.put(questionId, answer);
+            quizSession.setAnswers(answers);
+            saveQuizSession(quizSession);
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),
+                    "Error updating quiz answer: " + e.getMessage());
+        }
+    }
+
     private void updateExamScore(Long userId, Assessment assessment) {
         try {
             List<Grade> quizGrades = gradeRepository.findByUserIdAndQuizId(userId, null);
             List<Grade> assignmentGrades = gradeRepository.findByUserIdAndAssignmentId(userId, null);
 
+            List<Long> quizIds = quizGrades.stream()
+                    .filter(grade -> grade.getQuiz() != null)
+                    .map(grade -> grade.getQuiz().getId())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            List<Quiz> quizzes = quizRepository.findAllById(quizIds);
+            Map<Long, Quiz> quizMap = quizzes.stream()
+                    .collect(Collectors.toMap(Quiz::getId, quiz -> quiz));
+
             float totalScore = 0;
             int count = 0;
 
             for (Grade grade : quizGrades) {
-                if (grade.getQuizId() != null) {
-                    Optional<Quiz> quizOptional = quizRepository.findById(grade.getQuizId());
-                    if (quizOptional.isPresent()) {
-                        Quiz quiz = quizOptional.get();
-                        if (assessment.getId().equals(quiz.getAssessment().getId())) {
-                            totalScore += grade.getScore();
-                            count++;
-                        }
+                if (grade.getQuiz() != null) { // Sửa từ getQuizId() thành getQuiz()
+                    Quiz quiz = quizMap.get(grade.getQuiz().getId());
+                    if (quiz != null && assessment.getId().equals(quiz.getAssessment().getId())) {
+                        totalScore += grade.getScore();
+                        count++;
                     }
                 }
             }
 
             for (Grade grade : assignmentGrades) {
-                if (grade.getAssignmentId() != null) {
+                if (grade.getAssignment() != null) {
                     totalScore += grade.getScore();
                     count++;
                 }
@@ -266,7 +320,7 @@ public class ELearningServiceImpl implements ELearningService {
 
     @Getter
     private static class DocumentRequest {
-        private Long documentId;
+        private final Long documentId;
 
         public DocumentRequest(Long documentId) {
             this.documentId = documentId;

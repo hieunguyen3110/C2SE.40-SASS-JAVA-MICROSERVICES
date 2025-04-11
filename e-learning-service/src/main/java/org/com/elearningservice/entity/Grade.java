@@ -14,14 +14,16 @@ public class Grade extends AbstractDefault {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "account_id", nullable = false)
+    private Long accountId;
 
-    @Column(name = "quiz_id")
-    private Long quizId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quiz_id")
+    private Quiz quiz;
 
-    @Column(name = "assignment_id")
-    private Long assignmentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assignment_id")
+    private Assignment assignment;
 
     private Float score;
 }

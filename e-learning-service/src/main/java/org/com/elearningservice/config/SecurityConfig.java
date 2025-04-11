@@ -24,18 +24,15 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(request->{
+                .authorizeHttpRequests(request -> {
                     request
                             .requestMatchers(PUBLIC_ENDPOINT).permitAll()
-                            .requestMatchers(
-                                    "/study-group/**"
-                            ).hasAnyRole("STUDENT")
-                            .requestMatchers(
-                                    "/admin/**"
-                            ).hasRole("ADMIN")
+                            .requestMatchers("/e-learning-group/**").hasRole("STUDENT")
                             .anyRequest().authenticated();
                 });
+
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
+
 }

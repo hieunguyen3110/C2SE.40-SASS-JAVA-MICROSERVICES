@@ -15,11 +15,11 @@ public class Question extends AbstractDefault {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quiz_id")
     private Quiz quiz;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assignment_id")
     private Assignment assignment;
 
@@ -27,5 +27,15 @@ public class Question extends AbstractDefault {
 
     @Column(columnDefinition = "JSON")
     private String options;
+
+    @Column(name = "correct_answer")
     private String correctAnswer;
 }
+//content: "Question content",
+//options: {
+//        "A": "Option A",
+//        "B": "Option B",
+//        "C": "Option C",
+//        }
+//correctAnswer: ["A", "B"]
+
