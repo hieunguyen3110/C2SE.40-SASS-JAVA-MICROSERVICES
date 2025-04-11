@@ -1,6 +1,7 @@
-package com.capstone1.sasscapstone1.service.RedisService;
+package org.com.studygroupservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.com.studygroupservice.service.RedisService;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -9,10 +10,11 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class RedisServiceImpl implements RedisService {
+
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
-    public void saveData(String key, Object value, long timeout) {
+    public void saveData(String key, Object value, Long timeout) {
         redisTemplate.opsForValue().set(key,value,timeout, TimeUnit.SECONDS);
     }
 
@@ -29,9 +31,5 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public void deleteData(String key) {
         redisTemplate.delete(key);
-    }
-    @Override
-    public Long getTtl(String key) {
-        return redisTemplate.getExpire(key);
     }
 }

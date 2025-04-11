@@ -1,15 +1,14 @@
 package com.capstone1.sasscapstone1.dto.SubjectDto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class SubjectDto {
+    private Long subjectId;
     private String subjectCode;
     private String subjectName;
 }
