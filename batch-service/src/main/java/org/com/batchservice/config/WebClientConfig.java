@@ -1,8 +1,11 @@
 package org.com.batchservice.config;
 
 import lombok.RequiredArgsConstructor;
+import org.com.batchservice.constant.AppConstant;
 import org.com.batchservice.repository.ChatbotClient;
 import org.com.batchservice.repository.DocumentClient;
+import org.com.batchservice.repository.IdentityClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +16,8 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @Configuration
 @RequiredArgsConstructor
 public class WebClientConfig {
+    @Value("${chatbot.url}")
+    private String chatBotUrl;
     @Bean
     @LoadBalanced
     public WebClient.Builder webClientBuilder() {
@@ -25,7 +30,7 @@ public class WebClientConfig {
         WebClient webClient = builder
                 .baseUrl("http://document-service/api/v1/document")
                 .defaultRequest(request->{
-                    request.header("origin", "batch-service");
+                    request.header("origin", AppConstant.SERVICE_NAME);
                 })
                 .build();
         HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
@@ -33,11 +38,25 @@ public class WebClientConfig {
     }
     @Bean
     @LoadBalanced
-    ChatbotClient chatbotClient(WebClient.Builder builder){
+    IdentityClient identityClient(WebClient.Builder builder){
         WebClient webClient = builder
-                .baseUrl("http://chatbot-service/api/v1/chatbot")
+                .baseUrl("http://identity-service/api/v1/identity")
+                .defaultRequest(request->{
+                    request.header("origin", AppConstant.SERVICE_NAME);
+                })
                 .build();
         HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
-        return httpServiceProxyFactory.createClient(ChatbotClient.class);
+        return httpServiceProxyFactory.createClient(IdentityClient.class);
+    }
+    @Bean
+    public ChatbotClient chatbotClient() {
+        WebClient webClient = WebClient.builder()
+                .baseUrl(chatBotUrl)
+                .build();
+        HttpServiceProxyFactory factory = HttpServiceProxyFactory
+                .builderFor(WebClientAdapter.create(webClient))
+                .build();
+
+        return factory.createClient(ChatbotClient.class);
     }
 }

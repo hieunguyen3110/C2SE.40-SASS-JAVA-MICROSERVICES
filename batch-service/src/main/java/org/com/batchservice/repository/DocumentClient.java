@@ -12,6 +12,8 @@ public interface DocumentClient {
     ApiResponse<List<RatingDto>> getAllRatingByDayAndIsCheckFalse();
     @PostExchange("/cronjob/ratings/update-checked")
     ApiResponse<String> updateRatingChecked(@RequestBody List<Long> ratingIds);
-    @GetExchange("/cronjob/documents/")
+    @GetExchange("/cronjob/documents/get-by-day")
     ApiResponse<List<DocumentDto>> getDocumentsByDay();
+    @PostExchange("/cronjob/documents/update-file")
+    ApiResponse<String> updateFileStatus(@RequestBody List<Long> docIds);
 }

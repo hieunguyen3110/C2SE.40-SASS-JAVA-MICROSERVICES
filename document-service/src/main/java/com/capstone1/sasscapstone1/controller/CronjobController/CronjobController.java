@@ -35,4 +35,8 @@ public class CronjobController {
     public ApiResponse<List<DocumentDto>> getALlDocumentByDay() throws Exception {
         return CreateApiResponse.createResponse(documentService.getAllDocumentByDay(),false);
     }
+    @PostMapping("/documents/update-file")
+    public ApiResponse<String> updateFileStatus(@RequestBody List<Long> docIds) throws Exception {
+        return CreateApiResponse.createResponse(documentService.updateFileStatus(docIds),false);
+    }
 }

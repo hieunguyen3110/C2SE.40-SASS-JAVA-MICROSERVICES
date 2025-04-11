@@ -1,14 +1,14 @@
 package com.capstone1.sasscapstone1.service.DocumentCheckService;
 
 import com.capstone1.sasscapstone1.dto.CheckFileResponse.CheckFileResponse;
+import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.entity.Documents;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -38,10 +38,17 @@ public class DocumentCheckServiceImpl implements DocumentCheckService {
             request.put("filePath",document.getFilePath());
             httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             HttpEntity<Map<String,String>> entity= new HttpEntity<>(request,httpHeaders);
-            String uri = "http://127.0.0.1:5000/api/check-file";
-            CheckFileResponse result= restTemplate.postForEntity(uri,entity,CheckFileResponse.class).getBody();
-            assert result != null;
-            if(result.getSensitiveWords()!=null && result.getSensitiveWords().size()>10){
+            String uri = "http://127.0.0.1:5002/api/v1/chatbot/check-file";
+            ResponseEntity<ApiResponse<CheckFileResponse>> response = restTemplate.exchange(
+                    uri,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<>() {}
+            );
+
+            CheckFileResponse result = response.getBody().getData();
+            if((!result.isContainsSensitiveWords() && result.getSensitiveWords().isEmpty()) ||
+                    (result.isContainsSensitiveWords() && result.getSensitiveWords().size()<10)){
                 throw new Exception("File chứa từ nhạy cảm quá nhiều!");
             }
             document.setIsCheck(true);

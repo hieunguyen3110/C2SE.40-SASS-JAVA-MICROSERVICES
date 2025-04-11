@@ -15,8 +15,12 @@ import org.springframework.context.annotation.Configuration;
 public class CheckingRatingContentJob {
     private final JobRepository jobRepository;
     @Bean(name = "customCheckingRatingContentJob")
-    public Job checkingRatingContentJob(JobCompletionNotificationListener listener, Step checkingDocAndTrainDocStep){
-        return new JobBuilder("checkingRatingContentJob", jobRepository).incrementer(new RunIdIncrementer()).listener(listener).flow(checkingDocAndTrainDocStep).end()
+    public Job checkingRatingContentJob(JobCompletionNotificationListener listener, Step checkRatingContentStepHandler){
+        return new JobBuilder("checkingRatingContentJob", jobRepository)
+                .incrementer(new RunIdIncrementer())
+                .listener(listener)
+                .flow(checkRatingContentStepHandler)
+                .end()
                 .build();
     }
 }

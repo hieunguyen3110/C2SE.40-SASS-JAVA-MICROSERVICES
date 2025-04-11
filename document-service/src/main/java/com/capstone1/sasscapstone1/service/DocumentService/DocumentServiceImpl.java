@@ -11,6 +11,7 @@ import com.capstone1.sasscapstone1.dto.response.DocumentData;
 import com.capstone1.sasscapstone1.entity.*;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
+import com.capstone1.sasscapstone1.repository.DocumentView.DocumentViewRepository;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import com.capstone1.sasscapstone1.repository.Faculty.FacultyRepository;
 import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
@@ -25,18 +26,18 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -56,7 +57,49 @@ public class DocumentServiceImpl implements DocumentService {
     private final IdentityClient identityClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final DocumentViewRepository documentViewRepository;
     private List<Documents> documents;
+
+    private void increaseClickCount(Long docId){
+        Optional<History> existHistory= historyRepository.findByDocument_DocId(docId);
+        History history;
+        if(existHistory.isPresent()){
+            history= existHistory.get();
+            history.setClickCount(history.getClickCount()+1);
+        }else{
+            Documents document= documentsRepository.findById(docId)
+                    .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Document not found"));
+            history= History.builder()
+                    .document(document)
+                    .clickCount(1)
+                    .downloadCount(0)
+                    .averageRating(0)
+                    .build();
+        }
+        historyRepository.save(history);
+    }
+    @Async("documentExecutor")
+    protected void trackingClickViewDocument(Long accountId, Long docId){
+        Optional<DocumentView> existDocumentView= documentViewRepository.findByAccountIdAndDocumentId(accountId,docId);
+        LocalDateTime now= LocalDateTime.now();
+        if(existDocumentView.isPresent()){
+            DocumentView documentView= existDocumentView.get();
+            Duration duration = Duration.between(documentView.getLastViewTime(), now);
+            if(duration.toMinutes()>10){
+                increaseClickCount(docId);
+                documentView.setLastViewTime(now);
+                documentViewRepository.save(documentView);
+            }
+        }else{
+            increaseClickCount(docId);
+            DocumentView documentView= DocumentView.builder()
+                    .accountId(accountId)
+                    .documentId(docId)
+                    .lastViewTime(now)
+                    .build();
+            documentViewRepository.save(documentView);
+        }
+    }
 
     @Override
     public ApiResponse<String> uploadDocument(MultipartFile file,
@@ -176,6 +219,7 @@ public class DocumentServiceImpl implements DocumentService {
                 List<AccountRatingDto> accountRatingDtos= objectMapper.readValue(json,new TypeReference<>() {});
                 documentDetailDto.setAccountRatingDtos(accountRatingDtos);
             }
+            trackingClickViewDocument(document.getAccountId(), docId);
             return documentDetailDto;
         } catch (Exception e) {
             throw new RuntimeException("Error fetching document by ID: " + e.getMessage(), e);
@@ -183,24 +227,31 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public ResponseEntity<?> trainDocument(TrainDocumentRequest request) {
+    public ApiResponse<String> trainDocument(TrainDocumentRequest request) {
         try {
-            String uri = "http://127.0.0.1:5000/api/upload-file";
+            String uri = "http://127.0.0.1:5002/api/v1/chatbot/upload-file";
             HttpHeaders headers = new HttpHeaders();
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-            List<Object> response = new ArrayList<>();
             HttpEntity<TrainDocumentRequest> entity = new HttpEntity<>(request, headers);
-            response.add(restTemplate.postForEntity(uri, entity, Object.class).getBody());
-            Optional<Documents> findDocByFilePath= documentsRepository.findByFilePath(request.getFilePath());
-            if(findDocByFilePath.isPresent()){
-                Documents documents= findDocByFilePath.get();
-                documents.setIsTrain(true);
-                documentsRepository.save(documents);
+            ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
+                    uri,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            ApiResponse<String> result = response.getBody();
+            if(result.getCode()==200){
+                Optional<Documents> findDocByFilePath= documentsRepository.findByFilePath(request.getFilePath());
+                if(findDocByFilePath.isPresent()){
+                    Documents documents= findDocByFilePath.get();
+                    documents.setIsTrain(true);
+                    documentsRepository.save(documents);
+                }
             }
-            return ResponseEntity.ok(response);
+            return result;
         } catch (Exception e) {
             throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error during document training.");
-        }// Logic for training document...
+        }
     }
 
     @Override
@@ -331,15 +382,34 @@ public class DocumentServiceImpl implements DocumentService {
     public List<DocumentDto> getAllDocumentByDay() throws Exception {
         try{
             LocalDateTime endDate = LocalDateTime.now();
-            LocalDateTime startDate= endDate.minusDays(1);
+            LocalDateTime startDate= endDate.minusDays(2);
             documents= documentsRepository.findAllByCreatedAtAndIsCheckFalseAndIsTrainFalse(startDate,endDate);
             return documents.stream().map(document->DocumentDto.builder()
                             .docId(document.getDocId())
                             .filePath(document.getFilePath())
                             .description(document.getDescription())
-                            .title(document.getTitle())
+                            .fileName(document.getFileName())
                             .build()
                     ).toList();
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String updateFileStatus(List<Long> docIds) throws Exception {
+        try{
+            List<Documents> documentsFilter= documents.stream()
+                    .filter(document->docIds.contains(document.getDocId()))
+                    .toList();
+            documentsFilter.forEach(document->{
+                document.setIsCheck(true);
+                document.setIsTrain(true);
+                document.setIsActive(true);
+            });
+            documentsRepository.saveAll(documentsFilter);
+            return "Update file status is successful";
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }

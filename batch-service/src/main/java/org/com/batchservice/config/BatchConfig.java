@@ -13,24 +13,26 @@ import org.springframework.stereotype.Component;
 public class BatchConfig {
     private final Job customCheckingRatingContentJob;
     private final Job customCollectDataJob;
+    private final Job customCheckDocAndTrainDocJob;
+    private final Job customActiveUserJob;
     private final JobLauncher jobLauncher;
 
     public void runJobCheckDocAndTrainDoc(){
-        JobParameters checkingRatingContentParameter= new JobParametersBuilder()
-                .addString("ID", "checking_rating_content_"+System.currentTimeMillis())
+        JobParameters checkDocAndTrainDocParameter= new JobParametersBuilder()
+                .addString("ID", "check_doc_and_train_doc_"+System.currentTimeMillis())
                 .toJobParameters();
         try{
-            JobExecution execution= jobLauncher.run(customCheckingRatingContentJob,checkingRatingContentParameter);
-            if(execution.getStatus() == BatchStatus.COMPLETED){
-                JobParameters collectDataParameter= new JobParametersBuilder()
-                        .addString("ID", "collect_data_"+System.currentTimeMillis())
-                        .toJobParameters();
-                log.info("Starting Job 2: collect data...");
-                JobExecution execution1= jobLauncher.run(customCollectDataJob,collectDataParameter);
-                log.info("Collect data is status {}",execution1.getStatus());
-            }else{
-                log.warn("Checking rating content not success, Collect data will not run.");
-            }
+            jobLauncher.run(customCheckDocAndTrainDocJob,checkDocAndTrainDocParameter);
+        }catch (Exception e){
+            log.error("Exception: "+ e.getMessage());
+        }
+    }
+    public void runJobActiveUser(){
+        JobParameters activeUserParameter= new JobParametersBuilder()
+                .addString("ID", "active_user"+System.currentTimeMillis())
+                .toJobParameters();
+        try{
+            jobLauncher.run(customActiveUserJob,activeUserParameter);
         }catch (Exception e){
             log.error("Exception: "+ e.getMessage());
         }
@@ -40,17 +42,17 @@ public class BatchConfig {
                 .addString("ID", "checking_rating_content_"+System.currentTimeMillis())
                 .toJobParameters();
         try{
-            JobExecution execution= jobLauncher.run(customCheckingRatingContentJob,checkingRatingContentParameter);
-            if(execution.getStatus() == BatchStatus.COMPLETED){
-                JobParameters collectDataParameter= new JobParametersBuilder()
-                        .addString("ID", "collect_data_"+System.currentTimeMillis())
-                        .toJobParameters();
-                log.info("Starting Job 2: collect data...");
-                JobExecution execution1= jobLauncher.run(customCollectDataJob,collectDataParameter);
-                log.info("Collect data is status {}",execution1.getStatus());
-            }else{
-                log.warn("Checking rating content not success, Collect data will not run.");
-            }
+            jobLauncher.run(customCheckingRatingContentJob,checkingRatingContentParameter);
+//            if(execution.getStatus() == BatchStatus.COMPLETED){
+//                JobParameters collectDataParameter= new JobParametersBuilder()
+//                        .addString("ID", "collect_data_"+System.currentTimeMillis())
+//                        .toJobParameters();
+//                log.info("Starting Job 2: collect data...");
+//                JobExecution execution1= jobLauncher.run(customCollectDataJob,collectDataParameter);
+//                log.info("Collect data is status {}",execution1.getStatus());
+//            }else{
+//                log.warn("Checking rating content not success, Collect data will not run.");
+//            }
         }catch (Exception e){
             log.error("Exception: "+ e.getMessage());
         }

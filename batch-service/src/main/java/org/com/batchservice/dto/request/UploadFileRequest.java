@@ -1,4 +1,4 @@
-package org.com.batchservice.dto.response;
+package org.com.batchservice.dto.request;
 
 import lombok.*;
 
@@ -7,9 +7,8 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DocumentDto {
-    private Long docId;
+public class UploadFileRequest {
     private String fileName;
-    private String description;
     private String filePath;
+    private Long docId;
 }

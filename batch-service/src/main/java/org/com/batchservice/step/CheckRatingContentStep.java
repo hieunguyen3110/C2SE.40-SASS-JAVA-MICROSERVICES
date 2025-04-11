@@ -16,19 +16,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.util.List;
-
 @Configuration
 @RequiredArgsConstructor
-public class CheckingRatingContentStep {
+public class CheckRatingContentStep {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     @Bean
-    public Step checkRatingContentStep(ItemReader<RatingDto> checkingRatingContentReader,
+    public Step checkRatingContentStepHandler(ItemReader<RatingDto> checkingRatingContentReader,
                                        ItemProcessor<RatingDto,RatingDto> checkingRatingContentProcessor,
                                        ItemWriter<RatingDto> checkingRatingContentWriter)
     {
-        return new StepBuilder("checkingRatingContentStep", jobRepository)
+        return new StepBuilder("CheckRatingContentStep", jobRepository)
                 .<RatingDto, RatingDto>chunk(10, transactionManager)
                 .reader(checkingRatingContentReader)
                 .processor(checkingRatingContentProcessor)

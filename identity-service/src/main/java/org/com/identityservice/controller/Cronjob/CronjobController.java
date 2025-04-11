@@ -1,8 +1,10 @@
 package org.com.identityservice.controller.Cronjob;
 
 import lombok.RequiredArgsConstructor;
+import org.com.identityservice.dto.response.AccountDto;
 import org.com.identityservice.dto.response.AccountRatingDto;
 import org.com.identityservice.dto.response.ApiResponse;
+import org.com.identityservice.helpers.CreateApiResponse;
 import org.com.identityservice.service.AccountService;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,5 +27,13 @@ public class CronjobController {
                                                                           @RequestParam("docTitle") String docTitle,
                                                                           @RequestParam("docId") long docId) throws Exception {
         return accountService.updateListAccountRatingAtRedis(accountIds,docTitle,docId);
+    }
+    @GetMapping("/account/get-new-account")
+    public ApiResponse<List<AccountDto>> getAllNewAccountByDay() throws Exception {
+        return CreateApiResponse.createResponse(accountService.getAllNewUserByDay(),false);
+    }
+    @PostMapping("/account/update-account-status")
+    public ApiResponse<String> updateStatusAccount(@RequestBody Long accountId) throws Exception {
+        return CreateApiResponse.createResponse(accountService.approveNewUsers(accountId),false);
     }
 }

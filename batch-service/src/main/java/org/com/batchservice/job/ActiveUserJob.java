@@ -12,14 +12,14 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @RequiredArgsConstructor
-public class CheckDocAndTrainDocJob {
+public class ActiveUserJob {
     private final JobRepository jobRepository;
-    @Bean(name = "customCheckDocAndTrainDocJob")
-    public Job checkDocAndTrainDocJob(JobCompletionNotificationListener listener, Step checkDocAndTrainDocStepHandler){
-        return new JobBuilder("checkDocAndTrainDocJob", jobRepository)
+    @Bean(name = "customActiveUserJob")
+    public Job checkDocAndTrainDocJob(JobCompletionNotificationListener listener, Step activeUserStepHandler){
+        return new JobBuilder("activeUserJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .listener(listener)
-                .flow(checkDocAndTrainDocStepHandler)
+                .flow(activeUserStepHandler)
                 .end()
                 .build();
     }

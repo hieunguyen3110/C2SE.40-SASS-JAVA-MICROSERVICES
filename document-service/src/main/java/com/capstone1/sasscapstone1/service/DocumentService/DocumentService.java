@@ -24,7 +24,7 @@ public interface DocumentService {
 
     ApiResponse<List<DocumentDto>> getDocumentByFolderId(Long folderId, int pageNum, int pageSize);
 
-    ResponseEntity<?> trainDocument(TrainDocumentRequest request) throws Exception;
+    ApiResponse<String> trainDocument(TrainDocumentRequest request) throws Exception;
 
     ApiResponse<List<DocumentDto>> findAllByAccount(AccountDto account, int pageNum, int pageSize) throws Exception;
     ApiResponse<List<DocumentDto>> findAllByAccount(String email, int pageNum, int pageSize) throws Exception;
@@ -33,4 +33,5 @@ public interface DocumentService {
 
     Page<PopularDocumentDto> getPopularDocuments(int page, int size);
     List<DocumentDto> getAllDocumentByDay() throws Exception;
+    String updateFileStatus(List<Long> docIds) throws Exception;
 }

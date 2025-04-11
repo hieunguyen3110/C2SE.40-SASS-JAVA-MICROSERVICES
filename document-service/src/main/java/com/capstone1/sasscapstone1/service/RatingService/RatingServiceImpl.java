@@ -51,36 +51,50 @@ public class RatingServiceImpl implements RatingService{
                 .isChecked(ratings.getIsChecked())
                 .build();
     }
-    private boolean checkIsRating(Long accountId, String docTitle, Long docId) throws JsonProcessingException {
-        String key= docTitle+"_"+docId;
-        String json= (String) redisService.getData(key);
-        if(json!=null){
-            List<AccountRatingDto> accountRatingDtos= objectMapper.readValue(json,new TypeReference<>() {});
-            return accountRatingDtos.stream().anyMatch(accountRatingDto -> accountRatingDto.getAccountId()==accountId);
-        }else{
-            Optional<Ratings> isRating= ratingsRepository.findRatingsByAccountIdAndDocuments_DocId(accountId,docId);
-            return isRating.isPresent();
-        }
+    private Ratings checkIsRating(Long accountId, String docTitle, Long docId) throws JsonProcessingException {
+//        String key= docTitle+"_"+docId;
+//        String json= (String) redisService.getData(key);
+//        if(json!=null){
+//            List<AccountRatingDto> accountRatingDtos= objectMapper.readValue(json,new TypeReference<>() {});
+//            return accountRatingDtos.stream().anyMatch(accountRatingDto -> accountRatingDto.getAccountId()==accountId);
+//        }else{
+//            Optional<Ratings> isRating= ratingsRepository.findRatingsByAccountIdAndDocuments_DocId(accountId,docId);
+//            return isRating.isPresent();
+//        }
+        Optional<Ratings> isRating= ratingsRepository.findRatingsByAccountIdAndDocuments_DocId(accountId,docId);
+        return isRating.orElse(null);
     }
     @Override
     public String rateDocumentByUser(AccountDto accountDto, RatingRequest request) throws Exception {
         try{
             Documents findDoc= documentsRepository.findByDocIdAndIsCheckTrueAndIsActiveTrue(request.getDocId())
                     .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Document is not found!!"));
-            boolean checkedIsRated= checkIsRating(accountDto.getAccountId(),findDoc.getTitle(),findDoc.getDocId());
-            if(checkedIsRated){
-                throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"User was rated to this document");
+            Ratings checkedIsRated= checkIsRating(accountDto.getAccountId(),findDoc.getTitle(),findDoc.getDocId());
+            if(checkedIsRated!=null){
+                if(checkedIsRated.getRating()==0){
+                    if(request.getRating()!=0){
+                        checkedIsRated.setRating(request.getRating());
+                    }
+                    if(checkedIsRated.getViewTime()==0 && request.getViewTime()!=0){
+                        checkedIsRated.setViewTime(request.getViewTime());
+                    }
+                    ratingsRepository.save(checkedIsRated);
+                    return "Document is rate update";
+                }else{
+                    throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Document is rated");
+                }
+            }else{
+                Ratings ratingsSaved= Ratings.builder()
+                        .rating(request.getRating())
+                        .documents(findDoc)
+                        .accountId(accountDto.getAccountId())
+                        .viewTime(request.getViewTime())
+                        .content(request.getContent())
+                        .isChecked(false)
+                        .build();
+                ratingsRepository.save(ratingsSaved);
+                return "Document is rate successful";
             }
-            Ratings ratingsSaved= Ratings.builder()
-                    .rating(request.getRating())
-                    .documents(findDoc)
-                    .accountId(accountDto.getAccountId())
-                    .viewTime(request.getViewTime())
-                    .content(request.getContent())
-                    .isChecked(false)
-                    .build();
-            ratingsRepository.save(ratingsSaved);
-            return "Document is rate successful";
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
@@ -90,7 +104,7 @@ public class RatingServiceImpl implements RatingService{
     public List<RatingDto> getAllRatingByDayCheckedIsFalse() throws Exception {
         try{
             endDate= LocalDateTime.now();
-            startDate= endDate.minusDays(1);
+            startDate= endDate.minusDays(2);
             ratings= ratingsRepository.findAllByCreatedAtAndIsChecked(startDate,endDate);
             return ratings.stream().map(this::mapToDto).toList();
         }catch(Exception e){

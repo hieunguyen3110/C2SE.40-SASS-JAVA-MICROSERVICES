@@ -15,8 +15,12 @@ import org.springframework.context.annotation.Configuration;
 public class CollectDataJob {
     private final JobRepository jobRepository;
     @Bean(name = "customCollectDataJob")
-    public Job collectDataJob(JobCompletionNotificationListener listener, Step collectingDataStep){
-        return new JobBuilder("collectDataJob", jobRepository).incrementer(new RunIdIncrementer()).listener(listener).flow(collectingDataStep).end()
+    public Job collectDataJob(JobCompletionNotificationListener listener, Step collectDataStepHandler){
+        return new JobBuilder("collectDataJob", jobRepository)
+                .incrementer(new RunIdIncrementer())
+                .listener(listener)
+                .flow(collectDataStepHandler)
+                .end()
                 .build();
     }
 }

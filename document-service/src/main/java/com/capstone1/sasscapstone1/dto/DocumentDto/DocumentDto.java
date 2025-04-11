@@ -16,6 +16,7 @@ public class DocumentDto {
     private Boolean isActive;
     private String subjectName;
     private String filePath;
+    private String fileName;
     private Long accountId;
     private Long facultyId;
     private String facultyName;

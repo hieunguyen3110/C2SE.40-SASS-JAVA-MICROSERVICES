@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +48,7 @@ public class AccountServiceImpl implements AccountService {
     private final DocumentClient documentClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private List<Account> newAccounts;
 
     private String uploadProfilePicture(MultipartFile profilePicture) {
         try {
@@ -123,6 +125,24 @@ public class AccountServiceImpl implements AccountService {
                     });
         } catch (Exception e) {
             throw new RuntimeException("Error listing users: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<AccountDto> getAllNewUserByDay() throws Exception {
+        try{
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startDate= now.minusDays(2);
+            newAccounts=accountRepository.findAllByCreatedAtAndIsActiveIsFalse(startDate,now);
+            return newAccounts.stream()
+                    .map(account->{
+                        AccountDto accountDto= AccountMapper.mapToAccountDto(account);
+                        accountDto.setPassword(null);
+                        return accountDto;
+                    })
+                    .toList();
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
         }
     }
 
@@ -279,6 +299,23 @@ public class AccountServiceImpl implements AccountService {
             throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error approving users: " + e.getMessage());
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String approveNewUsers(Long accountId) {
+        try {
+            newAccounts.forEach(account->{
+                if(account.getAccountId()==accountId){
+                    account.setIsActive(true);
+                    accountRepository.save(account);
+                }
+            });
+            return "Users approved successfully.";
+        } catch (Exception e) {
+            throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error approving users: " + e.getMessage());
+        }
+    }
+
     @Override
     @Transactional
     public ApiResponse<String> adminDeleteUserProfilePicture(Long accountId) {

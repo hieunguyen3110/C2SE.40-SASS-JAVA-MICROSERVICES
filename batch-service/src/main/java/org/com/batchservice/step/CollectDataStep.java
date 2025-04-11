@@ -21,7 +21,7 @@ public class CollectDataStep {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     @Bean
-    public Step collectingDataStep(ItemReader<Object> collectDataReader,
+    public Step collectDataStepHandler(ItemReader<Object> collectDataReader,
                                        ItemProcessor<Object,Object> collectDataProcessor,
                                        ItemWriter<Object> collectDataWriter)
     {

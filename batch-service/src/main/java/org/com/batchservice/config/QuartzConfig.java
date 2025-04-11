@@ -30,7 +30,7 @@ public class QuartzConfig {
     public Trigger jobTrigger(JobDetail jobDetail) {
         return TriggerBuilder.newTrigger()
                 .forJob(jobDetail)
-                .withSchedule(CronScheduleBuilder.cronSchedule("0 08 0 * * ?"))
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 0 3 * * ?"))
                 .build();
     }
 
