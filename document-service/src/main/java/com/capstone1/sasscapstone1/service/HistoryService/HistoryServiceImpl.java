@@ -41,7 +41,7 @@ public class HistoryServiceImpl implements HistoryService {
                 history.setDownloadCount(history.getDownloadCount() + 1);
             } else {
                 // Nếu chưa tồn tại, tạo mới với số lượt tải là 1
-                history = new History(document, 1);
+                history = new History();
             }
 
             // Lưu lại bản ghi

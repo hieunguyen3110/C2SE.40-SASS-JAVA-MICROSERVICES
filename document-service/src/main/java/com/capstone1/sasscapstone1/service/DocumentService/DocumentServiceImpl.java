@@ -26,6 +26,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -59,6 +60,8 @@ public class DocumentServiceImpl implements DocumentService {
     private final ObjectMapper objectMapper;
     private final DocumentViewRepository documentViewRepository;
     private List<Documents> documents;
+    @Value("${chatbot.url}")
+    private String chatbotUrl;
 
     private void increaseClickCount(Long docId){
         Optional<History> existHistory= historyRepository.findByDocument_DocId(docId);
@@ -229,7 +232,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public ApiResponse<String> trainDocument(TrainDocumentRequest request) {
         try {
-            String uri = "http://127.0.0.1:5002/api/v1/chatbot/upload-file";
+            String uri = chatbotUrl;
             HttpHeaders headers = new HttpHeaders();
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             HttpEntity<TrainDocumentRequest> entity = new HttpEntity<>(request, headers);

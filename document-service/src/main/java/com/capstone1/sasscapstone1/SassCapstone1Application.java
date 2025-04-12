@@ -10,11 +10,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class SassCapstone1Application {
 
     public static void main(String[] args) {
-        Dotenv dotenv = Dotenv.configure()
-                .filename(".env")
-                .directory("document-service")
-                .load();
-        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+//        Dotenv dotenv = Dotenv.configure()
+//                .filename(".env")
+//                .directory("document-service")
+//                .load();
+//        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
         SpringApplication.run(SassCapstone1Application.class, args);
     }
 
