@@ -11,6 +11,8 @@ import java.util.List;
 public interface IdentityClient {
     @GetExchange("/cronjob/account/get-new-account")
     ApiResponse<List<AccountDto>> getAllNewAccountByDay();
+    @GetExchange("/cronjob/account/get-new-account-active")
+    ApiResponse<List<AccountDto>> getAllNewAccountByDayActive();
     @PostExchange("/cronjob/account/update-account-status")
     ApiResponse<String> updateAccountStatus(@RequestBody Long accountId);
 }

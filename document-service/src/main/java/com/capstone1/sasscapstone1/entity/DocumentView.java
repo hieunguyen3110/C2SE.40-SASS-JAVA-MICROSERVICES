@@ -12,15 +12,17 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Table(name = "document_view")
 @Entity
-public class DocumentView {
+public class DocumentView extends AbstractDefault {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "doc_view_id")
     private Long docViewId;
-    @Column(name = "account_id", unique = true)
+    @Column(name = "account_id")
     private Long accountId;
-    @Column(name = "document_id", unique = true)
+    @Column(name = "document_id")
     private Long documentId;
     @Column(name = "last_view_time")
-    private LocalDateTime lastViewTime;
+    private LocalDateTime startViewTime;
+    @Column(name = "duration_seconds")
+    private long durationSeconds;
 }

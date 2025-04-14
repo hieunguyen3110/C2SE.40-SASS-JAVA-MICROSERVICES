@@ -1,6 +1,7 @@
 package org.com.batchservice.step;
 
 import lombok.RequiredArgsConstructor;
+import org.com.batchservice.dto.response.MultipleNewData;
 import org.com.batchservice.processor.CollectDataProcessorCustom;
 import org.com.batchservice.reader.CollectDataReaderCustom;
 import org.com.batchservice.writter.CollectDataWriterCustom;
@@ -21,12 +22,12 @@ public class CollectDataStep {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     @Bean
-    public Step collectDataStepHandler(ItemReader<Object> collectDataReader,
-                                       ItemProcessor<Object,Object> collectDataProcessor,
-                                       ItemWriter<Object> collectDataWriter)
+    public Step collectDataStepHandler(ItemReader<MultipleNewData> collectDataReader,
+                                       ItemProcessor<MultipleNewData,MultipleNewData> collectDataProcessor,
+                                       ItemWriter<MultipleNewData> collectDataWriter)
     {
         return new StepBuilder("collectDataStep", jobRepository)
-                .<Object, Object>chunk(10, transactionManager)
+                .<MultipleNewData, MultipleNewData>chunk(10, transactionManager)
                 .reader(collectDataReader)
                 .processor(collectDataProcessor)
                 .writer(collectDataWriter)
@@ -34,17 +35,17 @@ public class CollectDataStep {
     }
     @Bean
     @StepScope
-    public ItemReader<Object> collectDataReader(CollectDataReaderCustom readerCustom){
+    public ItemReader<MultipleNewData> collectDataReader(CollectDataReaderCustom readerCustom){
         return readerCustom;
     }
     @Bean
     @StepScope
-    public ItemProcessor<Object,Object> collectDataProcessor(CollectDataProcessorCustom processorCustom){
+    public ItemProcessor<MultipleNewData,MultipleNewData> collectDataProcessor(CollectDataProcessorCustom processorCustom){
         return processorCustom;
     }
     @Bean
     @StepScope
-    public ItemWriter<Object> collectDataWriter(CollectDataWriterCustom writerCustom){
+    public ItemWriter<MultipleNewData> collectDataWriter(CollectDataWriterCustom writerCustom){
         return writerCustom;
     }
 }

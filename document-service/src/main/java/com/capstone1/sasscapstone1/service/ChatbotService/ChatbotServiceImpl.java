@@ -7,6 +7,7 @@ import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import com.capstone1.sasscapstone1.request.SendMessageRequest;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -24,6 +25,8 @@ import java.util.stream.Collectors;
 public class ChatbotServiceImpl implements ChatbotService{
     private final RestTemplate restTemplate;
     private final DocumentsRepository documentsRepository;
+    @Value("${chatbot.url}")
+    private String chatbotUrl;
 
     @Override
     public ApiResponse<ChatbotResponse> sendMessage(SendMessageRequest request) throws Exception {
@@ -31,7 +34,7 @@ public class ChatbotServiceImpl implements ChatbotService{
             HttpHeaders httpHeaders= new HttpHeaders();
             httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             HttpEntity<SendMessageRequest> entity= new HttpEntity<>(request,httpHeaders);
-            String uri = "http://127.0.0.1:5000/api/search";
+            String uri = chatbotUrl;
             ChatbotResponse result= restTemplate.postForEntity(uri,entity,ChatbotResponse.class).getBody();
             assert result != null;
             if (!result.getParts().get(0).getFile_source().isEmpty()) {

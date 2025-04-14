@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Map;
 
 public interface DocumentService {
     ApiResponse<String> uploadDocument(MultipartFile file, String title, String description, String content, String type, String subjectCode, String facultyName, String folderId, AccountDto account) throws Exception;
@@ -34,4 +35,5 @@ public interface DocumentService {
     Page<PopularDocumentDto> getPopularDocuments(int page, int size);
     List<DocumentDto> getAllDocumentByDay() throws Exception;
     String updateFileStatus(List<Long> docIds) throws Exception;
+    Map<String, List<DocumentData>> collectNewData();
 }

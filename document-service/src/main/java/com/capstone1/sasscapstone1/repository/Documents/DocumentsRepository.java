@@ -56,6 +56,10 @@ public interface DocumentsRepository extends JpaRepository<Documents,Long> {
     Optional<Documents> findByDocIdAndIsCheckIsTrue(Long docId);
     @Query("select count(distinct d.docId) from Documents d where d.accountId=:accountId and d.isActive=true")
     Long countDocumentByAccountIdAndIsActive(Long accountId);
-    @Query("select d from Documents d where (d.createdAt between :startDate and :endDate) and d.isCheck=false and d.isTrain=false")
-    List<Documents> findAllByCreatedAtAndIsCheckFalseAndIsTrainFalse(@Param("startDate") LocalDateTime startDate,@Param("endDate") LocalDateTime endDate);
+    @Query("select d from Documents d where (d.createdAt between :startDate and :endDate) and d.isCheck=:isCheck and d.isTrain=:isTrain")
+    List<Documents> findAllByCreatedAtAndIsCheckAndIsTrain(@Param("startDate") LocalDateTime startDate,
+                                                                     @Param("endDate") LocalDateTime endDate,
+                                                                     @Param("isCheck") Boolean isCheck,
+                                                                     @Param("isTrain") Boolean isTrain);
+    List<Documents> findAllByIsActiveIsTrue();
 }

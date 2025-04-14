@@ -7,7 +7,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class RatingRequest {
     private long docId;
-    private String content;
+//    private String content;
     private int rating;
-    private float viewTime;
 }

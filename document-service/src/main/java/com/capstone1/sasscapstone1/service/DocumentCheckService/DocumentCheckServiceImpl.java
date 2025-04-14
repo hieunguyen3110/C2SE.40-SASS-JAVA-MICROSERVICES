@@ -7,6 +7,7 @@ import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,8 @@ public class DocumentCheckServiceImpl implements DocumentCheckService {
 
     private final DocumentsRepository documentsRepository;
     private final RestTemplate restTemplate;
+    @Value("${chatbot.url}")
+    private String chatbotUrl;
 
     @Override
     public void checkDocument(Long docId) {
@@ -38,7 +41,7 @@ public class DocumentCheckServiceImpl implements DocumentCheckService {
             request.put("filePath",document.getFilePath());
             httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             HttpEntity<Map<String,String>> entity= new HttpEntity<>(request,httpHeaders);
-            String uri = "http://127.0.0.1:5002/api/v1/chatbot/check-file";
+            String uri = chatbotUrl;
             ResponseEntity<ApiResponse<CheckFileResponse>> response = restTemplate.exchange(
                     uri,
                     HttpMethod.POST,

@@ -22,12 +22,9 @@ public class History extends AbstractDefault {
     @JoinColumn(name = "doc_id", nullable = false)
     private Documents document;
 
-    @Column(name = "click_count")
-    private int clickCount;
+    @Column(name = "account_id")
+    private Long accountId;
 
-    @Column(name = "download_count", nullable = false, columnDefinition = "INT DEFAULT 1")
-    private int downloadCount;
-
-    @Column(name = "average_rating")
-    private float averageRating;
+    @Column(name = "download_count", nullable = false)
+    private int downloadCount=1;
 }

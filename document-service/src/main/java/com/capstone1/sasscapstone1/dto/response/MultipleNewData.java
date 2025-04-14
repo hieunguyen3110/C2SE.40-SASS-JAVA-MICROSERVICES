@@ -10,7 +10,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MultipleNewData {
-    private List<DocumentData> documents;
-    private List<UserInteractionData> user_interactions;
-    private List<UserNewsData> user_requests;
+    private List<DocumentData> updateDocuments;
+    private List<DocumentData> newDocuments;
+    private List<UserInteractionData> userInteractions;
+    private List<UserNewsData> userRequests;
 }

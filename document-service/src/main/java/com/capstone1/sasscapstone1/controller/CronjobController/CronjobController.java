@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/cronjob")
@@ -27,9 +28,14 @@ public class CronjobController {
     public ApiResponse<String> updateRating(@RequestBody List<Long> ratingIds) throws Exception {
         return CreateApiResponse.createResponse(ratingService.saveRatingIsChecked(ratingIds),false);
     }
-    @GetMapping("/ratings/collect-data")
-    public ApiResponse<MultipleNewData> getDataNew(){
-        return null;
+    @GetMapping("/collect-data")
+    public ApiResponse<MultipleNewData> getDataNew() throws Exception {
+        MultipleNewData multipleNewData= new MultipleNewData();
+        Map<String,List<DocumentData>> map= documentService.collectNewData();
+        multipleNewData.setNewDocuments(map.get("documentsNew"));
+        multipleNewData.setUpdateDocuments(map.get("documentUpdate"));
+        multipleNewData.setUserInteractions(ratingService.getUserInteractionData());
+        return CreateApiResponse.createResponse(multipleNewData,false);
     }
     @GetMapping("/documents/get-by-day")
     public ApiResponse<List<DocumentDto>> getALlDocumentByDay() throws Exception {

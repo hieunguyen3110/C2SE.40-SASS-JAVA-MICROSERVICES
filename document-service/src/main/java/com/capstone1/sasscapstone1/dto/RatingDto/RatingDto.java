@@ -11,9 +11,6 @@ import lombok.*;
 public class RatingDto {
     private long rateId;
     private int rating;
-    private String content;
-    private float viewTime;
-    private Boolean isChecked;
     private long accountId;
     private long docId;
 }

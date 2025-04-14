@@ -32,6 +32,10 @@ public class CronjobController {
     public ApiResponse<List<AccountDto>> getAllNewAccountByDay() throws Exception {
         return CreateApiResponse.createResponse(accountService.getAllNewUserByDay(),false);
     }
+    @GetMapping("/account/get-new-account-active")
+    public ApiResponse<List<AccountDto>> getAllNewAccountByDayActive() throws Exception {
+        return CreateApiResponse.createResponse(accountService.getAllNewUserByDayIsActiveIsTrue(),false);
+    }
     @PostMapping("/account/update-account-status")
     public ApiResponse<String> updateStatusAccount(@RequestBody Long accountId) throws Exception {
         return CreateApiResponse.createResponse(accountService.approveNewUsers(accountId),false);
