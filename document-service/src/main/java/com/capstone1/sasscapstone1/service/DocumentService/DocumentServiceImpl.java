@@ -11,7 +11,6 @@ import com.capstone1.sasscapstone1.dto.response.DocumentData;
 import com.capstone1.sasscapstone1.entity.*;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
-import com.capstone1.sasscapstone1.repository.DocumentView.DocumentViewRepository;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import com.capstone1.sasscapstone1.repository.Faculty.FacultyRepository;
 import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
@@ -22,22 +21,22 @@ import com.capstone1.sasscapstone1.request.TrainDocumentRequest;
 import com.capstone1.sasscapstone1.service.FirebaseService.FirebaseService;
 import com.capstone1.sasscapstone1.service.RedisService.RedisService;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
+import com.capstone1.sasscapstone1.util.UpdateDocumentPopularity;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -57,49 +56,10 @@ public class DocumentServiceImpl implements DocumentService {
     private final IdentityClient identityClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
-    private final DocumentViewRepository documentViewRepository;
+    private final UpdateDocumentPopularity updateDocumentPopularity;
     private List<Documents> documents;
-
-    private void increaseClickCount(Long docId){
-        Optional<History> existHistory= historyRepository.findByDocument_DocId(docId);
-        History history;
-        if(existHistory.isPresent()){
-            history= existHistory.get();
-            history.setClickCount(history.getClickCount()+1);
-        }else{
-            Documents document= documentsRepository.findById(docId)
-                    .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Document not found"));
-            history= History.builder()
-                    .document(document)
-                    .clickCount(1)
-                    .downloadCount(0)
-                    .averageRating(0)
-                    .build();
-        }
-        historyRepository.save(history);
-    }
-    @Async("documentExecutor")
-    protected void trackingClickViewDocument(Long accountId, Long docId){
-        Optional<DocumentView> existDocumentView= documentViewRepository.findByAccountIdAndDocumentId(accountId,docId);
-        LocalDateTime now= LocalDateTime.now();
-        if(existDocumentView.isPresent()){
-            DocumentView documentView= existDocumentView.get();
-            Duration duration = Duration.between(documentView.getLastViewTime(), now);
-            if(duration.toMinutes()>10){
-                increaseClickCount(docId);
-                documentView.setLastViewTime(now);
-                documentViewRepository.save(documentView);
-            }
-        }else{
-            increaseClickCount(docId);
-            DocumentView documentView= DocumentView.builder()
-                    .accountId(accountId)
-                    .documentId(docId)
-                    .lastViewTime(now)
-                    .build();
-            documentViewRepository.save(documentView);
-        }
-    }
+    @Value("${chatbot.url}")
+    private String chatbotUrl;
 
     @Override
     public ApiResponse<String> uploadDocument(MultipartFile file,
@@ -209,9 +169,7 @@ public class DocumentServiceImpl implements DocumentService {
             if(json == null){
                 List<Long> accountIds= new ArrayList<>();
                 for(Ratings rating : ratings){
-                    if(rating.getIsChecked()){
-                        accountIds.add(rating.getAccountId());
-                    }
+                    accountIds.add(rating.getAccountId());
                 }
                 List<AccountRatingDto> accountRatingDtos= identityClient.getAllAccountByRatingDocId(accountIds,document.getTitle(),document.getDocId()).getData();
                 documentDetailDto.setAccountRatingDtos(accountRatingDtos);
@@ -219,7 +177,6 @@ public class DocumentServiceImpl implements DocumentService {
                 List<AccountRatingDto> accountRatingDtos= objectMapper.readValue(json,new TypeReference<>() {});
                 documentDetailDto.setAccountRatingDtos(accountRatingDtos);
             }
-            trackingClickViewDocument(document.getAccountId(), docId);
             return documentDetailDto;
         } catch (Exception e) {
             throw new RuntimeException("Error fetching document by ID: " + e.getMessage(), e);
@@ -229,7 +186,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public ApiResponse<String> trainDocument(TrainDocumentRequest request) {
         try {
-            String uri = "http://127.0.0.1:5002/api/v1/chatbot/upload-file";
+            String uri = chatbotUrl;
             HttpHeaders headers = new HttpHeaders();
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             HttpEntity<TrainDocumentRequest> entity = new HttpEntity<>(request, headers);
@@ -346,6 +303,15 @@ public class DocumentServiceImpl implements DocumentService {
         }
         return dto;
     }
+    private DocumentData mapToDocumentData(Documents documents){
+        return DocumentData.builder()
+                .document_id(documents.getDocId())
+                .popularity(documents.getPopularity())
+                .title(documents.getTitle())
+                .category(documents.getSubject().getSubjectName())
+                .content(documents.getDescription())
+                .build();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -383,7 +349,7 @@ public class DocumentServiceImpl implements DocumentService {
         try{
             LocalDateTime endDate = LocalDateTime.now();
             LocalDateTime startDate= endDate.minusDays(2);
-            documents= documentsRepository.findAllByCreatedAtAndIsCheckFalseAndIsTrainFalse(startDate,endDate);
+            documents= documentsRepository.findAllByCreatedAtAndIsCheckAndIsTrain(startDate,endDate,false,false);
             return documents.stream().map(document->DocumentDto.builder()
                             .docId(document.getDocId())
                             .filePath(document.getFilePath())
@@ -413,5 +379,31 @@ public class DocumentServiceImpl implements DocumentService {
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
+    }
+
+    @Override
+    public Map<String, List<DocumentData>> collectNewData() {
+        LocalDateTime now= LocalDateTime.now();
+        LocalDateTime startDate= now.minusDays(1);
+        List<Documents> updateDocPopularity= updateDocumentPopularity.updateDocumentPopularity(startDate,now);
+        List<Documents> newlyCreateDoc= new ArrayList<>();
+        List<Documents> docUpdated= new ArrayList<>();
+        for(Documents document : updateDocPopularity){
+            if(document.getCreatedAt().isAfter(startDate) && document.getCreatedAt().isBefore(now)){
+                newlyCreateDoc.add(document);
+            }else{
+                docUpdated.add(document);
+            }
+        }
+        List<DocumentData> newlyCreateDocData= newlyCreateDoc.stream()
+                .map(this::mapToDocumentData)
+                .toList();
+        List<DocumentData> docUpdatedData= docUpdated.stream()
+                .map(this::mapToDocumentData)
+                .toList();
+        Map<String, List<DocumentData>> map= new HashMap<>();
+        map.put("documentUpdate",docUpdatedData);
+        map.put("documentsNew",newlyCreateDocData);
+        return map;
     }
 }

@@ -23,7 +23,7 @@ public class CheckDocAndTrainDocProcessorCustom implements ItemProcessor<Documen
             CheckFileResponse response= chatbotClient.checkFile(CheckFileRequest.builder()
                             .filePath(item.getFilePath())
                     .build()).getData();
-            if((!response.isContainsSensitiveWords() && response.getSensitiveWords().isEmpty()) ||
+            if((!response.isContainsSensitiveWords() && response.getSensitiveWords()==null) ||
                     (response.isContainsSensitiveWords() && response.getSensitiveWords().size()<10)
             ){
                 int statusCode2= chatbotClient.uploadFile(UploadFileRequest.builder()
@@ -38,7 +38,8 @@ public class CheckDocAndTrainDocProcessorCustom implements ItemProcessor<Documen
                     throw new Exception("Train ai is failed");
                 }
             }else{
-                throw new Exception("Check sensitive file is failed");
+                log.error("Doc "+item.getDocId()+" contain sensitive word");
+                return null;
             }
         }catch (RuntimeException e){
             log.error("Runtime exception: "+ e.getMessage());

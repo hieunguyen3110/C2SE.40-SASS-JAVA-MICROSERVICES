@@ -133,8 +133,26 @@ public class AccountServiceImpl implements AccountService {
         try{
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime startDate= now.minusDays(2);
-            newAccounts=accountRepository.findAllByCreatedAtAndIsActiveIsFalse(startDate,now);
+            newAccounts=accountRepository.findAllByCreatedAtAndIsActive(startDate,now,false);
             return newAccounts.stream()
+                    .map(account->{
+                        AccountDto accountDto= AccountMapper.mapToAccountDto(account);
+                        accountDto.setPassword(null);
+                        return accountDto;
+                    })
+                    .toList();
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<AccountDto> getAllNewUserByDayIsActiveIsTrue() throws Exception {
+        try{
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startDate= now.minusDays(2);
+            List<Account> accounts=accountRepository.findAllByCreatedAtAndIsActive(startDate,now,true);
+            return accounts.stream()
                     .map(account->{
                         AccountDto accountDto= AccountMapper.mapToAccountDto(account);
                         accountDto.setPassword(null);

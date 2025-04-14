@@ -23,13 +23,13 @@ public class DownloadDocumentServiceImpl implements DownloadDocumentService {
     }
 
     @Override
-    public ApiResponse<String> downloadDocument(Long documentId, String username) throws Exception {
+    public ApiResponse<String> downloadDocument(Long documentId, Long accountId) throws Exception {
         try {
             // Kiểm tra tài liệu có tồn tại không
             Documents document = documentsRepository.findById(documentId)
                     .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Document not found"));
 
-            historyService.trackDownload(documentId, username);
+            historyService.trackDownload(documentId, accountId);
 
             // Trả về filePath của tài liệu
             String filePath = document.getFilePath();

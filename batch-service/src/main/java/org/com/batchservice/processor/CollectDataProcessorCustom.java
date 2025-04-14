@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.com.batchservice.dto.response.MultipleNewData;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
@@ -12,9 +13,9 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Setter
 @Getter
-public class CollectDataProcessorCustom implements ItemProcessor<Object,Object> {
+public class CollectDataProcessorCustom implements ItemProcessor<MultipleNewData,MultipleNewData> {
     @Override
-    public Object process(Object item) throws Exception {
-        return null;
+    public MultipleNewData process(MultipleNewData item) throws Exception {
+        return item;
     }
 }

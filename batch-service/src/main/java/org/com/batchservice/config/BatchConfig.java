@@ -43,16 +43,16 @@ public class BatchConfig {
                 .toJobParameters();
         try{
             jobLauncher.run(customCheckingRatingContentJob,checkingRatingContentParameter);
-//            if(execution.getStatus() == BatchStatus.COMPLETED){
-//                JobParameters collectDataParameter= new JobParametersBuilder()
-//                        .addString("ID", "collect_data_"+System.currentTimeMillis())
-//                        .toJobParameters();
-//                log.info("Starting Job 2: collect data...");
-//                JobExecution execution1= jobLauncher.run(customCollectDataJob,collectDataParameter);
-//                log.info("Collect data is status {}",execution1.getStatus());
-//            }else{
-//                log.warn("Checking rating content not success, Collect data will not run.");
-//            }
+        }catch (Exception e){
+            log.error("Exception: "+ e.getMessage());
+        }
+    }
+    public void runJobCollectData(){
+        JobParameters collectDataParameter= new JobParametersBuilder()
+                .addString("ID", "collect_data_"+System.currentTimeMillis())
+                .toJobParameters();
+        try{
+            jobLauncher.run(customCollectDataJob,collectDataParameter);
         }catch (Exception e){
             log.error("Exception: "+ e.getMessage());
         }

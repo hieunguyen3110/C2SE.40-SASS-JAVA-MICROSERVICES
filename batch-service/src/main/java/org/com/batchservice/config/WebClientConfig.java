@@ -5,6 +5,7 @@ import org.com.batchservice.constant.AppConstant;
 import org.com.batchservice.repository.ChatbotClient;
 import org.com.batchservice.repository.DocumentClient;
 import org.com.batchservice.repository.IdentityClient;
+import org.com.batchservice.repository.RecommendationClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,8 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 public class WebClientConfig {
     @Value("${chatbot.url}")
     private String chatBotUrl;
+    @Value("${recommendation.url}")
+    private String recommendationUrl;
     @Bean
     @LoadBalanced
     public WebClient.Builder webClientBuilder() {
@@ -58,5 +61,16 @@ public class WebClientConfig {
                 .build();
 
         return factory.createClient(ChatbotClient.class);
+    }
+    @Bean
+    public RecommendationClient recommendationClient() {
+        WebClient webClient = WebClient.builder()
+                .baseUrl(recommendationUrl)
+                .build();
+        HttpServiceProxyFactory factory = HttpServiceProxyFactory
+                .builderFor(WebClientAdapter.create(webClient))
+                .build();
+
+        return factory.createClient(RecommendationClient.class);
     }
 }

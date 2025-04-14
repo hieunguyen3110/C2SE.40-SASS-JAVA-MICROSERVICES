@@ -13,6 +13,6 @@ public class UserInteractionData {
     private Long account_id;
     private Long document_id;
     private LocalDateTime timestamp;
-    private float view_time;
+    private double view_time;
     private int rating;
 }

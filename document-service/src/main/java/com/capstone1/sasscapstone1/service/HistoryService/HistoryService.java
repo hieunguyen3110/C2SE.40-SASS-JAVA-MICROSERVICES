@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 public interface HistoryService {
-    void trackDownload(Long docId, String username);
+    void trackDownload(Long docId, Long accountId);
 
 
 }

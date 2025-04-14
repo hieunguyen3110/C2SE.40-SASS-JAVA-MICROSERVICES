@@ -48,7 +48,9 @@ public interface AccountRepository extends JpaRepository<Account,Long> {
 
     List<Account> findAllByAccountIdIn(List<Long> accountIds);
 
-    @Query("select a from Account a where (a.createdAt between :startDate and :endDate) and a.isActive=false")
-    List<Account> findAllByCreatedAtAndIsActiveIsFalse(@Param("startDate")LocalDateTime startDate,
-                                                       @Param("endDate") LocalDateTime endDate);
+    @Query("select a from Account a where (a.createdAt between :startDate and :endDate) and a.isActive=:isActive")
+    List<Account> findAllByCreatedAtAndIsActive(@Param("startDate")LocalDateTime startDate,
+                                                       @Param("endDate") LocalDateTime endDate,
+                                                       @Param("isActive") Boolean isActive);
+
 }

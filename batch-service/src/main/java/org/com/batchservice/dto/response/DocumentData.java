@@ -12,5 +12,5 @@ public class DocumentData {
     private String title;
     private String category;
     private String content;
-    private float popularity;
+    private double popularity;
 }

@@ -67,6 +67,9 @@ public class Documents extends AbstractDefault {
     @Column(name = "account_id")
     private long accountId;
 
+    @Column(name = "popularity")
+    private double popularity;
+
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "folder_id")
     @JsonIgnore
