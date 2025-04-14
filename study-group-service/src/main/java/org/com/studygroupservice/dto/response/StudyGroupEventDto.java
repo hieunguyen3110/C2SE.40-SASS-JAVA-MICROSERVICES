@@ -9,6 +9,11 @@ public class StudyGroupEventDto {
     private Long userId;
     private String message;
     private String isPrivate;
+    private String groupName;
+    private String description;
+    private String subjectName;
+    private String picture;
+    private int memberLimited;
 
     public StudyGroupEventDto(Long groupId, Long userId, String message, String isPrivate) {
         this.groupId = groupId;

@@ -63,4 +63,38 @@ public class KafkaConsumerHandler {
             log.error("Error parsing JSON: {}", e.getMessage());
         }
     }
+
+    @KafkaListener(topics = "chat-ws-topic", groupId = "websocket-group")
+    public void sendNotificationChatForClient(ConsumerRecord<String, String> records) {
+        try {
+            if (records.key() == null || records.value() == null) {
+                log.error("Received null key or value from Kafka. Key: {}, Value: {}", records.key(), records.value());
+                return;
+            }
+
+            String groupId = records.key();
+            String json = records.value();
+
+            if (groupId.isBlank()) {
+                log.warn("Received blank groupId. Skipping message.");
+                return;
+            }
+
+            NotificationDto notificationDto = objectMapper.readValue(json, NotificationDto.class);
+
+            if (notificationDto != null) {
+                simpMessagingTemplate.convertAndSendToUser(
+                        groupId, "/queue/notifications-with-chat", notificationDto
+                );
+                log.info("Sent WebSocket notification to group '{}': {}", groupId, notificationDto);
+            } else {
+                log.error("NotificationDto is null after parsing JSON: {}", json);
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse JSON: {}", e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error in Kafka listener: {}", e.getMessage(), e);
+        }
+    }
+
 }
