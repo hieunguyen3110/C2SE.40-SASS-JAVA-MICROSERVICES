@@ -41,6 +41,7 @@
         <module>notification-service</module>
         <module>discovery-server</module>
         <module>websocket-server</module>
+        <module>batch-service</module>
     </modules>
     <dependencyManagement>
         <dependencies>

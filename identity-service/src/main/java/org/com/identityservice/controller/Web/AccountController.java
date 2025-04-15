@@ -111,10 +111,14 @@ public class AccountController {
         }
     }
 
+<<<<<<< HEAD
     @PostMapping("/account-rated")
     public ApiResponse<List<AccountRatingDto>> getAllAccountByRatingDocId(@RequestBody List<Long> accountIds,
                                                                           @RequestParam("docTitle") String docTitle,
                                                                           @RequestParam("docId") long docId) throws Exception {
         return accountService.getAccountByAccountIds(accountIds,docTitle,docId);
     }
+=======
+
+>>>>>>> develop
 }

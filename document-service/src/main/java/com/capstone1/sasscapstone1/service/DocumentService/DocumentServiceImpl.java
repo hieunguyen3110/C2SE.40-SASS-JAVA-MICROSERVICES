@@ -7,6 +7,7 @@ import com.capstone1.sasscapstone1.dto.DocumentDetailDto.DocumentDetailDto;
 import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import com.capstone1.sasscapstone1.dto.PopularDocumentDto.PopularDocumentDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
+import com.capstone1.sasscapstone1.dto.response.DocumentData;
 import com.capstone1.sasscapstone1.entity.*;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
@@ -20,22 +21,23 @@ import com.capstone1.sasscapstone1.request.TrainDocumentRequest;
 import com.capstone1.sasscapstone1.service.FirebaseService.FirebaseService;
 import com.capstone1.sasscapstone1.service.RedisService.RedisService;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
+import com.capstone1.sasscapstone1.util.UpdateDocumentPopularity;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -54,6 +56,10 @@ public class DocumentServiceImpl implements DocumentService {
     private final IdentityClient identityClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final UpdateDocumentPopularity updateDocumentPopularity;
+    private List<Documents> documents;
+    @Value("${chatbot.url}")
+    private String chatbotUrl;
 
     @Override
     public ApiResponse<String> uploadDocument(MultipartFile file,
@@ -79,8 +85,6 @@ public class DocumentServiceImpl implements DocumentService {
             if (!extension.equalsIgnoreCase("pdf")) {
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Only pdf files are accepted.");
             }
-
-
             String lowerCaseType = type.toLowerCase();
             if (!lowerCaseType.equals("trắc nghiệm") && !lowerCaseType.equals("tự luận")) {
                 throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Invalid document type. Only 'trắc nghiệm' and 'tự luận' are accepted.");
@@ -165,9 +169,7 @@ public class DocumentServiceImpl implements DocumentService {
             if(json == null){
                 List<Long> accountIds= new ArrayList<>();
                 for(Ratings rating : ratings){
-                    if(rating.getIsChecked()){
-                        accountIds.add(rating.getAccountId());
-                    }
+                    accountIds.add(rating.getAccountId());
                 }
                 List<AccountRatingDto> accountRatingDtos= identityClient.getAllAccountByRatingDocId(accountIds,document.getTitle(),document.getDocId()).getData();
                 documentDetailDto.setAccountRatingDtos(accountRatingDtos);
@@ -182,24 +184,31 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public ResponseEntity<?> trainDocument(TrainDocumentRequest request) {
+    public ApiResponse<String> trainDocument(TrainDocumentRequest request) {
         try {
-            String uri = "http://127.0.0.1:5000/api/upload-file";
+            String uri = chatbotUrl;
             HttpHeaders headers = new HttpHeaders();
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-            List<Object> response = new ArrayList<>();
             HttpEntity<TrainDocumentRequest> entity = new HttpEntity<>(request, headers);
-            response.add(restTemplate.postForEntity(uri, entity, Object.class).getBody());
-            Optional<Documents> findDocByFilePath= documentsRepository.findByFilePath(request.getFilePath());
-            if(findDocByFilePath.isPresent()){
-                Documents documents= findDocByFilePath.get();
-                documents.setIsTrain(true);
-                documentsRepository.save(documents);
+            ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
+                    uri,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            ApiResponse<String> result = response.getBody();
+            if(result.getCode()==200){
+                Optional<Documents> findDocByFilePath= documentsRepository.findByFilePath(request.getFilePath());
+                if(findDocByFilePath.isPresent()){
+                    Documents documents= findDocByFilePath.get();
+                    documents.setIsTrain(true);
+                    documentsRepository.save(documents);
+                }
             }
-            return ResponseEntity.ok(response);
+            return result;
         } catch (Exception e) {
             throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error during document training.");
-        }// Logic for training document...
+        }
     }
 
     @Override
@@ -294,6 +303,15 @@ public class DocumentServiceImpl implements DocumentService {
         }
         return dto;
     }
+    private DocumentData mapToDocumentData(Documents documents){
+        return DocumentData.builder()
+                .document_id(documents.getDocId())
+                .popularity(documents.getPopularity())
+                .title(documents.getTitle())
+                .category(documents.getSubject().getSubjectName())
+                .content(documents.getDescription())
+                .build();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -324,5 +342,68 @@ public class DocumentServiceImpl implements DocumentService {
         } catch (Exception e) {
             throw new RuntimeException("Error fetching popular documents: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public List<DocumentDto> getAllDocumentByDay() throws Exception {
+        try{
+            LocalDateTime endDate = LocalDateTime.now();
+            LocalDateTime startDate= endDate.minusDays(2);
+            documents= documentsRepository.findAllByCreatedAtAndIsCheckAndIsTrain(startDate,endDate,false,false);
+            return documents.stream().map(document->DocumentDto.builder()
+                            .docId(document.getDocId())
+                            .filePath(document.getFilePath())
+                            .description(document.getDescription())
+                            .fileName(document.getFileName())
+                            .build()
+                    ).toList();
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String updateFileStatus(List<Long> docIds) throws Exception {
+        try{
+            List<Documents> documentsFilter= documents.stream()
+                    .filter(document->docIds.contains(document.getDocId()))
+                    .toList();
+            documentsFilter.forEach(document->{
+                document.setIsCheck(true);
+                document.setIsTrain(true);
+                document.setIsActive(true);
+            });
+            documentsRepository.saveAll(documentsFilter);
+            return "Update file status is successful";
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    public Map<String, List<DocumentData>> collectNewData() {
+        LocalDateTime now= LocalDateTime.now();
+        LocalDateTime startDate= now.minusDays(1);
+        List<Documents> updateDocPopularity= updateDocumentPopularity.updateDocumentPopularity(startDate,now);
+        List<Documents> newlyCreateDoc= new ArrayList<>();
+        List<Documents> docUpdated= new ArrayList<>();
+        for(Documents document : updateDocPopularity){
+            if(document.getCreatedAt().isAfter(startDate) && document.getCreatedAt().isBefore(now)){
+                newlyCreateDoc.add(document);
+            }else{
+                docUpdated.add(document);
+            }
+        }
+        List<DocumentData> newlyCreateDocData= newlyCreateDoc.stream()
+                .map(this::mapToDocumentData)
+                .toList();
+        List<DocumentData> docUpdatedData= docUpdated.stream()
+                .map(this::mapToDocumentData)
+                .toList();
+        Map<String, List<DocumentData>> map= new HashMap<>();
+        map.put("documentUpdate",docUpdatedData);
+        map.put("documentsNew",newlyCreateDocData);
+        return map;
     }
 }

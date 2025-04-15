@@ -9,6 +9,7 @@ import com.capstone1.sasscapstone1.repository.History.HistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,28 +26,24 @@ public class HistoryServiceImpl implements HistoryService {
     }
 
     @Override
-    public void trackDownload(Long documentId, String username) {
+    public void trackDownload(Long documentId, Long accountId) {
         try {
-            // Kiểm tra xem tài liệu có tồn tại không
             Documents document = documentsRepository.findById(documentId)
                     .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Document not found with ID: " + documentId));
-
-            // Tìm bản ghi history hiện tại
-            Optional<History> existingHistory = historyRepository.findByDocument_DocId(documentId);
-
+            LocalDate now= LocalDate.now();
+            Optional<History> existHistory= historyRepository.findByDocIdAndAccountIdAndCreatedAt(documentId,accountId,now);
             History history;
-            if (existingHistory.isPresent()) {
-                // Nếu đã tồn tại, tăng số lượt tải
-                history = existingHistory.get();
-                history.setDownloadCount(history.getDownloadCount() + 1);
-            } else {
-                // Nếu chưa tồn tại, tạo mới với số lượt tải là 1
-                history = new History(document, 1);
+            if(existHistory.isPresent()){
+                history= existHistory.get();
+                history.setDownloadCount(history.getDownloadCount()+1);
+            }else{
+                history= History.builder()
+                        .accountId(accountId)
+                        .document(document)
+                        .downloadCount(1)
+                        .build();
             }
-
-            // Lưu lại bản ghi
             historyRepository.save(history);
-
         } catch (Exception e) {
             throw new RuntimeException("Error tracking download: " + e.getMessage(), e);
         }

@@ -11,12 +11,19 @@ import java.util.List;
 public interface AccountService {
     ApiResponse<String> allowActiveAccount(String email) throws Exception;
     Page<AccountDto> listUsers(int page, int size);
+    List<AccountDto> getAllNewUserByDay() throws Exception;
+    List<AccountDto> getAllNewUserByDayIsActiveIsTrue() throws Exception;
     AccountDto getUserDetails(Long accountId);
     AccountDto getUserDetails(String email);
     Long countStatsByRoleName(String roleName);
     void softDeleteAccounts(List<Long> accountIds);
     ApiResponse<List<AccountRatingDto>> getAccountByAccountIds(List<Long> accountIds, String docTitle, long docId) throws Exception;
+<<<<<<< HEAD
+=======
+    ApiResponse<String> updateListAccountRatingAtRedis(List<Long> accountIds, String docTitle, long docId) throws Exception;
+>>>>>>> develop
     ApiResponse<String> approveNewUsers(List<Long> accountIds);
+    String approveNewUsers(Long accountId);
     ApiResponse<String>adminDeleteUserProfilePicture(Long accountId);
     ApiResponse<List<SearchUserResponseDto>> searchUsersByName(String name, Long accountId, int pageNum, int pageSize);
     ApiResponse<UserProfileResponse> updateUserProfile(AccountDto account, UpdateUserProfileRequest request, MultipartFile profilePicture);

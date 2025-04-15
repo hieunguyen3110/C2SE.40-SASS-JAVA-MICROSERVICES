@@ -5,4 +5,6 @@ public interface RedisService {
     void updateData(String key, Object value);
     Object getData(String key);
     void deleteData(String key);
+
+    Long getTtl(String key);
 }

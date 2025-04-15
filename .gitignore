@@ -39,9 +39,8 @@ notification-service/.env
 websocket-server/.env
 study-group-service/.env
 e-learning-service/.env
+batch-service/.env
 
-Recommendation-system-service/
-Chatbot-service/
 ### VS Code ###
 .vscode/
 

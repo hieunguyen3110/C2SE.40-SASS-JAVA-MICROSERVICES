@@ -23,22 +23,10 @@ public class Ratings extends AbstractDefault {
     @Column(name = "rating")
     private int rating;
 
-    @Column(name = "content", columnDefinition = "text")
-    private String content;
-
-    @Column(name = "view_time")
-    private float viewTime;
-
-    @Column(name = "is_checked")
-    private Boolean isChecked;
-
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "doc_id")
     private Documents documents;
 
     @Column(name = "account_id")
     private long accountId;
-
-    @OneToMany(mappedBy = "ratings", fetch = FetchType.LAZY)
-    private Set<Feedbacks> feedbacks= new HashSet<>();
 }

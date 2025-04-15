@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,4 +47,13 @@ public interface AccountRepository extends JpaRepository<Account,Long> {
     Long countByRolesName(@Param("roleName") String roleName);
 
     List<Account> findAllByAccountIdIn(List<Long> accountIds);
+<<<<<<< HEAD
+=======
+
+    @Query("select a from Account a where (a.createdAt between :startDate and :endDate) and a.isActive=:isActive")
+    List<Account> findAllByCreatedAtAndIsActive(@Param("startDate")LocalDateTime startDate,
+                                                       @Param("endDate") LocalDateTime endDate,
+                                                       @Param("isActive") Boolean isActive);
+
+>>>>>>> develop
 }

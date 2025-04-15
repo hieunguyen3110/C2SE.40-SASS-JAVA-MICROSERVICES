@@ -113,11 +113,7 @@ public class AdminDashboardController {
         return ResponseEntity.ok("Document updated successfully.");
     }
     @PostMapping("/train-document")
-    public ResponseEntity<?> trainDocument(@RequestBody TrainDocumentRequest request){
-        try{
-            return documentService.trainDocument(request);
-        }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
+    public ApiResponse<String> trainDocument(@RequestBody TrainDocumentRequest request) throws Exception {
+       return documentService.trainDocument(request);
     }
 }

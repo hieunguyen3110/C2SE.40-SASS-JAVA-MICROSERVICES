@@ -1,17 +1,18 @@
 package com.capstone1.sasscapstone1.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@Builder
 @Entity
 @Table(name = "History")
+@NoArgsConstructor
+@AllArgsConstructor
 public class History extends AbstractDefault {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "history_id")
@@ -21,16 +22,9 @@ public class History extends AbstractDefault {
     @JoinColumn(name = "doc_id", nullable = false)
     private Documents document;
 
-    @Column(name = "download_count", nullable = false, columnDefinition = "INT DEFAULT 1")
-    private int downloadCount;
+    @Column(name = "account_id")
+    private Long accountId;
 
-    public History() {
-
-    }
-
-    // Constructor nhận `Documents`
-    public History(Documents document, int downloadCount) {
-        this.document = document;
-        this.downloadCount = downloadCount;
-    }
+    @Column(name = "download_count", nullable = false)
+    private int downloadCount=1;
 }
