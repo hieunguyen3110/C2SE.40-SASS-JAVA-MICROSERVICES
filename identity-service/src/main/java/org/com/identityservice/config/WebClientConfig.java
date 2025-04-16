@@ -33,7 +33,7 @@ public class WebClientConfig {
     @Primary
     DocumentClient documentClient(WebClient.Builder builder){
         WebClient webClient = builder
-                .baseUrl("lb://document-service/api/v1/document")
+                .baseUrl("http://document-service/api/v1/document")
                 .defaultRequest(request->{
                     Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
                     if(authentication != null && !(authentication instanceof AnonymousAuthenticationToken)){
