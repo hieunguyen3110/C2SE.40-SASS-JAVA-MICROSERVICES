@@ -49,9 +49,9 @@ public class StudyGroupController {
         return CreateApiResponse.createResponse(group, false);
     }
 
-    @MessageMapping("/chat.sendMessage")
+    @MessageMapping("/app.sendMessage")
     public void sendMessage(@Payload ChatMessage chatMessage) {
-        groupService.sendMessage(chatMessage.getGroupId(), chatMessage.getContent());
+        groupService.sendMessage(chatMessage.getGroupId(), chatMessage.getContent(), chatMessage.getSenderId());
     }
 
     @PostMapping("/{groupId}/members")

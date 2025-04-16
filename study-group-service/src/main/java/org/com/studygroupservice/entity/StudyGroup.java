@@ -33,12 +33,14 @@ public class StudyGroup extends AbstractDefault{
     @OneToMany(mappedBy = "studyGroup", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<GroupMember> members;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
     private List<Message> messages;
 
     @Column(nullable = false)
     private Boolean isPrivate;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "studyGroup", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JoinRequest> joinRequests = new ArrayList<>();
 }

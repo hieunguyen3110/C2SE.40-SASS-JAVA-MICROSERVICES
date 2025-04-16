@@ -18,12 +18,12 @@ public interface StudyGroupService {
 
     List<SubjectDto> searchSubjectsByName(String subjectName);
 
-    // Lấy danh sách SubjectDto từ Redis, fallback sang document-service nếu cần
     List<SubjectDto> fetchSubjects();
 
     StudyGroup getGroupDetails(Long groupId);
 
-    void sendMessage(Long groupId, String content);
+    @Transactional
+    void sendMessage(Long groupId, String content, Long senderId);
 
     @Transactional
     void addMember(Long groupId, Long userId);

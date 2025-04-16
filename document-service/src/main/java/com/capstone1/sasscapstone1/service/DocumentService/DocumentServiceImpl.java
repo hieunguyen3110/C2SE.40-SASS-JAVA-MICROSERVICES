@@ -58,6 +58,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final ObjectMapper objectMapper;
     private final UpdateDocumentPopularity updateDocumentPopularity;
     private List<Documents> documents;
+
     @Value("${chatbot.url}")
     private String chatbotUrl;
 

@@ -1,4 +1,4 @@
-package org.com.websocketserver.dto.response;
+package org.com.studygroupservice.dto.response;
 
 import lombok.*;
 
@@ -19,5 +19,9 @@ public class NotificationDto {
     private Boolean deletedFlag;
     private LocalDateTime createdAt;
 
-
+    public NotificationDto(Long groupId, long accountId, String content) {
+        this.notificationId = groupId;
+        this.accountId = accountId;
+        this.message = content;
+    }
 }
