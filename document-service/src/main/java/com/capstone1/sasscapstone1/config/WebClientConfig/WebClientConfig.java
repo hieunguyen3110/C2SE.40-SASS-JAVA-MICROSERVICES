@@ -4,9 +4,11 @@ import com.capstone1.sasscapstone1.dto.AccountDto.AccountDto;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
+import com.capstone1.sasscapstone1.repository.httpClient.RecommendationClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +24,8 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 @RequiredArgsConstructor
 public class WebClientConfig {
     private final ObjectMapper objectMapper;
+    @Value("${recommendation.url}")
+    private String recommendationUrl;
 
     @Bean
     @LoadBalanced
@@ -72,5 +76,16 @@ public class WebClientConfig {
         return builder
                 .baseUrl("http://study-group-service")
                 .build();
+    }
+    @Bean
+    public RecommendationClient recommendationClient() {
+        WebClient webClient = WebClient.builder()
+                .baseUrl(recommendationUrl)
+                .build();
+        HttpServiceProxyFactory factory = HttpServiceProxyFactory
+                .builderFor(WebClientAdapter.create(webClient))
+                .build();
+
+        return factory.createClient(RecommendationClient.class);
     }
 }

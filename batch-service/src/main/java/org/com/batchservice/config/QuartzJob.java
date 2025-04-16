@@ -15,9 +15,9 @@ public class QuartzJob implements Job {
     public void execute(JobExecutionContext jobExecutionContext) {
         log.info("Starting Quartz job to launch Spring batch job...");
         // run job 1: check new document and train new document for chatbot
-//        batchConfig.runJobCheckDocAndTrainDoc();
-//        // run job 2: active new user
-//        batchConfig.runJobActiveUser();
+        batchConfig.runJobCheckDocAndTrainDoc();
+        // run job 2: active new user
+        batchConfig.runJobActiveUser();
         // run job 3: collect data
         batchConfig.runJobCollectData();
     }

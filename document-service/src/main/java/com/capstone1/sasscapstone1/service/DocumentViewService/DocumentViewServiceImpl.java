@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class DocumentViewServiceImpl implements DocumentViewService{
     private final DocumentViewRepository documentViewRepository;
     @Override
-    public void saveViewLog(AccountDto accountDto, ViewTimeRequest request) throws Exception {
+    public String saveViewLog(AccountDto accountDto, ViewTimeRequest request) throws Exception {
         try{
             DocumentView documentView= DocumentView.builder()
                     .documentId(request.getDocId())
@@ -21,6 +21,7 @@ public class DocumentViewServiceImpl implements DocumentViewService{
                     .durationSeconds(request.getDuration())
                     .build();
             documentViewRepository.save(documentView);
+            return "Save view time doc is successful";
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }

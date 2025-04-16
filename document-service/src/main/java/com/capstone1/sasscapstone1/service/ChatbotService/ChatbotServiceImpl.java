@@ -34,7 +34,7 @@ public class ChatbotServiceImpl implements ChatbotService{
             HttpHeaders httpHeaders= new HttpHeaders();
             httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             HttpEntity<SendMessageRequest> entity= new HttpEntity<>(request,httpHeaders);
-            String uri = chatbotUrl;
+            String uri = chatbotUrl+"/search";
             ChatbotResponse result= restTemplate.postForEntity(uri,entity,ChatbotResponse.class).getBody();
             assert result != null;
             if (!result.getParts().get(0).getFile_source().isEmpty()) {

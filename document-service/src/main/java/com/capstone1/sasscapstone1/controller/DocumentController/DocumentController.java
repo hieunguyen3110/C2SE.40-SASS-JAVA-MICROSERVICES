@@ -8,7 +8,9 @@ import com.capstone1.sasscapstone1.dto.PopularDocumentDto.PopularDocumentDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
+import com.capstone1.sasscapstone1.request.ViewTimeRequest;
 import com.capstone1.sasscapstone1.service.DocumentService.DocumentService;
+import com.capstone1.sasscapstone1.service.DocumentViewService.DocumentViewService;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,6 +32,7 @@ import java.util.List;
 public class DocumentController {
 
     private final DocumentService documentService;
+    private final DocumentViewService documentViewService;
 
     // Upload tài liệu với môn học và khoa
     @PostMapping("/upload")
@@ -139,10 +142,25 @@ public class DocumentController {
     }
 
     @GetMapping("/popular")
-    public ApiResponse<Page<PopularDocumentDto>> getPopularDocuments(@RequestParam(value = "page", defaultValue = "0") int page,
-                                                                        @RequestParam(value = "size", defaultValue = "3") int size) {
-        Page<PopularDocumentDto> popularDocuments = documentService.getPopularDocuments(page, size);
-        return CreateApiResponse.createResponse(popularDocuments,false);
+    public ApiResponse<List<PopularDocumentDto>> getPopularDocuments() {
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+        if(!(authentication instanceof AnonymousAuthenticationToken)){
+            AccountDto accountDto= (AccountDto) authentication.getPrincipal();
+            List<PopularDocumentDto> popularDocuments = documentService.getPopularDocuments(accountDto);
+            return CreateApiResponse.createResponse(popularDocuments,false);
+        }else{
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Account not permission");
+        }
     }
 
+    @PostMapping("/save-duration")
+    public ApiResponse<String> handleSaveDocumentView(@RequestBody ViewTimeRequest request) throws Exception{
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+        if(!(authentication instanceof AnonymousAuthenticationToken)){
+            AccountDto accountDto= (AccountDto) authentication.getPrincipal();
+            return CreateApiResponse.createResponse(documentViewService.saveViewLog(accountDto,request), false);
+        }else{
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(), "Account isn't permission!");
+        }
+    }
 }

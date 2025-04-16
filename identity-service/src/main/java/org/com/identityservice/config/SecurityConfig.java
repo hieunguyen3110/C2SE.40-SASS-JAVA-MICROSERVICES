@@ -56,6 +56,7 @@ public class SecurityConfig {
                             .requestMatchers(
                                     "/auth/change-password"
                             ).hasAnyRole("STUDENT","LECTURER")
+                            .requestMatchers("/admin/**").hasRole("ADMIN")
                             .anyRequest().authenticated();
                 });
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
