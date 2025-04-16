@@ -1,9 +1,6 @@
 package org.com.identityservice.service.impl;
 
-<<<<<<< HEAD
-=======
 import com.fasterxml.jackson.core.type.TypeReference;
->>>>>>> develop
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
@@ -51,11 +48,7 @@ public class AccountServiceImpl implements AccountService {
     private final DocumentClient documentClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
-<<<<<<< HEAD
-=======
     private List<Account> newAccounts;
->>>>>>> develop
-
     private String uploadProfilePicture(MultipartFile profilePicture) {
         try {
             String originalFileName = profilePicture.getOriginalFilename();
@@ -250,17 +243,6 @@ public class AccountServiceImpl implements AccountService {
     public ApiResponse<List<AccountRatingDto>> getAccountByAccountIds(List<Long> accountIds,String docTitle, long docId) throws Exception {
         try{
             List<Account> getAllAccount= accountRepository.findAllByAccountIdIn(accountIds);
-<<<<<<< HEAD
-            List<AccountRatingDto> accountRatingDtos= getAllAccount.stream().map(account->
-                 AccountRatingDto.builder()
-                        .accountId(account.getAccountId())
-                        .firstName(account.getFirstName())
-                        .lastName(account.getLastName())
-                        .profilePicture(account.getProfilePicture())
-                        .build()
-            ).toList();
-            String key= docTitle+"_"+docId;
-=======
             String key= docTitle+"_"+docId;
             String isExistJson= (String) redisService.getData(key);
             List<AccountRatingDto> accountRatingDtos;
@@ -286,7 +268,6 @@ public class AccountServiceImpl implements AccountService {
                                 .build()
                 ).toList();
             }
->>>>>>> develop
             String json= objectMapper.writeValueAsString(accountRatingDtos);
             redisService.saveData(key,json,864000);
             return CreateApiResponse.createResponse(accountRatingDtos,false);
@@ -296,8 +277,6 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-<<<<<<< HEAD
-=======
     public ApiResponse<String> updateListAccountRatingAtRedis(List<Long> accountIds, String docTitle, long docId) throws Exception {
         try{
             String key= docTitle+"_"+docId;
@@ -327,7 +306,6 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
->>>>>>> develop
     public ApiResponse<String> approveNewUsers(List<Long> accountIds) {
         try {
             List<Account> accounts = accountRepository.findAllById(accountIds);

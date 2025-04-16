@@ -62,4 +62,6 @@ public interface DocumentsRepository extends JpaRepository<Documents,Long> {
                                                                      @Param("isCheck") Boolean isCheck,
                                                                      @Param("isTrain") Boolean isTrain);
     List<Documents> findAllByIsActiveIsTrue();
+
+    List<Documents> findAllByDocIdIn(List<Long> docIds);
 }

@@ -17,6 +17,7 @@ import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
 import com.capstone1.sasscapstone1.repository.History.HistoryRepository;
 import com.capstone1.sasscapstone1.repository.Subject.SubjectRepository;
 import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
+import com.capstone1.sasscapstone1.repository.httpClient.RecommendationClient;
 import com.capstone1.sasscapstone1.request.TrainDocumentRequest;
 import com.capstone1.sasscapstone1.service.FirebaseService.FirebaseService;
 import com.capstone1.sasscapstone1.service.RedisService.RedisService;
@@ -57,6 +58,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
     private final UpdateDocumentPopularity updateDocumentPopularity;
+    private final RecommendationClient recommendationClient;
     private List<Documents> documents;
     @Value("${chatbot.url}")
     private String chatbotUrl;
@@ -186,7 +188,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public ApiResponse<String> trainDocument(TrainDocumentRequest request) {
         try {
-            String uri = chatbotUrl;
+            String uri = chatbotUrl+"/upload-file";
             HttpHeaders headers = new HttpHeaders();
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             HttpEntity<TrainDocumentRequest> entity = new HttpEntity<>(request, headers);
@@ -315,30 +317,26 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PopularDocumentDto> getPopularDocuments(int page, int size) {
+    public List<PopularDocumentDto> getPopularDocuments(AccountDto accountDto) {
         try {
-            Pageable pageable = PageRequest.of(page, size);
-            return historyRepository.findAllByOrderByDownloadCountDesc(pageable).map(history -> {
-                Documents document = history.getDocument();
-                AccountDto getAccount= identityClient.getAccountId(document.getAccountId()).getData();
-                String authorName= "Unknown";
-                String profilePicture= "Unknown";
-                if(getAccount != null){
-                    authorName= getAccount.getFirstName() + " " + getAccount.getLastName();
-                    profilePicture= getAccount.getProfilePicture();
-                }
-                return new PopularDocumentDto(
-                        document.getDocId(),
-                        document.getTitle(),
-                        document.getDescription(),
-                        document.getFilePath(),
-                        document.getSubject() != null ? document.getSubject().getSubjectName() : null,
-                        document.getFaculty() != null ? document.getFaculty().getFacultyName() : null,
-                        authorName,
-                        history.getDownloadCount(),
-                        profilePicture
-                );
-            });
+            List<String> data= recommendationClient.getDocumentByModel(accountDto.getAccountId()).getData();
+            List<Long> dataParseLong= data.stream()
+                    .map(docId->Long.parseLong(docId.substring(4)))
+                    .toList();
+            List<Documents> documentsList= documentsRepository.findAllByDocIdIn(dataParseLong);
+            return documentsList.stream().map(document->{
+                AccountDto account= identityClient.getAccountId(document.getAccountId()).getData();
+                return PopularDocumentDto.builder()
+                        .authorName(account.getLastName())
+                        .filePath(document.getFilePath())
+                        .title(document.getTitle())
+                        .profilePicture(account.getProfilePicture())
+                        .docId(document.getDocId())
+                        .subject(document.getSubject().getSubjectName())
+                        .description(document.getDescription())
+                        .facultyName(document.getFaculty().getFacultyName())
+                        .build();
+            }).toList();
         } catch (Exception e) {
             throw new RuntimeException("Error fetching popular documents: " + e.getMessage(), e);
         }
