@@ -16,17 +16,18 @@ import java.util.List;
 public class CronjobController {
     private final AccountService accountService;
 
-    @PostMapping("/account/account-rated")
-    public ApiResponse<List<AccountRatingDto>> getAllAccountByRatingDocId(@RequestBody List<Long> accountIds,
-                                                                          @RequestParam("docTitle") String docTitle,
-                                                                          @RequestParam("docId") long docId) throws Exception {
-        return accountService.getAccountByAccountIds(accountIds,docTitle,docId);
-    }
+//    @PostMapping("/account/account-rated")
+//    public ApiResponse<List<AccountRatingDto>> getAllAccountByRatingDocId(@RequestBody List<Long> accountIds,
+//                                                                          @RequestParam("docTitle") String docTitle,
+//                                                                          @RequestParam("docId") long docId) throws Exception {
+//        return accountService.getAccountByAccountIds(accountIds,docTitle,docId);
+//    }
     @PostMapping("/account/update/account-rated")
     public ApiResponse<String> updateAccountListInRedis(@RequestBody List<Long> accountIds,
                                                                           @RequestParam("docTitle") String docTitle,
-                                                                          @RequestParam("docId") long docId) throws Exception {
-        return accountService.updateListAccountRatingAtRedis(accountIds,docTitle,docId);
+                                                                          @RequestParam("docId") long docId,
+                                                        @RequestParam("rating") long rating) throws Exception {
+        return accountService.updateListAccountRatingAtRedis(accountIds,docTitle,docId, rating);
     }
     @GetMapping("/account/get-new-account")
     public ApiResponse<List<AccountDto>> getAllNewAccountByDay() throws Exception {

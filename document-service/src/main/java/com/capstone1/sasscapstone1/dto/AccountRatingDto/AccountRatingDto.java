@@ -9,7 +9,5 @@ import lombok.*;
 @NoArgsConstructor
 public class AccountRatingDto {
     private long accountId;
-    private String firstName;
-    private String lastName;
-    private String profilePicture;
+    private long rating;
 }

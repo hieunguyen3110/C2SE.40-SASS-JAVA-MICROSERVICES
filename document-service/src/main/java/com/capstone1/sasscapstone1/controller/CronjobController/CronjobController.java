@@ -24,10 +24,10 @@ public class CronjobController {
     public ApiResponse<List<RatingDto>> getRatingNotCheckedByDay() throws Exception {
         return CreateApiResponse.createResponse(ratingService.getAllRatingByDayCheckedIsFalse(),false);
     }
-    @PostMapping("/ratings/update-checked")
-    public ApiResponse<String> updateRating(@RequestBody List<Long> ratingIds) throws Exception {
-        return CreateApiResponse.createResponse(ratingService.saveRatingIsChecked(ratingIds),false);
-    }
+//    @PostMapping("/ratings/update-checked")
+//    public ApiResponse<String> updateRating(@RequestBody List<Long> ratingIds) throws Exception {
+//        return CreateApiResponse.createResponse(ratingService.saveRatingIsChecked(ratingIds),false);
+//    }
     @GetMapping("/collect-data")
     public ApiResponse<MultipleNewData> getDataNew() throws Exception {
         MultipleNewData multipleNewData= new MultipleNewData();

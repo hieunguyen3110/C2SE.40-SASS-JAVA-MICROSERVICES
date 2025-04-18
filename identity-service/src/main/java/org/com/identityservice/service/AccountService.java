@@ -17,8 +17,8 @@ public interface AccountService {
     AccountDto getUserDetails(String email);
     Long countStatsByRoleName(String roleName);
     void softDeleteAccounts(List<Long> accountIds);
-    ApiResponse<List<AccountRatingDto>> getAccountByAccountIds(List<Long> accountIds, String docTitle, long docId) throws Exception;
-    ApiResponse<String> updateListAccountRatingAtRedis(List<Long> accountIds, String docTitle, long docId) throws Exception;
+//    ApiResponse<List<AccountRatingDto>> getAccountByAccountIds(List<Long> accountIds, String docTitle, long docId) throws Exception;
+    ApiResponse<String> updateListAccountRatingAtRedis(List<Long> accountIds, String docTitle, long docId, long rating) throws Exception;
     ApiResponse<String> approveNewUsers(List<Long> accountIds);
     String approveNewUsers(Long accountId);
     ApiResponse<String>adminDeleteUserProfilePicture(Long accountId);
