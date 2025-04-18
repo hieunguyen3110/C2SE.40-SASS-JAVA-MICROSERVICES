@@ -22,7 +22,7 @@ public interface StudyGroupService {
 
     List<SubjectDto> fetchSubjects();
 
-    StudyGroup getGroupDetails(Long groupId);
+    StudyGroupEventDto getGroupDetails(Long groupId);
 
     @Transactional
     void sendMessage(Long groupId, String content, Long senderId);

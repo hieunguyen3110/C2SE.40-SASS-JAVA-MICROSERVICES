@@ -45,8 +45,8 @@ public class StudyGroupController {
     }
 
     @GetMapping("/detail-group/{groupId}")
-    public ApiResponse<StudyGroup> getGroupDetails(@PathVariable Long groupId) {
-        StudyGroup group = groupService.getGroupDetails(groupId);
+    public ApiResponse<StudyGroupEventDto> getGroupDetails(@PathVariable Long groupId) {
+        StudyGroupEventDto group = groupService.getGroupDetails(groupId);
         return CreateApiResponse.createResponse(group, false);
     }
 

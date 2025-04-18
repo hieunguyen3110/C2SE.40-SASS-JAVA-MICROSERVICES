@@ -91,7 +91,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     studyGroup.getId(),
                     owner.getAccountId(),
                     "Study group '" + groupName + "' has been created!",
-                    isPrivate ? "Private" : "Public"
+                    isPrivate ? Boolean.TRUE : Boolean.FALSE
             );
             kafkaProducerService.sendStudyGroupEvent(event);
 
@@ -180,10 +180,31 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
 
     @Override
-    public StudyGroup getGroupDetails(Long groupId) {
+    public StudyGroupEventDto getGroupDetails(Long groupId) {
         try {
-            return groupRepository.findById(groupId)
-                    .orElseThrow(() -> new ApiException(404, "Group not found"));
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUser = (AccountDto) authentication.getPrincipal();
+
+            Optional<StudyGroup> studyGroupEventDto = groupRepository.findById(groupId);
+
+            return studyGroupEventDto.map(group -> {
+                SubjectDto subject = fetchSubjectById(group.getSubjectId());
+                if (subject == null) {
+                    throw new ApiException(404, "Subject with ID " + group.getSubjectId() + " not found.");
+                }
+
+                return new StudyGroupEventDto(
+                        group.getId(),
+                        group.getOwnerId(),
+                        group.getIsPrivate(),
+                        group.getName(),
+                        group.getDescription(),
+                        subject.getSubjectName(),
+                        group.getPicture(),
+                        group.getMemberLimited()
+                );
+            }).orElseThrow(() -> new ApiException(404, "Group with ID " + groupId + " not found."));
+
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -234,7 +255,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public void addMember(Long groupId, Long userId) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             if (isMember(groupId, userId)) {
                 throw new ApiException(400, "User is already a member of the group.");
@@ -257,7 +288,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Transactional
     @Override
     public void joinGroup(Long groupId, Long userId) {
-        StudyGroup group = getGroupDetails(groupId);
+        StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+        StudyGroup group =  new StudyGroup();
+        group.setId(dto.getGroupId());
+        group.setOwnerId(dto.getUserId());
+        group.setIsPrivate(dto.getIsPrivate());
+        group.setName(dto.getGroupName());
+        group.setDescription(dto.getDescription());
+        group.setPicture(dto.getPicture());
+        group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+        group.setMemberLimited(dto.getMemberLimited());
 
         if (isMember(groupId, userId)) {
             throw new ApiException(400, "User is already a member of the group.");
@@ -290,7 +331,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public void removeMember(Long groupId, Long userId) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto = getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUserId = (AccountDto) (authentication.getPrincipal());
@@ -438,7 +489,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUser = (AccountDto) (authentication.getPrincipal());
@@ -488,7 +549,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public StudyGroup updatePrivacySetting(Long groupId, boolean isPrivate) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUser = (AccountDto) (authentication.getPrincipal());
@@ -616,7 +687,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public void transferOwnership(Long groupId, Long newOwnerId) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentOwnerId = (AccountDto) (authentication.getPrincipal());
@@ -696,7 +777,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public boolean isGroupOwner(Long groupId, Long userId) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
             return group.getOwnerId().equals(userId);
         } catch (Exception e) {
             return false;
