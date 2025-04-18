@@ -38,7 +38,7 @@ public class RatingServiceImpl implements RatingService{
     private final DocumentViewRepository documentViewRepository;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
-    private List<Ratings> ratings = null;
+    private final IdentityClient identityClient;
 
     private RatingDto mapToDto(Ratings ratings){
         return RatingDto.builder()
@@ -73,6 +73,7 @@ public class RatingServiceImpl implements RatingService{
                         .accountId(accountDto.getAccountId())
                         .build();
                 ratingsRepository.save(ratingsSaved);
+                identityClient.updateAccountRatedInRedis(List.of(accountDto.getAccountId()),findDoc.getTitle(),findDoc.getDocId(),request.getRating());
                 return "Document is rate successful";
             }
         }catch (Exception e){
@@ -85,7 +86,7 @@ public class RatingServiceImpl implements RatingService{
         try{
             LocalDateTime endDate = LocalDateTime.now();
             LocalDateTime startDate = endDate.minusDays(2);
-            ratings= ratingsRepository.findAllByCreatedAtAndIsChecked(startDate, endDate);
+            List<Ratings> ratings = ratingsRepository.findAllByCreatedAtAndIsChecked(startDate, endDate);
             return ratings.stream().map(this::mapToDto).toList();
         }catch(Exception e){
             throw new Exception(e.getMessage());
@@ -139,33 +140,33 @@ public class RatingServiceImpl implements RatingService{
         }
     }
 
-    @Override
-    @Transactional
-    public String saveRatingIsChecked(List<Long> ratingIds) throws Exception {
-        try{
-            List<Ratings> ratingsFilter= ratings.stream()
-                    .filter(rating->ratingIds.contains(rating.getRateId()))
-                    .toList();
-//            ratingsFilter.forEach(rating->rating.setIsChecked(true));
-            List<Ratings> ratingsUpdated=ratingsRepository.saveAll(ratingsFilter);
-            Map<Long, List<Ratings>> map= ratingsUpdated.stream()
-                    .collect(Collectors.groupingBy(rating->rating.getDocuments().getDocId()));
-            for(Map.Entry<Long, List<Ratings>> entry : map.entrySet()){
-                Long docId= entry.getKey();
-                Documents document= documentsRepository.findById(docId)
-                        .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Document is not found"));
-                List<Ratings> ratingForDocs= entry.getValue();
-                List<Long> accountIds= ratingForDocs.stream().map(Ratings::getAccountId).toList();
-                String title= document.getTitle();
-                String accountRatingDtos= identityClientWithoutSecurity.updateAccountRatedInRedis(accountIds,title,docId).getData();
-                if(accountRatingDtos==null){
-                    throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Update account rating checked is fail");
-                }
-            }
-            return "Update rating checked is successful";
-        }catch (Exception e){
-            log.error("Exception: "+e.getMessage());
-            throw new Exception("Exception: "+ e.getMessage());
-        }
-    }
+//    @Override
+//    @Transactional
+//    public String saveRatingIsChecked(List<Long> ratingIds) throws Exception {
+//        try{
+//            List<Ratings> ratingsFilter= ratings.stream()
+//                    .filter(rating->ratingIds.contains(rating.getRateId()))
+//                    .toList();
+////            ratingsFilter.forEach(rating->rating.setIsChecked(true));
+//            List<Ratings> ratingsUpdated=ratingsRepository.saveAll(ratingsFilter);
+//            Map<Long, List<Ratings>> map= ratingsUpdated.stream()
+//                    .collect(Collectors.groupingBy(rating->rating.getDocuments().getDocId()));
+//            for(Map.Entry<Long, List<Ratings>> entry : map.entrySet()){
+//                Long docId= entry.getKey();
+//                Documents document= documentsRepository.findById(docId)
+//                        .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Document is not found"));
+//                List<Ratings> ratingForDocs= entry.getValue();
+//                List<Long> accountIds= ratingForDocs.stream().map(Ratings::getAccountId).toList();
+//                String title= document.getTitle();
+//                String accountRatingDtos= identityClientWithoutSecurity.updateAccountRatedInRedis(accountIds,title,docId).getData();
+//                if(accountRatingDtos==null){
+//                    throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Update account rating checked is fail");
+//                }
+//            }
+//            return "Update rating checked is successful";
+//        }catch (Exception e){
+//            log.error("Exception: "+e.getMessage());
+//            throw new Exception("Exception: "+ e.getMessage());
+//        }
+//    }
 }

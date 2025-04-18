@@ -18,13 +18,14 @@ public interface IdentityClient {
     ApiResponse<AccountDto> getAccountEmail(@RequestParam("email") String email);
     @GetExchange(url="/stats/type")
     ApiResponse<Long> countStatsByRoleName(@RequestParam("roleName") String roleName);
-    @PostExchange(url = "/cronjob/account/account-rated")
-    ApiResponse<List<AccountRatingDto>> getAllAccountByRatingDocId(@RequestBody List<Long> accountIds,
-                                                                   @RequestParam("docTitle") String docTitle,
-                                                                   @RequestParam("docId") long docId);
+//    @PostExchange(url = "/cronjob/account/account-rated")
+//    ApiResponse<List<AccountRatingDto>> getAllAccountByRatingDocId(@RequestBody List<Long> accountIds,
+//                                                                   @RequestParam("docTitle") String docTitle,
+//                                                                   @RequestParam("docId") long docId);
     @PostExchange(url = "/cronjob/account/update/account-rated")
-    ApiResponse<String> updateAccountRatedInRedis(@RequestBody List<Long> accountIds,
+    void updateAccountRatedInRedis(@RequestBody List<Long> accountIds,
                                                                    @RequestParam("docTitle") String docTitle,
-                                                                   @RequestParam("docId") long docId);
+                                                                   @RequestParam("docId") long docId,
+                                                  @RequestParam("rating") long rating);
 
 }
