@@ -78,7 +78,7 @@ public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
                         }
                     } catch (Exception e) {
                         log.error("WebSocket authentication error: " + e.getMessage());
-                        return null; // Từ chối kết nối WebSocket nếu lỗi xác thực
+                        return null;
                     }
                 }
                 return message;

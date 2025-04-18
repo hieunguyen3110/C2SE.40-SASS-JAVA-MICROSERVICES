@@ -1,6 +1,7 @@
 package org.com.studygroupservice.repository;
 
 import org.com.studygroupservice.entity.GroupMember;
+import org.com.studygroupservice.entity.StudyGroup;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +17,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     Page<GroupMember> findByStudyGroupId(Long studyGroupId, Pageable pageable);
 
     List<GroupMember> findByAccountId(Long accountId);
+
+    List<GroupMember> findStudyGroupsByAccountId(Long accountId);
 }

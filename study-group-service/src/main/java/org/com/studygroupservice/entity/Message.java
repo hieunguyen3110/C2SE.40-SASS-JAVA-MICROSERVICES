@@ -17,7 +17,7 @@ public class Message extends AbstractDefault {
     private Long id;
     private Long senderId;
     private String content;
-    private boolean isPinned;
+    private Boolean isPinned;
     private Boolean documentLink;
     private String documentId;
 

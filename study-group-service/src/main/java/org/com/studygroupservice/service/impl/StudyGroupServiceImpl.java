@@ -16,20 +16,19 @@ import org.com.studygroupservice.repository.GroupMemberRepository;
 import org.com.studygroupservice.repository.JoinRequestRepository;
 import org.com.studygroupservice.repository.MessageRepository;
 import org.com.studygroupservice.repository.StudyGroupRepository;
+import org.com.studygroupservice.repository.httpClient.IdentityClient;
 import org.com.studygroupservice.service.RedisService;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.com.studygroupservice.constant.AppConstant.SUBJECT_KEY;
@@ -48,6 +47,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final JoinRequestRepository joinRequestRepository;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final IdentityClient identityClient;
+//    private final SimpMessagingTemplate simpMessagingTemplate;
+    private final GroupMemberRepository groupMemberRepository;
 
     @Transactional
     @Override
@@ -89,7 +91,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     studyGroup.getId(),
                     owner.getAccountId(),
                     "Study group '" + groupName + "' has been created!",
-                    isPrivate ? "Private" : "Public"
+                    isPrivate ? Boolean.TRUE : Boolean.FALSE
             );
             kafkaProducerService.sendStudyGroupEvent(event);
 
@@ -178,10 +180,31 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
 
     @Override
-    public StudyGroup getGroupDetails(Long groupId) {
+    public StudyGroupEventDto getGroupDetails(Long groupId) {
         try {
-            return groupRepository.findById(groupId)
-                    .orElseThrow(() -> new ApiException(404, "Group not found"));
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUser = (AccountDto) authentication.getPrincipal();
+
+            Optional<StudyGroup> studyGroupEventDto = groupRepository.findById(groupId);
+
+            return studyGroupEventDto.map(group -> {
+                SubjectDto subject = fetchSubjectById(group.getSubjectId());
+                if (subject == null) {
+                    throw new ApiException(404, "Subject with ID " + group.getSubjectId() + " not found.");
+                }
+
+                return new StudyGroupEventDto(
+                        group.getId(),
+                        group.getOwnerId(),
+                        group.getIsPrivate(),
+                        group.getName(),
+                        group.getDescription(),
+                        subject.getSubjectName(),
+                        group.getPicture(),
+                        group.getMemberLimited()
+                );
+            }).orElseThrow(() -> new ApiException(404, "Group with ID " + groupId + " not found."));
+
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -192,45 +215,38 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public void sendMessage(Long groupId, String content) {
+    public void sendMessage(Long groupId, String content, Long senderId) {
         try {
             if (content == null || content.trim().isEmpty()) {
-                throw new ApiException(400, "Message content cannot be empty.");
+                throw new ApiException(400, "Nội dung tin nhắn không được để trống.");
             }
 
-            //Check if the study group exists
             StudyGroup group = groupRepository.findById(groupId)
-                    .orElseThrow(() -> new ApiException(404, "Study group not found."));
+                    .orElseThrow(() -> new ApiException(404, "Không tìm thấy nhóm học tập."));
 
-            //Get sender information from SecurityContext
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            AccountDto sender = (AccountDto) authentication.getPrincipal();
-
-            //Check if the sender is a member of the group
-            if (!isMember(groupId, sender.getAccountId())) {
-                throw new ApiException(403, "User is not a member of this group.");
+            if (!isMember(groupId, senderId)) {
+                throw new ApiException(403, "Người dùng không phải là thành viên của nhóm này.");
             }
 
-            //Create and save the message
+            //Tạo và lưu tin nhắn
             Message message = new Message();
-            message.setSenderId(sender.getAccountId());
+            message.setSenderId(senderId);
             message.setContent(content);
-            message.setPinned(false);
+            message.setIsPinned(false);
             message.setGroup(group);
 
             Message savedMessage = messageRepository.save(message);
 
-            //Send message event to Kafka
             MessageEventDto event = new MessageEventDto(
-                    groupId, sender.getAccountId(), "send-message", savedMessage.getId(), content
+                    groupId, senderId, "send-message", savedMessage.getId(), content
             );
             kafkaProducerService.sendMessageEvent(event);
 
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Error sending message: {}", e.getMessage(), e);
-            throw new ApiException(500, "Failed to send message. Please try again later.");
+            log.error("Lỗi khi gửi tin nhắn: {}", e.getMessage(), e);
+            throw new ApiException(500, "Không thể gửi tin nhắn. Vui lòng thử lại sau.");
         }
     }
 
@@ -239,7 +255,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public void addMember(Long groupId, Long userId) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             if (isMember(groupId, userId)) {
                 throw new ApiException(400, "User is already a member of the group.");
@@ -262,7 +288,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Transactional
     @Override
     public void joinGroup(Long groupId, Long userId) {
-        StudyGroup group = getGroupDetails(groupId);
+        StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+        StudyGroup group =  new StudyGroup();
+        group.setId(dto.getGroupId());
+        group.setOwnerId(dto.getUserId());
+        group.setIsPrivate(dto.getIsPrivate());
+        group.setName(dto.getGroupName());
+        group.setDescription(dto.getDescription());
+        group.setPicture(dto.getPicture());
+        group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+        group.setMemberLimited(dto.getMemberLimited());
 
         if (isMember(groupId, userId)) {
             throw new ApiException(400, "User is already a member of the group.");
@@ -295,7 +331,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public void removeMember(Long groupId, Long userId) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto = getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUserId = (AccountDto) (authentication.getPrincipal());
@@ -338,7 +384,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 throw new ApiException(403, "Only owner can pin messages");
             }
 
-            message.setPinned(true);
+            message.setIsPinned(true);
             messageRepository.save(message);
             kafkaProducerService.sendMessageEvent(new MessageEventDto(group.getId(), currentUserId.getAccountId(), "pin_message", messageId, null));
         } catch (ApiException e) {
@@ -365,7 +411,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 throw new ApiException(403, "Only owner can unpin messages");
             }
 
-            message.setPinned(false);
+            message.setIsPinned(false);
             messageRepository.save(message);
 
             kafkaProducerService.sendMessageEvent(new MessageEventDto(group.getId(), currentUserId.getAccountId(), "unpin_message", messageId, null));
@@ -417,16 +463,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 throw new ApiException(404, "No members found in group");
             }
 
-            WebClient webClient = webClientBuilder.baseUrl("http://identity-service").build();
-
             return membersPage.map(member -> {
-                String url = "/admin/account/users/" + member.getAccountId();
                 try {
-                    AccountDto account = webClient.get()
-                            .uri(url)
-                            .retrieve()
-                            .bodyToMono(AccountDto.class)
-                            .block();
+                    AccountDto account = identityClient.getAccountId(member.getAccountId()).getData();
 
                     if (account == null) {
                         throw new ApiException(404, "Account not found for member ID: " + member.getAccountId());
@@ -450,7 +489,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUser = (AccountDto) (authentication.getPrincipal());
@@ -500,7 +549,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public StudyGroup updatePrivacySetting(Long groupId, boolean isPrivate) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUser = (AccountDto) (authentication.getPrincipal());
@@ -532,7 +591,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public Page<Message> getPinnedMessages(Long groupId, Pageable pageable) {
         try {
-            Page<Message> pinnedMessages = messageRepository.findByGroupIdAndPinnedTrue(groupId, pageable);
+            Page<Message> pinnedMessages = messageRepository.findByGroupIdAndIsPinnedTrue(groupId, pageable);
             if (pinnedMessages.isEmpty()) {
                 throw new ApiException(404, "No pinned messages found in group");
             }
@@ -578,7 +637,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             Message message = new Message();
             message.setSenderId(senderId.getAccountId());
             message.setContent("Đã chia sẻ tài liệu: " + shareUrl);
-            message.setPinned(false);
+            message.setIsPinned(false);
             message.setDocumentLink(true);
             message.setDocumentId(documentId);
             message.setGroup(group);
@@ -628,7 +687,17 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public void transferOwnership(Long groupId, Long newOwnerId) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentOwnerId = (AccountDto) (authentication.getPrincipal());
@@ -708,10 +777,60 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public boolean isGroupOwner(Long groupId, Long userId) {
         try {
-            StudyGroup group = getGroupDetails(groupId);
+            StudyGroupEventDto dto =  getGroupDetails(groupId);
+
+            StudyGroup group =  new StudyGroup();
+            group.setId(dto.getGroupId());
+            group.setOwnerId(dto.getUserId());
+            group.setIsPrivate(dto.getIsPrivate());
+            group.setName(dto.getGroupName());
+            group.setDescription(dto.getDescription());
+            group.setPicture(dto.getPicture());
+            group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
+            group.setMemberLimited(dto.getMemberLimited());
             return group.getOwnerId().equals(userId);
         } catch (Exception e) {
             return false;
         }
     }
+
+    @Override
+    public List<StudyGroupEventDto> getGroupsByUserId() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUser = (AccountDto) authentication.getPrincipal();
+
+            List<GroupMember> groupMembers = groupMemberRepository.findStudyGroupsByAccountId(currentUser.getAccountId());
+            if (groupMembers.isEmpty()) {
+                throw new ApiException(404, "User is not a member of any group");
+            }
+
+
+
+            return groupMembers.stream()
+                    .map(groupMember -> {
+                        StudyGroup group = groupMember.getStudyGroup();
+                        StudyGroupEventDto dto = new StudyGroupEventDto();
+
+                        Long subjectId = group.getSubjectId();
+
+                        String subjectName = Objects.requireNonNull(fetchSubjectById(subjectId)).getSubjectName();
+                        dto.setGroupId(group.getId());
+                        dto.setGroupName(group.getName());
+                        dto.setDescription(group.getDescription());
+                        dto.setPicture(group.getPicture());
+                        dto.setSubjectName(subjectName);
+                        dto.setUserId(group.getOwnerId());
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            log.error("Failed to fetch groups by user ID: {}", e.getMessage(), e);
+            throw new ApiException(500, "Failed to fetch groups by user ID: " + e.getMessage());
+        }
+    }
+
+
+
 }

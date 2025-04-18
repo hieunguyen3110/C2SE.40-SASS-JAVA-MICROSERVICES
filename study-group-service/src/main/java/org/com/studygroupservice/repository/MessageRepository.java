@@ -13,7 +13,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     void deleteByGroupId(Long groupId);
 
-    Page<Message> findByGroupIdAndPinnedTrue(Long groupId, Pageable pageable);
+    Page<Message> findByGroupIdAndIsPinnedTrue(Long groupId, Pageable pageable);
 
     Page<Message> findByGroupId(Long groupId, Pageable pageable);
 }

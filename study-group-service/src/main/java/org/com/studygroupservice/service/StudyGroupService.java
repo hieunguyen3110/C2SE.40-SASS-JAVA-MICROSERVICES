@@ -2,7 +2,9 @@ package org.com.studygroupservice.service;
 
 import org.com.studygroupservice.dto.request.CreateGroupRequest;
 import org.com.studygroupservice.dto.response.GroupResponse;
+import org.com.studygroupservice.dto.response.StudyGroupEventDto;
 import org.com.studygroupservice.dto.response.SubjectDto;
+import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.springframework.data.domain.Page;
@@ -18,12 +20,12 @@ public interface StudyGroupService {
 
     List<SubjectDto> searchSubjectsByName(String subjectName);
 
-    // Lấy danh sách SubjectDto từ Redis, fallback sang document-service nếu cần
     List<SubjectDto> fetchSubjects();
 
-    StudyGroup getGroupDetails(Long groupId);
+    StudyGroupEventDto getGroupDetails(Long groupId);
 
-    void sendMessage(Long groupId, String content);
+    @Transactional
+    void sendMessage(Long groupId, String content, Long senderId);
 
     @Transactional
     void addMember(Long groupId, Long userId);
@@ -67,4 +69,6 @@ public interface StudyGroupService {
     List<StudyGroup> searchGroups(String keyword);
 
     boolean isGroupOwner(Long groupId, Long userId);
+
+    List<StudyGroupEventDto> getGroupsByUserId();
 }

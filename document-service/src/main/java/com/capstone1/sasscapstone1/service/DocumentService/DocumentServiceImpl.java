@@ -60,6 +60,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final UpdateDocumentPopularity updateDocumentPopularity;
     private final RecommendationClient recommendationClient;
     private List<Documents> documents;
+
     @Value("${chatbot.url}")
     private String chatbotUrl;
 

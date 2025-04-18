@@ -54,7 +54,8 @@ public class SecurityConfig {
                     request
                             .requestMatchers(PUBLIC_ENDPOINT).permitAll()
                             .requestMatchers(
-                                    "/auth/change-password"
+                                    "/auth/change-password",
+                                    "/account/**"
                             ).hasAnyRole("STUDENT","LECTURER")
                             .requestMatchers("/admin/**").hasRole("ADMIN")
                             .anyRequest().authenticated();

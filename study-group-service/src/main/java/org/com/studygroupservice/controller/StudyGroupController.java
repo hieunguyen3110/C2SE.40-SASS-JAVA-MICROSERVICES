@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.com.studygroupservice.dto.request.*;
 import org.com.studygroupservice.dto.response.ApiResponse;
 import org.com.studygroupservice.dto.response.GroupResponse;
+import org.com.studygroupservice.dto.response.StudyGroupEventDto;
 import org.com.studygroupservice.dto.response.SubjectDto;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
@@ -44,14 +45,14 @@ public class StudyGroupController {
     }
 
     @GetMapping("/detail-group/{groupId}")
-    public ApiResponse<StudyGroup> getGroupDetails(@PathVariable Long groupId) {
-        StudyGroup group = groupService.getGroupDetails(groupId);
+    public ApiResponse<StudyGroupEventDto> getGroupDetails(@PathVariable Long groupId) {
+        StudyGroupEventDto group = groupService.getGroupDetails(groupId);
         return CreateApiResponse.createResponse(group, false);
     }
 
-    @MessageMapping("/chat.sendMessage")
+    @MessageMapping("/app.sendMessage")
     public void sendMessage(@Payload ChatMessage chatMessage) {
-        groupService.sendMessage(chatMessage.getGroupId(), chatMessage.getContent());
+        groupService.sendMessage(chatMessage.getGroupId(), chatMessage.getContent(), chatMessage.getSenderId());
     }
 
     @PostMapping("/{groupId}/members")
@@ -161,6 +162,12 @@ public class StudyGroupController {
     public ApiResponse<Void> deleteMessage(@PathVariable Long messageId) {
         groupService.deleteMessage(messageId);
         return CreateApiResponse.createResponse(null, false);
+    }
+
+    @GetMapping("/groupMembers")
+    public ApiResponse<List<StudyGroupEventDto>> getGroupsByUserId() {
+        List<StudyGroupEventDto> groups = groupService.getGroupsByUserId();
+        return CreateApiResponse.createResponse(groups, false);
     }
 
 }
