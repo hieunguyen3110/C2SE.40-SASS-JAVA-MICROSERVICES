@@ -168,15 +168,18 @@ public class DocumentServiceImpl implements DocumentService {
             String key= document.getTitle()+"_"+document.getDocId();
             String json= (String) redisService.getData(key);
             DocumentDetailDto documentDetailDto= mapToDocumentDetailDto(document);
+            List<AccountRatingDto> accountRatingDtos;
             if(json == null){
-                List<Long> accountIds= new ArrayList<>();
+                accountRatingDtos = new ArrayList<>();
                 for(Ratings rating : ratings){
-                    accountIds.add(rating.getAccountId());
+                    accountRatingDtos.add(AccountRatingDto.builder()
+                                    .accountId(rating.getAccountId())
+                                    .rating(rating.getRating())
+                            .build());
                 }
-                List<AccountRatingDto> accountRatingDtos= identityClient.getAllAccountByRatingDocId(accountIds,document.getTitle(),document.getDocId()).getData();
                 documentDetailDto.setAccountRatingDtos(accountRatingDtos);
             }else{
-                List<AccountRatingDto> accountRatingDtos= objectMapper.readValue(json,new TypeReference<>() {});
+                accountRatingDtos= objectMapper.readValue(json,new TypeReference<>() {});
                 documentDetailDto.setAccountRatingDtos(accountRatingDtos);
             }
             return documentDetailDto;

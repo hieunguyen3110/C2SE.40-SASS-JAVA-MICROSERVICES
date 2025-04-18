@@ -239,45 +239,45 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
-    @Override
-    public ApiResponse<List<AccountRatingDto>> getAccountByAccountIds(List<Long> accountIds,String docTitle, long docId) throws Exception {
-        try{
-            List<Account> getAllAccount= accountRepository.findAllByAccountIdIn(accountIds);
-            String key= docTitle+"_"+docId;
-            String isExistJson= (String) redisService.getData(key);
-            List<AccountRatingDto> accountRatingDtos;
-            if(isExistJson!=null){
-                accountRatingDtos= objectMapper.readValue(isExistJson, new TypeReference<>() {});
-                getAllAccount.forEach(account->{
-                    accountRatingDtos.add(
-                            AccountRatingDto.builder()
-                                    .accountId(account.getAccountId())
-                                    .firstName(account.getFirstName())
-                                    .lastName(account.getLastName())
-                                    .profilePicture(account.getProfilePicture())
-                                    .build()
-                    );
-                });
-            }else{
-                accountRatingDtos = getAllAccount.stream().map(account->
-                        AccountRatingDto.builder()
-                                .accountId(account.getAccountId())
-                                .firstName(account.getFirstName())
-                                .lastName(account.getLastName())
-                                .profilePicture(account.getProfilePicture())
-                                .build()
-                ).toList();
-            }
-            String json= objectMapper.writeValueAsString(accountRatingDtos);
-            redisService.saveData(key,json,864000);
-            return CreateApiResponse.createResponse(accountRatingDtos,false);
-        }catch (Exception e){
-            throw new Exception("Error when get all account with accountIds: "+ accountIds.toString());
-        }
-    }
+//    @Override
+//    public ApiResponse<List<AccountRatingDto>> getAccountByAccountIds(List<Long> accountIds,String docTitle, long docId) throws Exception {
+//        try{
+//            List<Account> getAllAccount= accountRepository.findAllByAccountIdIn(accountIds);
+//            String key= docTitle+"_"+docId;
+//            String isExistJson= (String) redisService.getData(key);
+//            List<AccountRatingDto> accountRatingDtos;
+//            if(isExistJson!=null){
+//                accountRatingDtos= objectMapper.readValue(isExistJson, new TypeReference<>() {});
+//                getAllAccount.forEach(account->{
+//                    accountRatingDtos.add(
+//                            AccountRatingDto.builder()
+//                                    .accountId(account.getAccountId())
+//                                    .firstName(account.getFirstName())
+//                                    .lastName(account.getLastName())
+//                                    .profilePicture(account.getProfilePicture())
+//                                    .build()
+//                    );
+//                });
+//            }else{
+//                accountRatingDtos = getAllAccount.stream().map(account->
+//                        AccountRatingDto.builder()
+//                                .accountId(account.getAccountId())
+//                                .firstName(account.getFirstName())
+//                                .lastName(account.getLastName())
+//                                .profilePicture(account.getProfilePicture())
+//                                .build()
+//                ).toList();
+//            }
+//            String json= objectMapper.writeValueAsString(accountRatingDtos);
+//            redisService.saveData(key,json,864000);
+//            return CreateApiResponse.createResponse(accountRatingDtos,false);
+//        }catch (Exception e){
+//            throw new Exception("Error when get all account with accountIds: "+ accountIds.toString());
+//        }
+//    }
 
     @Override
-    public ApiResponse<String> updateListAccountRatingAtRedis(List<Long> accountIds, String docTitle, long docId) throws Exception {
+    public ApiResponse<String> updateListAccountRatingAtRedis(List<Long> accountIds, String docTitle, long docId, long rating) throws Exception {
         try{
             String key= docTitle+"_"+docId;
             String isExistJson= (String) redisService.getData(key);
@@ -289,9 +289,7 @@ public class AccountServiceImpl implements AccountService {
                     accountRatingDtos.add(
                             AccountRatingDto.builder()
                                     .accountId(account.getAccountId())
-                                    .firstName(account.getFirstName())
-                                    .lastName(account.getLastName())
-                                    .profilePicture(account.getProfilePicture())
+                                    .rating(rating)
                                     .build()
                     );
                 });
