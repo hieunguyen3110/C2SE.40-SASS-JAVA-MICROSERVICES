@@ -42,19 +42,4 @@ public class ApplicationConfig {
         objectMapper.registerModule(new JavaTimeModule());
         return objectMapper;
     }
-
-    @Bean
-    public MessageChannel simpMessagingTemplate() {
-        return new MessageChannel() {
-            @Override
-            public boolean send(org.springframework.messaging.Message<?> message) {
-                return false;
-            }
-
-            @Override
-            public boolean send(org.springframework.messaging.Message<?> message, long timeout) {
-                return false;
-            }
-        };
-    }
 }
