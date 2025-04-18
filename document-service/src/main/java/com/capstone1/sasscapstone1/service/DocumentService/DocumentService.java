@@ -32,7 +32,7 @@ public interface DocumentService {
 
     void updateDocument(Long docId, AdminDocumentDto documentDto);
 
-    Page<PopularDocumentDto> getPopularDocuments(int page, int size);
+    List<PopularDocumentDto> getPopularDocuments(AccountDto accountDto);
     List<DocumentDto> getAllDocumentByDay() throws Exception;
     String updateFileStatus(List<Long> docIds) throws Exception;
     Map<String, List<DocumentData>> collectNewData();

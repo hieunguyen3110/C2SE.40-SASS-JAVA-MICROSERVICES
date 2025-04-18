@@ -1,6 +1,7 @@
 package com.capstone1.sasscapstone1.dto.DocumentDetailDto;
 
 import com.capstone1.sasscapstone1.dto.AccountRatingDto.AccountRatingDto;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ public class DocumentDetailDto {
     private String folderName;
     private String subjectName;
     private String facultyName;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
     private String authorName;
     private String filePath;

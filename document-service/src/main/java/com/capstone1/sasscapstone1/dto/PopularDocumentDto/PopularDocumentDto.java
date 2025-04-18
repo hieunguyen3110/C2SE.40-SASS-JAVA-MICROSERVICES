@@ -1,9 +1,11 @@
 package com.capstone1.sasscapstone1.dto.PopularDocumentDto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 @AllArgsConstructor
 public class PopularDocumentDto {
     private Long docId;

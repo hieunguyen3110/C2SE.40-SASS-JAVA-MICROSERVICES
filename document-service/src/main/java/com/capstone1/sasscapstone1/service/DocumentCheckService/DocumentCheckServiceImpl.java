@@ -41,7 +41,7 @@ public class DocumentCheckServiceImpl implements DocumentCheckService {
             request.put("filePath",document.getFilePath());
             httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             HttpEntity<Map<String,String>> entity= new HttpEntity<>(request,httpHeaders);
-            String uri = chatbotUrl;
+            String uri = chatbotUrl+"/check-file";
             ResponseEntity<ApiResponse<CheckFileResponse>> response = restTemplate.exchange(
                     uri,
                     HttpMethod.POST,
@@ -50,7 +50,7 @@ public class DocumentCheckServiceImpl implements DocumentCheckService {
             );
 
             CheckFileResponse result = response.getBody().getData();
-            if((!result.isContainsSensitiveWords() && result.getSensitiveWords().isEmpty()) ||
+            if((!result.isContainsSensitiveWords() && result.getSensitiveWords()==null) ||
                     (result.isContainsSensitiveWords() && result.getSensitiveWords().size()<10)){
                 throw new Exception("File chứa từ nhạy cảm quá nhiều!");
             }

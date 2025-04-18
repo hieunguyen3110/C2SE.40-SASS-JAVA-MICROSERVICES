@@ -49,7 +49,6 @@ public class AccountServiceImpl implements AccountService {
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
     private List<Account> newAccounts;
-
     private String uploadProfilePicture(MultipartFile profilePicture) {
         try {
             String originalFileName = profilePicture.getOriginalFilename();
