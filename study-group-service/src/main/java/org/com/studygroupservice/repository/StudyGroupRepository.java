@@ -1,5 +1,6 @@
 package org.com.studygroupservice.repository;
 
+import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,4 +25,5 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
 
     @Query("SELECT COUNT(m) FROM StudyGroup g JOIN g.members m WHERE g.id = :groupId")
     int getMemberCount(Long groupId);
+
 }

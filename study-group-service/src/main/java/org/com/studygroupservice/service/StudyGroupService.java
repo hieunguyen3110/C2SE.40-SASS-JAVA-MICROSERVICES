@@ -2,7 +2,9 @@ package org.com.studygroupservice.service;
 
 import org.com.studygroupservice.dto.request.CreateGroupRequest;
 import org.com.studygroupservice.dto.response.GroupResponse;
+import org.com.studygroupservice.dto.response.StudyGroupEventDto;
 import org.com.studygroupservice.dto.response.SubjectDto;
+import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.springframework.data.domain.Page;
@@ -67,4 +69,6 @@ public interface StudyGroupService {
     List<StudyGroup> searchGroups(String keyword);
 
     boolean isGroupOwner(Long groupId, Long userId);
+
+    List<StudyGroupEventDto> getGroupsByUserId();
 }

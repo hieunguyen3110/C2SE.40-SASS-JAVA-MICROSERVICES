@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.com.studygroupservice.dto.request.*;
 import org.com.studygroupservice.dto.response.ApiResponse;
 import org.com.studygroupservice.dto.response.GroupResponse;
+import org.com.studygroupservice.dto.response.StudyGroupEventDto;
 import org.com.studygroupservice.dto.response.SubjectDto;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
@@ -161,6 +162,12 @@ public class StudyGroupController {
     public ApiResponse<Void> deleteMessage(@PathVariable Long messageId) {
         groupService.deleteMessage(messageId);
         return CreateApiResponse.createResponse(null, false);
+    }
+
+    @GetMapping("/groupMembers")
+    public ApiResponse<List<StudyGroupEventDto>> getGroupsByUserId() {
+        List<StudyGroupEventDto> groups = groupService.getGroupsByUserId();
+        return CreateApiResponse.createResponse(groups, false);
     }
 
 }

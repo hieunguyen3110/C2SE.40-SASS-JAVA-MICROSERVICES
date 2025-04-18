@@ -28,10 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.com.studygroupservice.constant.AppConstant.SUBJECT_KEY;
@@ -51,7 +48,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
     private final IdentityClient identityClient;
-    private final SimpMessagingTemplate simpMessagingTemplate;
+//    private final SimpMessagingTemplate simpMessagingTemplate;
+    private final GroupMemberRepository groupMemberRepository;
 
     @Transactional
     @Override
@@ -704,4 +702,44 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             return false;
         }
     }
+
+    @Override
+    public List<StudyGroupEventDto> getGroupsByUserId() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUser = (AccountDto) authentication.getPrincipal();
+
+            List<GroupMember> groupMembers = groupMemberRepository.findStudyGroupsByAccountId(currentUser.getAccountId());
+            if (groupMembers.isEmpty()) {
+                throw new ApiException(404, "User is not a member of any group");
+            }
+
+
+
+            return groupMembers.stream()
+                    .map(groupMember -> {
+                        StudyGroup group = groupMember.getStudyGroup();
+                        StudyGroupEventDto dto = new StudyGroupEventDto();
+
+                        Long subjectId = group.getSubjectId();
+
+                        String subjectName = Objects.requireNonNull(fetchSubjectById(subjectId)).getSubjectName();
+                        dto.setGroupId(group.getId());
+                        dto.setGroupName(group.getName());
+                        dto.setDescription(group.getDescription());
+                        dto.setPicture(group.getPicture());
+                        dto.setSubjectName(subjectName);
+                        dto.setUserId(group.getOwnerId());
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            log.error("Failed to fetch groups by user ID: {}", e.getMessage(), e);
+            throw new ApiException(500, "Failed to fetch groups by user ID: " + e.getMessage());
+        }
+    }
+
+
+
 }
