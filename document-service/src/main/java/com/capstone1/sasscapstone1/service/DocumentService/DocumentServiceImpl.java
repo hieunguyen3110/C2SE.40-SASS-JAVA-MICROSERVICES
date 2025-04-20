@@ -52,7 +52,6 @@ public class DocumentServiceImpl implements DocumentService {
     private final FacultyRepository facultyRepository;
     private final FirebaseService firebaseService;
     private final SubjectRepository subjectRepository;
-    private final HistoryRepository historyRepository;
     private final RestTemplate restTemplate;
     private final IdentityClient identityClient;
     private final RedisService redisService;
@@ -130,6 +129,9 @@ public class DocumentServiceImpl implements DocumentService {
             document.setAccountId(account.getAccountId());
             if (folder != null) document.setFolder(folder);
             document.setIsActive(false);
+            document.setIsCheck(false);
+            document.setIsTrain(false);
+            document.setIsDeleted(false);
             documentsRepository.save(document);
 
             return CreateApiResponse.createResponse("Document uploaded successfully! ID: " + document.getDocId() + ", URL: " + filePath,true);
@@ -407,5 +409,17 @@ public class DocumentServiceImpl implements DocumentService {
         map.put("documentUpdate",docUpdatedData);
         map.put("documentsNew",newlyCreateDocData);
         return map;
+    }
+
+    @Override
+    public List<DocumentDto> getAllNewDocuments() throws Exception {
+        try{
+            List<Documents> documents= documentsRepository.findAllByIsActiveIsTrue();
+            return documents.stream()
+                    .map(this::mapToDocumentDto)
+                    .toList();
+        }catch (Exception e){
+            throw new Exception(e);
+        }
     }
 }

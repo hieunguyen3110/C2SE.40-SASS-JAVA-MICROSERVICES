@@ -57,6 +57,9 @@ public class Documents extends AbstractDefault {
     @Column(name = "is_train")
     private Boolean isTrain= false;
 
+//    @Column(name = "is_generate-question")
+//    private Boolean isGenerateQuestion= false;
+
     @Column(name = "approved_by")
     private String approvedBy;
 

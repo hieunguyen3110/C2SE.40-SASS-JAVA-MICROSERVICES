@@ -2,9 +2,10 @@ package org.com.batchservice.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.*;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,6 +17,7 @@ public class BatchConfig {
     private final Job customCheckDocAndTrainDocJob;
     private final Job customActiveUserJob;
     private final Job customStudentLearnTrendAnalyzeJob;
+    private final Job customGenerateQuestionJob;
     private final JobLauncher jobLauncher;
 
     public void runJobCheckDocAndTrainDoc(){
@@ -64,6 +66,16 @@ public class BatchConfig {
                 .toJobParameters();
         try{
             jobLauncher.run(customCollectDataJob,collectDataParameter);
+        }catch (Exception e){
+            log.error("Exception: "+ e.getMessage());
+        }
+    }
+    public void runJobGenerateQuestion(){
+        JobParameters generateQuestionParameter= new JobParametersBuilder()
+                .addString("ID", "generate_question_"+System.currentTimeMillis())
+                .toJobParameters();
+        try{
+            jobLauncher.run(customGenerateQuestionJob,generateQuestionParameter);
         }catch (Exception e){
             log.error("Exception: "+ e.getMessage());
         }
