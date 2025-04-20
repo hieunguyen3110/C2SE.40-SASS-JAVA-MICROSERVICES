@@ -17,7 +17,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
     private static final String[] PUBLIC_ENDPOINT={
-            "/ws/**"
+            "/ws/**",
+            "/cronjob/**"
     };
 
     @Bean

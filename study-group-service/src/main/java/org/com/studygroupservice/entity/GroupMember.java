@@ -33,6 +33,5 @@ public class GroupMember {
         this.id = id;
         this.accountId = accountId;
         this.studyGroup = studyGroup;
-        this.role = GroupMemberRole.MEMBER;
     }
 }

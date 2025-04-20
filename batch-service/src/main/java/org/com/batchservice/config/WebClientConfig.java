@@ -2,10 +2,7 @@ package org.com.batchservice.config;
 
 import lombok.RequiredArgsConstructor;
 import org.com.batchservice.constant.AppConstant;
-import org.com.batchservice.repository.ChatbotClient;
-import org.com.batchservice.repository.DocumentClient;
-import org.com.batchservice.repository.IdentityClient;
-import org.com.batchservice.repository.RecommendationClient;
+import org.com.batchservice.repository.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
@@ -50,6 +47,31 @@ public class WebClientConfig {
                 .build();
         HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
         return httpServiceProxyFactory.createClient(IdentityClient.class);
+    }
+    @Bean
+    @LoadBalanced
+    ElearningClient elearningClient(WebClient.Builder builder){
+        WebClient webClient = builder
+                .baseUrl("http://e-learning-service/api/v1/e-learning")
+                .defaultRequest(request->{
+                    request.header("origin", AppConstant.SERVICE_NAME);
+                })
+                .build();
+        HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
+        return httpServiceProxyFactory.createClient(ElearningClient.class);
+    }
+
+    @Bean
+    @LoadBalanced
+    StudyGroupClient studyGroupClient(WebClient.Builder builder){
+        WebClient webClient = builder
+                .baseUrl("http://study-group-service/api/v1/study-group")
+                .defaultRequest(request->{
+                    request.header("origin", AppConstant.SERVICE_NAME);
+                })
+                .build();
+        HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
+        return httpServiceProxyFactory.createClient(StudyGroupClient.class);
     }
     @Bean
     public ChatbotClient chatbotClient() {

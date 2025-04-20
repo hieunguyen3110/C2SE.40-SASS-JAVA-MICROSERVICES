@@ -23,26 +23,17 @@ public class Assessment extends AbstractDefault {
     @Column(name = "account_id", nullable = false, unique = true)
     private Long accountId;
 
-    @Column(name = "study_hours_per_week")
-    private Integer studyHoursPerWeek;
-
-    @Column(name = "preferred_learning_style")
-    private String preferredLearningStyle;
-
     @Column(name = "online_courses_completed")
     private Integer onlineCoursesCompleted;
+
+    @Column(name = "online_test_completed")
+    private Integer onlineTestCompleted;
 
     @Column(name = "participation_in_discussions")
     private Boolean participationInDiscussions;
 
     @Column(name = "assignment_completion_rate")
     private Integer assignmentCompletionRate;
-
-    @Column(name = "time_spent_on_social_media")
-    private Integer timeSpentOnSocialMedia;
-
-    @Column(name = "sleep_hours_per_night")
-    private Integer sleepHoursPerNight;
 
     @Column(name = "exam_score")
     private Integer examScore;

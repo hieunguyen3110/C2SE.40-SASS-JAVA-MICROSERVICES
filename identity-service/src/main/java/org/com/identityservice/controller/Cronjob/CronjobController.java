@@ -1,11 +1,13 @@
 package org.com.identityservice.controller.Cronjob;
 
 import lombok.RequiredArgsConstructor;
+import org.com.identityservice.dto.request.UpdateMessageAnalyzeRequest;
 import org.com.identityservice.dto.response.AccountDto;
 import org.com.identityservice.dto.response.AccountRatingDto;
 import org.com.identityservice.dto.response.ApiResponse;
 import org.com.identityservice.helpers.CreateApiResponse;
 import org.com.identityservice.service.AccountService;
+import org.com.identityservice.service.AnalyzeService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,13 +17,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CronjobController {
     private final AccountService accountService;
+    private final AnalyzeService analyzeService;
 
-//    @PostMapping("/account/account-rated")
-//    public ApiResponse<List<AccountRatingDto>> getAllAccountByRatingDocId(@RequestBody List<Long> accountIds,
-//                                                                          @RequestParam("docTitle") String docTitle,
-//                                                                          @RequestParam("docId") long docId) throws Exception {
-//        return accountService.getAccountByAccountIds(accountIds,docTitle,docId);
-//    }
     @PostMapping("/account/update/account-rated")
     public ApiResponse<String> updateAccountListInRedis(@RequestBody List<Long> accountIds,
                                                                           @RequestParam("docTitle") String docTitle,
@@ -40,5 +37,14 @@ public class CronjobController {
     @PostMapping("/account/update-account-status")
     public ApiResponse<String> updateStatusAccount(@RequestBody Long accountId) throws Exception {
         return CreateApiResponse.createResponse(accountService.approveNewUsers(accountId),false);
+    }
+    @GetMapping("/account/account-analyze")
+    public ApiResponse<List<AccountDto>> getAllAccountNeedAnalyze() throws Exception {
+        return CreateApiResponse.createResponse(accountService.getAllAccountIsAnalyze(),false);
+    }
+
+    @PostMapping("/account/update-analyze-message")
+    public ApiResponse<String> updateMessageAnalyze(@RequestBody UpdateMessageAnalyzeRequest request) throws Exception {
+        return CreateApiResponse.createResponse(analyzeService.updateAnalyzeMessage(request), false);
     }
 }

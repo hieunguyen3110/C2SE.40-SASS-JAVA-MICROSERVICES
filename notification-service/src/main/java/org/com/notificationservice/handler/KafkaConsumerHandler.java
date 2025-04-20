@@ -17,15 +17,15 @@ import org.com.notificationservice.service.RedisService;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-
+@Component
 @RequiredArgsConstructor
 public class KafkaConsumerHandler {
     private final NotificationRepository notificationRepository;
     private final RedisService redisService;
-    private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final KafkaTemplate<String, String> kafkaTemplate;
 
@@ -53,7 +53,8 @@ public class KafkaConsumerHandler {
             Notification notification= convertToNotification(notificationEventRequest);
             notification= notificationRepository.save(notification);
             NotificationDto notificationDto= NotificationMapper.mapToNotificationDto(notification);
-            messagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-upload", notificationDto);
+            String json= objectMapper.writeValueAsString(notificationDto);
+            kafkaTemplate.send("follow-ws-topic",followerId,json);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
@@ -72,7 +73,28 @@ public class KafkaConsumerHandler {
             Notification notification= convertToNotification(notificationEventRequest);
             notification= notificationRepository.save(notification);
             NotificationDto notificationDto= NotificationMapper.mapToNotificationDto(notification);
-            messagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-follow", notificationDto);
+            String json= objectMapper.writeValueAsString(notificationDto);
+            kafkaTemplate.send("file-upload-ws-topic",followerId,json);
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "e-learning-topic", groupId = "notification-group")
+    public void listenBatchJobEvent(ConsumerRecord<String, String> record) throws Exception {
+        try{
+            String accountId = record.key();
+            String messageJson = record.value();
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Sử dụng định dạng ISO
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Bỏ qua thuộc tính không mong muốn
+            NotificationEventRequest notificationEventRequest = objectMapper.readValue(messageJson, NotificationEventRequest.class);
+            Notification notification= convertToNotification(notificationEventRequest);
+            notification= notificationRepository.save(notification);
+            NotificationDto notificationDto= NotificationMapper.mapToNotificationDto(notification);
+            String json= objectMapper.writeValueAsString(notificationDto);
+            kafkaTemplate.send("e-learning-ws-topic",accountId,json);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
@@ -107,7 +129,7 @@ public class KafkaConsumerHandler {
             GroupNotification groupNotification = objectMapper.convertValue(notificationData, GroupNotification.class);
 
             String destination = "/topic/group-notification/" + groupNotification.getGroupId();
-            messagingTemplate.convertAndSend(destination, groupNotification);
+            kafkaTemplate.send("study-group-ws-topic",userId,"");
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
