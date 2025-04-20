@@ -1,6 +1,9 @@
 package org.com.studygroupservice.dto.response;
 
 import lombok.*;
+import org.com.studygroupservice.entity.JoinRequest;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -14,6 +17,8 @@ public class StudyGroupEventDto {
     private String subjectName;
     private String picture;
     private int memberLimited;
+    private int memberCount;
+    private List<JoinRequest> joinRequests;
 
     public StudyGroupEventDto(Long groupId, Long userId, String message, Boolean isPrivate) {
         this.groupId = groupId;
@@ -22,7 +27,7 @@ public class StudyGroupEventDto {
         this.isPrivate = isPrivate;
     }
 
-    public StudyGroupEventDto(Long groupId, Long userId, Boolean isPrivate, String groupName, String description, String subjectName, String picture, int memberLimited) {
+    public StudyGroupEventDto(Long groupId, Long userId, Boolean isPrivate, String groupName, String description, String subjectName, String picture, int memberLimited, List<JoinRequest> joinRequests, int memberCount) {
         this.groupId = groupId;
         this.userId = userId;
         this.isPrivate = isPrivate;
@@ -31,5 +36,6 @@ public class StudyGroupEventDto {
         this.subjectName = subjectName;
         this.picture = picture;
         this.memberLimited = memberLimited;
+        this.joinRequests = joinRequests;
     }
 }

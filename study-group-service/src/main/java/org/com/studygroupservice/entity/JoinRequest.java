@@ -1,5 +1,6 @@
 package org.com.studygroupservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -8,10 +9,12 @@ import lombok.Data;
 public class JoinRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonIgnore
     private Long id;
 
     @ManyToOne
     @JoinColumn(name = "group_id", nullable = false)
+    @JsonIgnore
     private StudyGroup studyGroup;
 
     private Long userId;
