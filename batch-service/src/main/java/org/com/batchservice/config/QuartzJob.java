@@ -20,5 +20,7 @@ public class QuartzJob implements Job {
         batchConfig.runJobActiveUser();
         // run job 3: collect data
         batchConfig.runJobCollectData();
+        // run job 4: analyze student trending
+        batchConfig.runJobStudentLearnTrendAnalyze();
     }
 }

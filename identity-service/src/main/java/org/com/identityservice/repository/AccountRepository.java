@@ -17,6 +17,7 @@ import java.util.Optional;
 public interface AccountRepository extends JpaRepository<Account,Long> {
     Optional<Account> findAccountByEmail(String email);
     Optional<Account> findAccountByEmailAndIsActive(String email, boolean active);
+    Optional<Account> findByAccountId(Long accountId);
     List<Account> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String firstName, String lastName);
     long countByRoles_Name(String roleName);
 
@@ -52,5 +53,7 @@ public interface AccountRepository extends JpaRepository<Account,Long> {
     List<Account> findAllByCreatedAtAndIsActive(@Param("startDate")LocalDateTime startDate,
                                                        @Param("endDate") LocalDateTime endDate,
                                                        @Param("isActive") Boolean isActive);
+
+    List<Account> findAllByIsAnalyzeIsTrue();
 
 }

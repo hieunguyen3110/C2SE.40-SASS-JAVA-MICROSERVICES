@@ -36,8 +36,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -234,6 +233,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     .roles(Collections.singleton(role))
                     .isActive(false)
                     .isDeleted(false)
+                    .isAnalyze(false)
+                    .analyzes(new ArrayList<>())
                     .build();
             accountRepository.save(account);
             return CreateApiResponse.createResponse("Register account is successful",true);

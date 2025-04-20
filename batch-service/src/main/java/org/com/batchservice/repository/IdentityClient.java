@@ -2,6 +2,7 @@ package org.com.batchservice.repository;
 
 import org.com.batchservice.dto.response.AccountDto;
 import org.com.batchservice.dto.response.ApiResponse;
+import org.com.batchservice.dto.response.MessageAnalyze;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.PostExchange;
@@ -15,4 +16,8 @@ public interface IdentityClient {
     ApiResponse<List<AccountDto>> getAllNewAccountByDayActive();
     @PostExchange("/cronjob/account/update-account-status")
     ApiResponse<String> updateAccountStatus(@RequestBody Long accountId);
+    @GetExchange("/cronjob/account/account-analyze")
+    ApiResponse<List<AccountDto>> getAllAccountNeedAnalyze();
+    @PostExchange("/cronjob/account/update-analyze-message")
+    ApiResponse<String> updateAnalyzeMessage(@RequestBody MessageAnalyze messageAnalyze);
 }

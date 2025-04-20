@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.com.elearningservice.dto.request.AssessmentRequest;
 import org.com.elearningservice.dto.request.AssignmentRequest;
 import org.com.elearningservice.dto.request.CreateTestRequest;
+import org.com.elearningservice.dto.response.AnalyzeData;
 import org.com.elearningservice.dto.response.ApiResponse;
 import org.com.elearningservice.dto.response.QuestionDto;
 import org.com.elearningservice.dto.response.QuizSession;
@@ -50,5 +51,10 @@ public class ELearningController {
                                                 @RequestParam Integer questionId, @RequestParam String answer) {
         eLearningService.updateQuizAnswer(userId, quizId, questionId, answer);
         return CreateApiResponse.createResponse("Answer updated successfully", true);
+    }
+
+    @GetMapping("/analyze-data")
+    public ApiResponse<AnalyzeData> getAnalyzeDataByAccountId(@RequestParam("accountId") Long accountId) throws Exception {
+        return CreateApiResponse.createResponse(eLearningService.getAnalyzeDataByAccountId(accountId),false);
     }
 }

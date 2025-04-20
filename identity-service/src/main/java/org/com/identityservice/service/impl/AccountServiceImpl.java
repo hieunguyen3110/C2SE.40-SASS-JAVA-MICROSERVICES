@@ -3,9 +3,11 @@ package org.com.identityservice.service.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.com.identityservice.dto.request.AnalyzeRequest;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
 import org.com.identityservice.dto.response.*;
 import org.com.identityservice.entity.Account;
+import org.com.identityservice.entity.Analyze;
 import org.com.identityservice.entity.Role;
 import org.com.identityservice.enums.ErrorCode;
 import org.com.identityservice.exception.ApiException;
@@ -13,7 +15,11 @@ import org.com.identityservice.helpers.CreateApiResponse;
 import org.com.identityservice.helpers.UserDetailServiceCustom;
 import org.com.identityservice.mapper.AccountMapper;
 import org.com.identityservice.repository.AccountRepository;
+import org.com.identityservice.repository.AnalyzeRepository;
 import org.com.identityservice.repository.httpClient.DocumentClient;
+import org.com.identityservice.repository.httpClient.ELearningClient;
+import org.com.identityservice.repository.httpClient.RecommendationClient;
+import org.com.identityservice.repository.httpClient.StudyGroupClient;
 import org.com.identityservice.service.AccountService;
 import org.com.identityservice.service.FirebaseService;
 import org.com.identityservice.service.RedisService;
@@ -31,6 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,11 +50,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
+    private final AnalyzeRepository analyzeRepository;
     private final UserDetailServiceCustom userDetailServiceCustom;
     private final FirebaseService firebaseService;
     private final DocumentClient documentClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final ELearningClient eLearningClient;
+    private final RecommendationClient recommendationClient;
+    private final StudyGroupClient studyGroupClient;
     private List<Account> newAccounts;
     private String uploadProfilePicture(MultipartFile profilePicture) {
         try {
@@ -157,6 +168,24 @@ public class AccountServiceImpl implements AccountService {
                         accountDto.setPassword(null);
                         return accountDto;
                     })
+                    .toList();
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    public List<AccountDto> getAllAccountIsAnalyze() throws Exception {
+        try{
+            LocalDate now= LocalDate.now();
+            List<Account> accountList= accountRepository.findAllByIsAnalyzeIsTrue();
+            List<Account> accountFilters= accountList.stream()
+                    .filter(account-> now.isEqual(account.getLastAnalyzeTime().plusDays(7).toLocalDate()))
+                    .toList();
+            return accountFilters.stream()
+                    .map(account->AccountDto.builder()
+                            .accountId(account.getAccountId())
+                            .build())
                     .toList();
         }catch (Exception e){
             throw new Exception(e.getMessage());
@@ -426,6 +455,57 @@ public class AccountServiceImpl implements AccountService {
 
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error while deleting profile picture: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public String enableStudyAnalyze(AccountDto accountDto) throws Exception {
+        try{
+            Account account= accountRepository.findByAccountId(accountDto.getAccountId())
+                    .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(), "Account not found"));
+            AnalyzeData analyzeData= eLearningClient.getAnalyzeDataByAccountId(account.getAccountId()).getData();
+            account.setIsAnalyze(true);
+            account.setLastAnalyzeTime(LocalDateTime.now());
+            accountRepository.save(account);
+            if(analyzeData!=null){
+                Boolean checkParticipateGroup= studyGroupClient.checkAccountIsParticipateGroup(account.getAccountId()).getData();
+                AnalyzeRequest analyzeRequest= AnalyzeRequest.builder()
+                        .Assignment_Completion_Rate(List.of(analyzeData.getAssignmentScore()))
+                        .Exam_Score(List.of(analyzeData.getExamScore()))
+                        .Online_Courses_Completed(List.of(analyzeData.getOnlineCourseComplete()+analyzeData.getOnlineTestComplete()))
+                        .Participation_in_Discussions(List.of(checkParticipateGroup?"Yes":"No"))
+                        .build();
+                String response= recommendationClient.getSolutionByAI(analyzeRequest).getData();
+                Analyze analyze;
+                if(account.getAnalyzes().isEmpty()){
+                    analyze= Analyze.builder()
+                            .account(account)
+                            .message(response)
+                            .build();
+                }else{
+                    analyze= account.getAnalyzes().get(0);
+                    analyze.setMessage(response);
+                }
+                analyzeRepository.save(analyze);
+                return response;
+            }else{
+                return null;
+            }
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public String disableStudyAnalyze(AccountDto accountDto) throws Exception {
+        try{
+            Account account= accountRepository.findByAccountId(accountDto.getAccountId())
+                    .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(), "Account not found"));
+            account.setIsAnalyze(false);
+            accountRepository.save(account);
+            return "Disable study analyze is successful";
+        }catch (Exception e){
+            throw new Exception(e);
         }
     }
 }

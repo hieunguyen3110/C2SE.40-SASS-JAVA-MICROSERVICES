@@ -3,6 +3,7 @@ package org.com.elearningservice.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.com.elearningservice.dto.response.AnalyzeData;
 import org.com.elearningservice.dto.response.QuizSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.com.elearningservice.constant.AppConstant;
@@ -22,6 +23,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,14 +60,10 @@ public class ELearningServiceImpl implements ELearningService {
             
             Assessment assessment = new Assessment();
             assessment.setAccountId(account.getAccountId());
-            assessment.setStudyHoursPerWeek(request.getStudyHoursPerWeek());
-            assessment.setPreferredLearningStyle(request.getPreferredLearningStyle());
             assessment.setOnlineCoursesCompleted(request.getOnlineCoursesCompleted());
             assessment.setParticipationInDiscussions(request.getParticipationInDiscussions());
             assessment.setAssignmentCompletionRate(request.getAssignmentCompletionRate());
-            assessment.setTimeSpentOnSocialMedia(request.getTimeSpentOnSocialMedia());
-            assessment.setSleepHoursPerNight(request.getSleepHoursPerNight());
-            assessment = assessmentRepository.save(assessment);
+            assessmentRepository.save(assessment);
 
             String analysisResult = webClientBuilder.build()
                     .post()
@@ -114,13 +114,9 @@ public class ELearningServiceImpl implements ELearningService {
             quiz = quizRepository.save(quiz);
 
             AssessmentRequest assessmentRequest = new AssessmentRequest();
-            assessmentRequest.setStudyHoursPerWeek(assessment.getStudyHoursPerWeek());
-            assessmentRequest.setPreferredLearningStyle(assessment.getPreferredLearningStyle());
             assessmentRequest.setOnlineCoursesCompleted(assessment.getOnlineCoursesCompleted());
             assessmentRequest.setParticipationInDiscussions(assessment.getParticipationInDiscussions());
             assessmentRequest.setAssignmentCompletionRate(assessment.getAssignmentCompletionRate());
-            assessmentRequest.setTimeSpentOnSocialMedia(assessment.getTimeSpentOnSocialMedia());
-            assessmentRequest.setSleepHoursPerNight(assessment.getSleepHoursPerNight());
 
             GenerateQuestionsRequest aiRequest = new GenerateQuestionsRequest();
             aiRequest.setAssessment(assessmentRequest);
@@ -272,6 +268,79 @@ public class ELearningServiceImpl implements ELearningService {
                     "Error updating quiz answer: " + e.getMessage());
         }
     }
+
+    @Override
+    public List<AnalyzeData> getListDataAnalyze(List<Long> accountIds) throws Exception {
+        try{
+            LocalDateTime now= LocalDateTime.now();
+            LocalDateTime startDate= now.minusDays(7);
+            List<Grade> grades= gradeRepository.findByAccountIdsAndCreatedAtBetween(accountIds,startDate,now);
+            Map<Long, List<Grade>> gradeMaps= grades.stream()
+                    .collect(Collectors.groupingBy(Grade::getAccountId));
+            List<AnalyzeData> analyzeData= new ArrayList<>();
+            for(Map.Entry<Long,List<Grade>> entry : gradeMaps.entrySet()){
+                float assignmentGrade= 0;
+                int numberOfAssignment=0;
+                int numberOfExam=0;
+                float examGrade= 0;
+                for(Grade grade : entry.getValue()){
+                    if(grade.getAssignment()!=null){
+                        numberOfAssignment++;
+                        assignmentGrade += grade.getScore();
+                    }
+                    if(grade.getQuiz() != null){
+                        numberOfExam++;
+                        examGrade += grade.getScore();
+                    }
+                }
+                if(numberOfAssignment!=0 || numberOfExam!=0){
+                    analyzeData.add(AnalyzeData.builder()
+                            .onlineCourseComplete(numberOfAssignment)
+                            .onlineTestComplete(numberOfExam)
+                            .assignmentScore(numberOfAssignment==0?0:(assignmentGrade/numberOfAssignment))
+                            .examScore(numberOfExam==0?0:(examGrade/numberOfExam))
+                            .build());
+                }
+            }
+            return analyzeData;
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    public AnalyzeData getAnalyzeDataByAccountId(Long accountId) throws Exception {
+        try{
+            List<Grade> grades= gradeRepository.findByAccountId(accountId);
+            float assignmentGrade= 0;
+            int numberOfAssignment=0;
+            int numberOfExam=0;
+            float examGrade= 0;
+            for(Grade grade : grades){
+                if(grade.getAssignment()!=null){
+                    numberOfAssignment++;
+                    assignmentGrade += grade.getScore();
+                }
+                if(grade.getQuiz() != null){
+                    numberOfExam++;
+                    examGrade += grade.getScore();
+                }
+            }
+            if(numberOfAssignment!=0 || numberOfExam!=0){
+                return AnalyzeData.builder()
+                        .onlineCourseComplete(numberOfAssignment)
+                        .onlineTestComplete(numberOfExam)
+                        .assignmentScore(numberOfAssignment==0?0:(assignmentGrade/numberOfAssignment))
+                        .examScore(numberOfExam==0?0:(examGrade/numberOfExam))
+                        .build();
+            }else{
+                return null;
+            }
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
 
     private void updateExamScore(Long userId, Assessment assessment) {
         try {
