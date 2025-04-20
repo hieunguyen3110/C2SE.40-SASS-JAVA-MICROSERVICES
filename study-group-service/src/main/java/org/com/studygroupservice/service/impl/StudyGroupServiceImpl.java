@@ -21,7 +21,6 @@ import org.com.studygroupservice.service.RedisService;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -182,9 +181,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public StudyGroupEventDto getGroupDetails(Long groupId) {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            AccountDto currentUser = (AccountDto) authentication.getPrincipal();
-
             Optional<StudyGroup> studyGroupEventDto = groupRepository.findById(groupId);
 
             return studyGroupEventDto.map(group -> {
@@ -201,7 +197,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         group.getDescription(),
                         subject.getSubjectName(),
                         group.getPicture(),
-                        group.getMemberLimited()
+                        group.getMemberLimited(),
+                        group.getJoinRequests(),
+                        groupRepository.getMemberCount(group.getId())
                 );
             }).orElseThrow(() -> new ApiException(404, "Group with ID " + groupId + " not found."));
 
@@ -821,6 +819,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         dto.setPicture(group.getPicture());
                         dto.setSubjectName(subjectName);
                         dto.setUserId(group.getOwnerId());
+                        dto.setMemberLimited(group.getMemberLimited());
+                        dto.setMemberCount(groupRepository.getMemberCount(group.getId()));
                         return dto;
                     })
                     .collect(Collectors.toList());
@@ -830,7 +830,5 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             throw new ApiException(500, "Failed to fetch groups by user ID: " + e.getMessage());
         }
     }
-
-
 
 }
