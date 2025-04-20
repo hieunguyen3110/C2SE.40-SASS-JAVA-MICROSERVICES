@@ -3,39 +3,25 @@ package org.com.elearningservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-@EqualsAndHashCode(callSuper = true)
+import java.util.List;
+
 @Entity
 @Table(name = "questions")
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Question extends AbstractDefault {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "quiz_id")
-    private Quiz quiz;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignment_id")
-    private Assignment assignment;
-
-    private String content;
-
-    @Column(columnDefinition = "JSON")
-    private String options;
-
-    @Column(name = "correct_answer")
+    private Long subjectId;
+    private String questionText;
     private String correctAnswer;
+
+    @Column(columnDefinition = "TEXT")
+    private String options;
 }
-//content: "Question content",
-//options: {
-//        "A": "Option A",
-//        "B": "Option B",
-//        "C": "Option C",
-//        }
-//correctAnswer: ["A", "B"]
 

@@ -1,29 +1,29 @@
 package org.com.elearningservice.entity;
 
-import jakarta.persistence.*;
 import lombok.*;
+import jakarta.persistence.*;
+import org.com.elearningservice.enums.ResultType;
 
-@EqualsAndHashCode(callSuper = true)
+import java.util.List;
+
 @Entity
-@Table(name = "grade")
-@Data
+@Table(name = "grades")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Grade extends AbstractDefault {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "account_id", nullable = false)
-    private Long accountId;
+    private Long userId;
+    private Long subjectId;
+    private int score;
+    private int totalQuestions;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "quiz_id")
-    private Quiz quiz;
+    @Enumerated(EnumType.STRING)
+    private ResultType type;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignment_id")
-    private Assignment assignment;
-
-    private Float score;
 }
