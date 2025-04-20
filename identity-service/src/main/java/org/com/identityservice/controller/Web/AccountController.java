@@ -12,7 +12,7 @@ import org.com.identityservice.helpers.CreateApiResponse;
 import org.com.identityservice.producer.UserUpdateProducer;
 import org.com.identityservice.service.AccountService;
 import org.com.identityservice.service.RedisService;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -110,11 +110,26 @@ public class AccountController {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
         }
     }
-//    @PostMapping("/account-rated")
-//    public ApiResponse<List<AccountRatingDto>> getAllAccountByRatingDocId(@RequestBody List<Long> accountIds,
-//                                                                          @RequestParam("docTitle") String docTitle,
-//                                                                          @RequestParam("docId") long docId) throws Exception {
-//        return accountService.getAccountByAccountIds(accountIds,docTitle,docId);
-//    }
+
+    @GetMapping("/enable-analyze-data")
+    public ApiResponse<String> handleEnableStudyAnalyze() throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(!(authentication instanceof AnonymousAuthenticationToken)){
+            AccountDto accountDto= (AccountDto) authentication.getPrincipal();
+            return CreateApiResponse.createResponse(accountService.enableStudyAnalyze(accountDto), false);
+        }else{
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
+        }
+    }
+    @GetMapping("/disable-analyze-data")
+    public ApiResponse<String> handleDisableStudyAnalyze() throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(!(authentication instanceof AnonymousAuthenticationToken)){
+            AccountDto accountDto= (AccountDto) authentication.getPrincipal();
+            return CreateApiResponse.createResponse(accountService.disableStudyAnalyze(accountDto), false);
+        }else{
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
+        }
+    }
 
 }

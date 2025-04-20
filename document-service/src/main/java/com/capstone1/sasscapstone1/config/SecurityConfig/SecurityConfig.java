@@ -36,7 +36,7 @@ public class SecurityConfig {
                                     "/download/**",
                                     "/chat-bot/**",
                                     "/user/**"
-                            ).hasAnyRole("STUDENT","LECTURER")
+                            ).hasAnyRole("STUDENT","LECTURE")
                             .requestMatchers(
                                     "/admin/**"
                             ).hasRole("ADMIN")

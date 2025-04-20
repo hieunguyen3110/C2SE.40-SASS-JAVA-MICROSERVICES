@@ -1,8 +1,6 @@
 package org.com.identityservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -10,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Getter
@@ -70,6 +69,15 @@ public class Account extends AbstractDefault implements UserDetails {
     @Column(name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "is_analyze")
+    private Boolean isAnalyze;
+
+    @Column(name = "last_analyze_time")
+    private LocalDateTime lastAnalyzeTime;
+
+    @OneToMany(mappedBy = "account")
+    private List<Analyze> analyzes;
+
     @ManyToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     @JoinTable(
             name = "Account_Role",
@@ -78,6 +86,7 @@ public class Account extends AbstractDefault implements UserDetails {
     )
     @JsonIgnoreProperties("accounts")
     private Set<Role> roles;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<SimpleGrantedAuthority> authorities= new ArrayList<>();
