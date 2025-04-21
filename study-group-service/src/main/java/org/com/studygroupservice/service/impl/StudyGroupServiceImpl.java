@@ -4,11 +4,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.com.studygroupservice.dto.request.NotificationEventRequest;
 import org.com.studygroupservice.dto.response.*;
 import org.com.studygroupservice.entity.JoinRequest;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.StudyGroup;
+import org.com.studygroupservice.enums.ErrorCode;
 import org.com.studygroupservice.enums.GroupMemberRole;
 import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.handler.KafkaProducerService;
@@ -285,43 +287,42 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public void joinGroup(Long groupId, Long userId) {
-        StudyGroupEventDto dto =  getGroupDetails(groupId);
+    public void joinGroup(Long groupId, AccountDto accountDto) throws Exception {
+        try{
+            StudyGroup group =  groupRepository.findById(groupId)
+                    .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Group not found"));
 
-        StudyGroup group =  new StudyGroup();
-        group.setId(dto.getGroupId());
-        group.setOwnerId(dto.getUserId());
-        group.setIsPrivate(dto.getIsPrivate());
-        group.setName(dto.getGroupName());
-        group.setDescription(dto.getDescription());
-        group.setPicture(dto.getPicture());
-        group.setSubjectId(searchSubjectsByName(dto.getSubjectName()).get(0).getSubjectId());
-        group.setMemberLimited(dto.getMemberLimited());
-
-        if (isMember(groupId, userId)) {
-            throw new ApiException(400, "User is already a member of the group.");
-        }
-
-        if (group.getIsPrivate()) {
-            // Kiểm tra nếu đã có yêu cầu đang chờ
-            if (joinRequestRepository.findByStudyGroupIdAndUserId(groupId, userId).isPresent()) {
-                throw new ApiException(400, "You have already sent a request to join this private group.");
+            if (isMember(groupId, accountDto.getAccountId())) {
+                throw new ApiException(400, "User is already a member of the group.");
+            }
+            if(group.getMemberLimited()==group.getMembers().size()){
+                throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"The group enough members");
             }
 
-            // Tạo yêu cầu tham gia nhóm
-            JoinRequest joinRequest = new JoinRequest();
-            joinRequest.setStudyGroup(group);
-            joinRequest.setUserId(userId);
-            joinRequest.setStatus(JoinRequest.RequestStatus.PENDING);
-            joinRequestRepository.save(joinRequest);
-
-            log.info("User {} requested to join private group {}", userId, groupId);
-        } else {
-            // Nếu là nhóm công khai, cho phép tham gia ngay lập tức
-            GroupMember member = new GroupMember(null, userId, group);
-            memberRepository.save(member);
-
-            kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, userId, "join", null, null));
+            if (group.getIsPrivate()) {
+                // Kiểm tra nếu đã có yêu cầu đang chờ
+                if (joinRequestRepository.findByStudyGroupIdAndUserId(groupId, accountDto.getAccountId()).isPresent()) {
+                    throw new ApiException(400, "You have already sent a request to join this private group.");
+                }
+                // Tạo yêu cầu tham gia nhóm
+                JoinRequest joinRequest = new JoinRequest();
+                joinRequest.setStudyGroup(group);
+                joinRequest.setUserId(accountDto.getAccountId());
+                joinRequest.setStatus(JoinRequest.RequestStatus.PENDING);
+                joinRequestRepository.save(joinRequest);
+                List<Long> filterAdminMember= group.getMembers().stream()
+                        .filter(member-> member.getRole().equals(GroupMemberRole.ADMIN))
+                        .map(GroupMember::getAccountId)
+                        .toList();
+                kafkaProducerService.sendJoinRequestEvent(accountDto,group.getOwnerId(),filterAdminMember,group.getName());
+                log.info("User {} requested to join private group {}", accountDto.getAccountId(), groupId);
+            } else {
+                // Nếu là nhóm công khai, cho phép tham gia ngay lập tức
+                GroupMember member = new GroupMember(null, accountDto.getAccountId(), group);
+                memberRepository.save(member);
+            }
+        }catch (Exception e){
+            throw new Exception(e);
         }
     }
 
