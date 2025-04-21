@@ -6,7 +6,7 @@ import java.util.List;
 
 @Data
 public class QuizSessionDTO {
-    private Long userId;
+    private Long accountId;
     private Long subjectId;
     private List<QuestionDTO> questions;
     private List<String> userAnswers;

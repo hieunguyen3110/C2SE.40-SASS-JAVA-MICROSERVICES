@@ -40,7 +40,7 @@ public class QuizServiceImpl implements QuizService {
     @Value("${app.ai-service.url}")
     private String aiServiceUrl;
 
-    private Long getCurrentUserId() {
+    private Long getCurrentAccountId() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto accountDto = (AccountDto) authentication.getPrincipal();
@@ -189,7 +189,7 @@ public class QuizServiceImpl implements QuizService {
                 throw new ApiException(HttpStatus.BAD_REQUEST.value(), "Duration must be greater than 0");
             }
 
-            Long userId = getCurrentUserId();
+            Long accountId = getCurrentAccountId();
 
             List<QuestionDTO> questions;
             if (isAssignment) {
@@ -199,13 +199,13 @@ public class QuizServiceImpl implements QuizService {
             }
 
             QuizSessionDTO session = new QuizSessionDTO();
-            session.setUserId(userId);
+            session.setAccountId(accountId);
             session.setSubjectId(subjectId);
             session.setQuestions(questions);
             session.setUserAnswers(new ArrayList<>());
             session.setAssignment(isAssignment);
 
-            String sessionKey = "session:" + userId + ":" + (isAssignment ? "assignment" : "quiz");
+            String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
             redisTemplate.opsForValue().set(sessionKey, session, (duration+5) * 60L , TimeUnit.SECONDS);
 
             return session;
@@ -219,8 +219,8 @@ public class QuizServiceImpl implements QuizService {
     @Override
     public QuizSessionDTO restoreSession(boolean isAssignment) {
         try {
-            Long userId = getCurrentUserId();
-            String sessionKey = "session:" + userId + ":" + (isAssignment ? "assignment" : "quiz");
+            Long accountId = getCurrentAccountId();
+            String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
             QuizSessionDTO session = (QuizSessionDTO) redisTemplate.opsForValue().get(sessionKey);
             return session != null ? session : startSession(null, 0, 0, isAssignment);
         } catch (ApiException e) {
@@ -233,24 +233,28 @@ public class QuizServiceImpl implements QuizService {
     @Override
     public Grade submitSession(Long subjectId, List<String> userAnswers, boolean isAssignment) {
         try {
-            Long userId = getCurrentUserId();
+            Long accountId = getCurrentAccountId();
             validateSubjectId(subjectId);
 
-            String sessionKey = "session:" + userId + ":" + (isAssignment ? "assignment" : "quiz");
+            String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
             QuizSessionDTO session = (QuizSessionDTO) redisTemplate.opsForValue().get(sessionKey);
             if (session == null) {
                 throw new ApiException(HttpStatus.NOT_FOUND.value(), "Session not found");
             }
 
-            int score = 0;
+            int correctAnswers = 0;
             for (int i = 0; i < userAnswers.size(); i++) {
                 if (userAnswers.get(i).equals(session.getQuestions().get(i).getCorrectAnswer())) {
-                    score++;
+                    correctAnswers++;
                 }
             }
 
+            float rawScore = ((float) correctAnswers / userAnswers.size()) * 100;
+            Float score = Math.min(100.0f, Math.max(0.0f, Math.round(rawScore * 100) / 100.0f));
+
+
             Grade result = new Grade();
-            result.setUserId(userId);
+            result.setAccountId(accountId);
             result.setSubjectId(subjectId);
             result.setScore(score);
             result.setTotalQuestions(userAnswers.size());
@@ -271,8 +275,8 @@ public class QuizServiceImpl implements QuizService {
     @Override
     public QuizSessionDTO updateSessionAnswer(List<String> userAnswers, boolean isAssignment) {
         try {
-            Long userId = getCurrentUserId();
-            String sessionKey = "session:" + userId + ":" + (isAssignment ? "assignment" : "quiz");
+            Long accountId = getCurrentAccountId();
+            String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
             QuizSessionDTO session = (QuizSessionDTO) redisTemplate.opsForValue().get(sessionKey);
             if (session == null) {
                 throw new ApiException(HttpStatus.NOT_FOUND.value(), "Session not found");
@@ -299,8 +303,8 @@ public class QuizServiceImpl implements QuizService {
     @Override
     public List<Grade> getHistory() {
         try {
-            Long userId = getCurrentUserId();
-            return gradeRepository.findByUserId(userId);
+            Long accountId = getCurrentAccountId();
+            return gradeRepository.findByAccountId(accountId);
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
