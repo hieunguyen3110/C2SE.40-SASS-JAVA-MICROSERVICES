@@ -100,6 +100,26 @@ public class KafkaConsumerHandler {
         }
     }
 
+    @KafkaListener(topics = "save-notification-topic", groupId = "notification-group")
+    public void listenJoinGroupEvent(ConsumerRecord<String, String> record) throws Exception {
+        try{
+            String accountId = record.key();
+            String messageJson = record.value();
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Sử dụng định dạng ISO
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Bỏ qua thuộc tính không mong muốn
+            NotificationEventRequest notificationEventRequest = objectMapper.readValue(messageJson, NotificationEventRequest.class);
+            Notification notification= convertToNotification(notificationEventRequest);
+            notification= notificationRepository.save(notification);
+            NotificationDto notificationDto= NotificationMapper.mapToNotificationDto(notification);
+            String json= objectMapper.writeValueAsString(notificationDto);
+            kafkaTemplate.send("join-group-ws-topic",accountId,json);
+        }catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
+    }
+
     @KafkaListener(topics = "user-update-topic", groupId = "notification-group")
     public void listenUserUpdateEvent(ConsumerRecord<String, Object> record) throws Exception {
         try{
