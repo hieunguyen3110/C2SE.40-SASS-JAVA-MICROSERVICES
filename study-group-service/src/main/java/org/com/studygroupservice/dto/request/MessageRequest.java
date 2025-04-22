@@ -13,4 +13,6 @@ public class MessageRequest {
     private Long groupId;
     private String content;
     private String timestamp;
+    private String username;
+    private String profilePicture;
 }
