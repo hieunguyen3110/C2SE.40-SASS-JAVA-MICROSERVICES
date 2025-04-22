@@ -3,10 +3,13 @@ package org.com.studygroupservice.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
-@Data
-public class JoinRequest {
+@Getter
+@Setter
+public class JoinRequest extends AbstractDefault {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @JsonIgnore
@@ -17,7 +20,7 @@ public class JoinRequest {
     @JsonIgnore
     private StudyGroup studyGroup;
 
-    private Long userId;
+    private Long accountId;
 
     @Enumerated(EnumType.STRING)
     private RequestStatus status;

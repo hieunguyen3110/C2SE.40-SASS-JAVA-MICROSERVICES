@@ -170,4 +170,16 @@ public class StudyGroupController {
         return CreateApiResponse.createResponse(groups, false);
     }
 
+    @PostMapping("/join-requests/{joinRequestId}/approve")
+    public ApiResponse<Void> approveJoinRequest(@PathVariable Long joinRequestId) {
+        groupService.approveJoinRequest(joinRequestId);
+        return CreateApiResponse.createResponse(null, false);
+    }
+
+    @PostMapping("/join-requests/{joinRequestId}/reject")
+    public ApiResponse<Void> rejectJoinRequest(@PathVariable Long joinRequestId) {
+        groupService.rejectJoinRequest(joinRequestId);
+        return CreateApiResponse.createResponse(null, false);
+    }
+
 }

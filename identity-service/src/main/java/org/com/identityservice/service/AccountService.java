@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 public interface AccountService {
     ApiResponse<String> allowActiveAccount(String email) throws Exception;
@@ -25,4 +26,5 @@ public interface AccountService {
     ApiResponse<List<SearchUserResponseDto>> searchUsersByName(String name, Long accountId, int pageNum, int pageSize);
     ApiResponse<UserProfileResponse> updateUserProfile(AccountDto account, UpdateUserProfileRequest request, MultipartFile profilePicture);
     void deleteProfilePicture(Long accountId);
+    List<AccountDto> findByIds(Set<Long> accountIds);
 }

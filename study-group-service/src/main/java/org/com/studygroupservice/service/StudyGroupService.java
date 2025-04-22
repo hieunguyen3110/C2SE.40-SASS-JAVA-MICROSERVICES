@@ -71,4 +71,8 @@ public interface StudyGroupService {
     boolean isGroupOwner(Long groupId, Long userId);
 
     List<StudyGroupEventDto> getGroupsByUserId();
+
+    void approveJoinRequest(Long joinRequestId);
+
+    void rejectJoinRequest(Long joinRequestId);
 }
