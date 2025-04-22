@@ -4,10 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.com.studygroupservice.dto.response.ApiResponse;
 import org.com.studygroupservice.helpers.CreateApiResponse;
 import org.com.studygroupservice.service.GroupMemberService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor

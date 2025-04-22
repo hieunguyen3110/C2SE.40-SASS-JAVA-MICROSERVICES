@@ -40,9 +40,9 @@ public class Documents extends AbstractDefault {
     @Column(name = "file_name")
     private String fileName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "subject_id")
-    @JsonIgnore
+//    @JsonIgnore
     private Subject subject;
 
     @Column(name = "is_active", columnDefinition = "boolean DEFAULT false")
@@ -57,8 +57,8 @@ public class Documents extends AbstractDefault {
     @Column(name = "is_train")
     private Boolean isTrain= false;
 
-//    @Column(name = "is_generate-question")
-//    private Boolean isGenerateQuestion= false;
+    @Column(name = "is_generate-question")
+    private Boolean isGenerateQuestion= false;
 
     @Column(name = "approved_by")
     private String approvedBy;

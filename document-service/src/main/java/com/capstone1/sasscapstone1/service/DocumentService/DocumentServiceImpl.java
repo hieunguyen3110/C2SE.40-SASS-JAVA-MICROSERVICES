@@ -414,9 +414,15 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public List<DocumentDto> getAllNewDocuments() throws Exception {
         try{
-            List<Documents> documents= documentsRepository.findAllByIsActiveIsTrue();
+            List<Documents> documents= documentsRepository.findAllByIsActiveIsTrueAndIsGenerateQuestionIsFalse();
             return documents.stream()
-                    .map(this::mapToDocumentDto)
+                    .map(document->{
+                        DocumentDto dto= mapToDocumentDto(document);
+                        dto.setSubjectId(document.getSubject().getSubjectId());
+                        dto.setSubjectCode(document.getSubject().getSubjectCode());
+                        dto.setSubjectName(document.getSubject().getSubjectName());
+                        return dto;
+                    })
                     .toList();
         }catch (Exception e){
             throw new Exception(e);

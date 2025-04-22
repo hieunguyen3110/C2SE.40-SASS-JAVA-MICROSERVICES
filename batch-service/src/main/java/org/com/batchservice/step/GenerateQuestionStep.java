@@ -2,7 +2,7 @@ package org.com.batchservice.step;
 
 import lombok.RequiredArgsConstructor;
 import org.com.batchservice.dto.response.DocumentDto;
-import org.com.batchservice.dto.response.QuestionResponse;
+import org.com.batchservice.dto.response.QuestionDto;
 import org.com.batchservice.processor.GenerateQuestionProcessorCustom;
 import org.com.batchservice.reader.GenerateQuestionReaderCustom;
 import org.com.batchservice.writter.GenerateQuestionWriterCustom;
@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @RequiredArgsConstructor
@@ -26,11 +27,11 @@ public class GenerateQuestionStep {
     private final PlatformTransactionManager transactionManager;
     @Bean
     public Step generateQuestionStepHandler(ItemReader<DocumentDto> generateQuestionReader,
-                                       ItemProcessor<DocumentDto,List<QuestionResponse>> generateQuestionProcessor,
-                                       ItemWriter<List<QuestionResponse>> generateQuestionWriter)
+                                       ItemProcessor<DocumentDto,Map<Long,List<QuestionDto>>> generateQuestionProcessor,
+                                       ItemWriter<Map<Long,List<QuestionDto>>> generateQuestionWriter)
     {
         return new StepBuilder("generateQuestionStep", jobRepository)
-                .<DocumentDto, List<QuestionResponse>>chunk(10, transactionManager)
+                .<DocumentDto, Map<Long,List<QuestionDto>>>chunk(10, transactionManager)
                 .reader(generateQuestionReader)
                 .processor(generateQuestionProcessor)
                 .writer(generateQuestionWriter)
@@ -43,12 +44,12 @@ public class GenerateQuestionStep {
     }
     @Bean
     @StepScope
-    public ItemProcessor<DocumentDto, List<QuestionResponse>> generateQuestionProcessor(GenerateQuestionProcessorCustom processorCustom){
+    public ItemProcessor<DocumentDto, Map<Long,List<QuestionDto>>> generateQuestionProcessor(GenerateQuestionProcessorCustom processorCustom){
         return processorCustom;
     }
     @Bean
     @StepScope
-    public ItemWriter<List<QuestionResponse>> generateQuestionWriter(GenerateQuestionWriterCustom writerCustom){
+    public ItemWriter<Map<Long,List<QuestionDto>>> generateQuestionWriter(GenerateQuestionWriterCustom writerCustom){
         return writerCustom;
     }
 }

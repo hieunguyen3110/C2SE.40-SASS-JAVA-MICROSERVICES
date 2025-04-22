@@ -12,4 +12,7 @@ public class DocumentDto {
     private String fileName;
     private String description;
     private String filePath;
+    private String subjectCode;
+    private Long subjectId;
+    private String subjectName;
 }

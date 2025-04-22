@@ -1,18 +1,16 @@
 package org.com.batchservice.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Map;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuestionResponse {
-    private String correct_answer;
+public class QuestionDto {
+    private String correctAnswer;
     private Map<String,Object> options;
     private String question;
 }
