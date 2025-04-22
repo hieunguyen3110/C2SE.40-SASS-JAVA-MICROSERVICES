@@ -68,7 +68,7 @@ public class StudyGroupController {
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
         if(!(authentication instanceof AnonymousAuthenticationToken)){
             AccountDto accountDto= (AccountDto) authentication.getPrincipal();
-            groupService.joinGroup(groupId, accountDto);
+            groupService.joinGroup(groupId, accountDto.getAccountId());
             return CreateApiResponse.createResponse("Send request join group successful", false);
         }else{
             throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Token is expires");
@@ -177,6 +177,18 @@ public class StudyGroupController {
     public ApiResponse<List<StudyGroupEventDto>> getGroupsByUserId() {
         List<StudyGroupEventDto> groups = groupService.getGroupsByUserId();
         return CreateApiResponse.createResponse(groups, false);
+    }
+
+    @PostMapping("/join-requests/{joinRequestId}/approve")
+    public ApiResponse<Void> approveJoinRequest(@PathVariable Long joinRequestId) {
+        groupService.approveJoinRequest(joinRequestId);
+        return CreateApiResponse.createResponse(null, false);
+    }
+
+    @PostMapping("/join-requests/{joinRequestId}/reject")
+    public ApiResponse<Void> rejectJoinRequest(@PathVariable Long joinRequestId) {
+        groupService.rejectJoinRequest(joinRequestId);
+        return CreateApiResponse.createResponse(null, false);
     }
 
 }

@@ -13,18 +13,13 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 @Data
 public class AbstractDefault {
+
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+
 }

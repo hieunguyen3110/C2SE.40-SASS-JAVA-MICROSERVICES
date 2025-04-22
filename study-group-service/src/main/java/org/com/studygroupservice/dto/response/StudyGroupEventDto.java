@@ -18,7 +18,7 @@ public class StudyGroupEventDto {
     private String picture;
     private int memberLimited;
     private int memberCount;
-    private List<JoinRequest> joinRequests;
+    private List<JoinRequestDto> joinRequests;
 
     public StudyGroupEventDto(Long groupId, Long userId, String message, Boolean isPrivate) {
         this.groupId = groupId;
@@ -27,7 +27,7 @@ public class StudyGroupEventDto {
         this.isPrivate = isPrivate;
     }
 
-    public StudyGroupEventDto(Long groupId, Long userId, Boolean isPrivate, String groupName, String description, String subjectName, String picture, int memberLimited, List<JoinRequest> joinRequests, int memberCount) {
+    public StudyGroupEventDto(Long groupId, Long userId, Boolean isPrivate, String groupName, String description, String subjectName, String picture, int memberLimited, List<JoinRequestDto> joinRequests, int memberCount) {
         this.groupId = groupId;
         this.userId = userId;
         this.isPrivate = isPrivate;
