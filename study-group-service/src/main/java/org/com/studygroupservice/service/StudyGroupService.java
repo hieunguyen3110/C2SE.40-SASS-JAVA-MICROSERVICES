@@ -32,7 +32,7 @@ public interface StudyGroupService {
     void addMember(Long groupId, Long userId);
 
     @Transactional
-    void joinGroup(Long groupId, AccountDto accountDto) throws Exception;
+    void joinGroup(Long groupId, Long accountId) throws Exception;
 
     void removeMember(Long groupId, Long userId);
 
