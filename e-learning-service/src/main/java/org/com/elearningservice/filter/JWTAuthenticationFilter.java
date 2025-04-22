@@ -32,6 +32,10 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                                     @NotNull FilterChain filterChain) throws ServletException, IOException {
         try{
             String userInfoJson= request.getHeader("X-User-Info");
+            String origin= request.getHeader("origin");
+            if(origin!=null && origin.equals("batch-service")){
+                filterChain.doFilter(request,response);
+            }
             if(userInfoJson != null){
                 AccountDto accountDto= objectMapper.readValue(userInfoJson,AccountDto.class);
                 List<GrantedAuthority> authorities = accountDto.getRoles().stream()

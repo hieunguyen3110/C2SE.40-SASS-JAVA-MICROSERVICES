@@ -8,8 +8,10 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.com.websocketserver.dto.response.NotificationDto;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Component;
 
 @Slf4j
+@Component
 @RequiredArgsConstructor
 public class KafkaConsumerHandler {
     private final SimpMessagingTemplate simpMessagingTemplate;
@@ -34,6 +36,30 @@ public class KafkaConsumerHandler {
             String json= records.value();
             NotificationDto notificationDto= objectMapper.readValue(json,NotificationDto.class);
             simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-upload", notificationDto);
+        }catch (JsonProcessingException e){
+            log.error("Error: "+ e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "e-learning-ws-topic", groupId = "websocket-group")
+    public void sendNotificationELearningForClient(ConsumerRecord<String, String> records) {
+        try{
+            String followerId= records.key();
+            String json= records.value();
+            NotificationDto notificationDto= objectMapper.readValue(json,NotificationDto.class);
+            simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-e-learning", notificationDto);
+        }catch (JsonProcessingException e){
+            log.error("Error: "+ e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "join-group-ws-topic", groupId = "websocket-group")
+    public void sendNotificationJoinRequest(ConsumerRecord<String, String> records) {
+        try{
+            String followerId= records.key();
+            String json= records.value();
+            NotificationDto notificationDto= objectMapper.readValue(json,NotificationDto.class);
+            simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-join-request", notificationDto);
         }catch (JsonProcessingException e){
             log.error("Error: "+ e.getMessage());
         }

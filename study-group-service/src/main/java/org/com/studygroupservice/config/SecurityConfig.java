@@ -17,7 +17,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
     private static final String[] PUBLIC_ENDPOINT={
-            "/ws/**"
+            "/ws/**",
+            "/cronjob/**"
     };
 
     @Bean
@@ -29,7 +30,7 @@ public class SecurityConfig {
                             .requestMatchers(PUBLIC_ENDPOINT).permitAll()
                             .requestMatchers(
                                     "/study-group/**"
-                            ).hasAnyRole("STUDENT","LECTURER")
+                            ).hasAnyRole("STUDENT","LECTURE")
                             .requestMatchers(
                                     "/admin/**"
                             ).hasRole("ADMIN")

@@ -14,6 +14,7 @@ public interface AccountService {
     Page<AccountDto> listUsers(int page, int size);
     List<AccountDto> getAllNewUserByDay() throws Exception;
     List<AccountDto> getAllNewUserByDayIsActiveIsTrue() throws Exception;
+    List<AccountDto> getAllAccountIsAnalyze() throws Exception;
     AccountDto getUserDetails(Long accountId);
     AccountDto getUserDetails(String email);
     Long countStatsByRoleName(String roleName);
@@ -26,5 +27,8 @@ public interface AccountService {
     ApiResponse<List<SearchUserResponseDto>> searchUsersByName(String name, Long accountId, int pageNum, int pageSize);
     ApiResponse<UserProfileResponse> updateUserProfile(AccountDto account, UpdateUserProfileRequest request, MultipartFile profilePicture);
     void deleteProfilePicture(Long accountId);
+
+    String enableStudyAnalyze(AccountDto accountDto) throws Exception;
+    String disableStudyAnalyze(AccountDto accountDto) throws Exception;
     List<AccountDto> findByIds(Set<Long> accountIds);
 }

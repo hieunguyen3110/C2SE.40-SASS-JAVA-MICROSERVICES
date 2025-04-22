@@ -15,6 +15,7 @@ public class BatchConfig {
     private final Job customCollectDataJob;
     private final Job customCheckDocAndTrainDocJob;
     private final Job customActiveUserJob;
+    private final Job customStudentLearnTrendAnalyzeJob;
     private final JobLauncher jobLauncher;
 
     public void runJobCheckDocAndTrainDoc(){
@@ -43,6 +44,16 @@ public class BatchConfig {
                 .toJobParameters();
         try{
             jobLauncher.run(customCheckingRatingContentJob,checkingRatingContentParameter);
+        }catch (Exception e){
+            log.error("Exception: "+ e.getMessage());
+        }
+    }
+    public void runJobStudentLearnTrendAnalyze(){
+        JobParameters studentLearnTrendAnalyzeParameter= new JobParametersBuilder()
+                .addString("ID", "analyze_student_"+System.currentTimeMillis())
+                .toJobParameters();
+        try{
+            jobLauncher.run(customStudentLearnTrendAnalyzeJob,studentLearnTrendAnalyzeParameter);
         }catch (Exception e){
             log.error("Exception: "+ e.getMessage());
         }

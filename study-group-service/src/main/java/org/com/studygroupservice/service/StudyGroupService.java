@@ -1,6 +1,7 @@
 package org.com.studygroupservice.service;
 
 import org.com.studygroupservice.dto.request.CreateGroupRequest;
+import org.com.studygroupservice.dto.response.AccountDto;
 import org.com.studygroupservice.dto.response.GroupResponse;
 import org.com.studygroupservice.dto.response.StudyGroupEventDto;
 import org.com.studygroupservice.dto.response.SubjectDto;
@@ -31,7 +32,7 @@ public interface StudyGroupService {
     void addMember(Long groupId, Long userId);
 
     @Transactional
-    void joinGroup(Long groupId, Long userId);
+    void joinGroup(Long groupId, AccountDto accountDto) throws Exception;
 
     void removeMember(Long groupId, Long userId);
 
