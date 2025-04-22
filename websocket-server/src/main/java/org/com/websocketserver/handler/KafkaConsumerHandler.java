@@ -61,6 +61,18 @@ public class KafkaConsumerHandler {
             String json= records.value();
             MessageResponse response= objectMapper.readValue(json,MessageResponse.class);
             simpMessagingTemplate.convertAndSendToUser(groupId,"/queue/messages",response);
+          }catch (JsonProcessingException e){
+            log.error("Error: "+ e.getMessage());
+        }
+    }
+  
+    @KafkaListener(topics = "join-group-ws-topic", groupId = "websocket-group")
+    public void sendNotificationJoinRequest(ConsumerRecord<String, String> records) {
+        try{
+            String followerId= records.key();
+            String json= records.value();
+            NotificationDto notificationDto= objectMapper.readValue(json,NotificationDto.class);
+            simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-join-request", notificationDto);
         }catch (JsonProcessingException e){
             log.error("Error: "+ e.getMessage());
         }
