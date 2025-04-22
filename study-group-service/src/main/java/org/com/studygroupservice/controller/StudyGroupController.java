@@ -68,7 +68,7 @@ public class StudyGroupController {
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
         if(!(authentication instanceof AnonymousAuthenticationToken)){
             AccountDto accountDto= (AccountDto) authentication.getPrincipal();
-            groupService.joinGroup(groupId, accountDto);
+            groupService.joinGroup(groupId, accountDto.getAccountId());
             return CreateApiResponse.createResponse("Send request join group successful", false);
         }else{
             throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Token is expires");
