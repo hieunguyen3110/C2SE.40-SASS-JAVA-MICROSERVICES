@@ -56,7 +56,7 @@ public class KafkaConsumerHandler {
                     .timestamp(messageRequest.getTimestamp())
                     .build();
             String responseJson= objectMapper.writeValueAsString(response);
-            kafkaTemplate.send("send-message-ws-topic",senderId,responseJson);
+            kafkaTemplate.send("send-message-ws-topic",response.getGroupId().toString(),responseJson);
         }catch (JsonProcessingException e){
             log.error("Error: "+ e.getMessage());
         }

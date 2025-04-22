@@ -57,10 +57,10 @@ public class KafkaConsumerHandler {
     @KafkaListener(topics = "send-message-ws-topic", groupId = "websocket-group")
     public void sendMessageToGroup(ConsumerRecord<String, String> records) {
         try{
-            String sendIs= records.key();
+            String groupId= records.key();
             String json= records.value();
             MessageResponse response= objectMapper.readValue(json,MessageResponse.class);
-            simpMessagingTemplate.convertAndSendToUser(sendIs,"/queue/messages",response);
+            simpMessagingTemplate.convertAndSendToUser(groupId,"/queue/messages",response);
         }catch (JsonProcessingException e){
             log.error("Error: "+ e.getMessage());
         }
