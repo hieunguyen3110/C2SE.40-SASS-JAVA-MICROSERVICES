@@ -20,8 +20,7 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
 
     Optional<StudyGroup> findByIdAndIsPrivateFalse(Long l);
 
-    @Query("SELECT g FROM StudyGroup g WHERE LOWER(g.name) LIKE LOWER(CONCAT('%', :name, '%')) AND g.isPrivate = false")
-    List<StudyGroup> searchPublicGroupsByName(String name);
+    List<StudyGroup> searchGroupsByName(String name);
 
     @Query("SELECT COUNT(m) FROM StudyGroup g JOIN g.members m WHERE g.id = :groupId")
     int getMemberCount(Long groupId);

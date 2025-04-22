@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.AnalyzeRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
 import org.com.identityservice.dto.response.*;
 import org.com.identityservice.entity.Account;
@@ -42,10 +43,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
@@ -506,6 +509,51 @@ public class AccountServiceImpl implements AccountService {
             return "Disable study analyze is successful";
         }catch (Exception e){
             throw new Exception(e);
+        }
+    }
+
+    @Override
+    public List<AccountDto> findByIds(Set<Long> accountIds) {
+        try {
+            if (accountIds == null || accountIds.isEmpty()) {
+                return new ArrayList<>();
+            }
+
+            List<AccountDto> cachedAccounts = new ArrayList<>();
+            List<Long> missingIds = new ArrayList<>();
+            for (Long accountId : accountIds) {
+                String cacheKey = "account:" + accountId;
+                String cachedData = (String) redisService.getData(cacheKey);
+                if (cachedData != null) {
+                    AccountDto accountDto = objectMapper.readValue(cachedData, AccountDto.class);
+                    cachedAccounts.add(accountDto);
+                } else {
+                    missingIds.add(accountId);
+                }
+            }
+
+            if (!missingIds.isEmpty()) {
+                List<Account> accounts = accountRepository.findAllById(missingIds);
+                List<AccountDto> fetchedAccounts = accounts.stream()
+                        .map(account -> {
+                            AccountDto accountDto = AccountMapper.mapToAccountDto(account);
+                            accountDto.setPassword(null);
+                            String cacheKey = "account:" + accountDto.getAccountId();
+                            try {
+                                String json = objectMapper.writeValueAsString(accountDto);
+                                redisService.saveData(cacheKey, json, 30 * 24 * 60 * 60);
+                            } catch (Exception e) {
+                                log.error("Error saving account to cache: {}", e.getMessage());
+                            }
+                            return accountDto;
+                        })
+                        .toList();
+                cachedAccounts.addAll(fetchedAccounts);
+            }
+
+            return cachedAccounts;
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching accounts by IDs: " + e.getMessage(), e);
         }
     }
 }

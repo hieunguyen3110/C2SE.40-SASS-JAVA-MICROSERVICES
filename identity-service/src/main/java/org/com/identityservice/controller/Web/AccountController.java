@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController("webAccountController")
 @RequestMapping("/account")
@@ -110,6 +111,18 @@ public class AccountController {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
         }
     }
+
+    @GetMapping("/accounts/batch")
+    public ApiResponse<List<AccountDto>> getAccountsByIds(@RequestBody Set<Long> accountIds) {
+        List<AccountDto> accounts = accountService.findByIds(accountIds);
+        return CreateApiResponse.createResponse(accounts, false);
+    }
+//    @PostMapping("/account-rated")
+//    public ApiResponse<List<AccountRatingDto>> getAllAccountByRatingDocId(@RequestBody List<Long> accountIds,
+//                                                                          @RequestParam("docTitle") String docTitle,
+//                                                                          @RequestParam("docId") long docId) throws Exception {
+//        return accountService.getAccountByAccountIds(accountIds,docTitle,docId);
+//    }
 
     @GetMapping("/enable-analyze-data")
     public ApiResponse<String> handleEnableStudyAnalyze() throws Exception {
