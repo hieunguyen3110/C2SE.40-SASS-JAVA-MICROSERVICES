@@ -18,7 +18,6 @@ public class Message extends AbstractDefault {
     private Boolean isPinned;
     private Boolean documentLink;
     private String documentId;
-
     @ManyToOne
     @JoinColumn(name = "group_id")
     private StudyGroup group;

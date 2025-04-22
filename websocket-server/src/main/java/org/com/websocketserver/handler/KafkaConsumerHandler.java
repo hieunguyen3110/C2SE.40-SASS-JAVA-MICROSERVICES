@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.com.websocketserver.dto.response.MessageResponse;
 import org.com.websocketserver.dto.response.NotificationDto;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -53,6 +54,18 @@ public class KafkaConsumerHandler {
         }
     }
 
+    @KafkaListener(topics = "send-message-ws-topic", groupId = "websocket-group")
+    public void sendMessageToGroup(ConsumerRecord<String, String> records) {
+        try{
+            String groupId= records.key();
+            String json= records.value();
+            MessageResponse response= objectMapper.readValue(json,MessageResponse.class);
+            simpMessagingTemplate.convertAndSendToUser(groupId,"/queue/messages",response);
+          }catch (JsonProcessingException e){
+            log.error("Error: "+ e.getMessage());
+        }
+    }
+  
     @KafkaListener(topics = "join-group-ws-topic", groupId = "websocket-group")
     public void sendNotificationJoinRequest(ConsumerRecord<String, String> records) {
         try{
