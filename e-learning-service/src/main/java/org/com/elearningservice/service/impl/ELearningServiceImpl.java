@@ -2,9 +2,12 @@ package org.com.elearningservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.com.elearningservice.dto.response.AnalyzeData;
+import org.com.elearningservice.dto.response.QuestionDTO;
 import org.com.elearningservice.entity.Grade;
+import org.com.elearningservice.entity.Question;
 import org.com.elearningservice.enums.ResultType;
 import org.com.elearningservice.repository.GradeRepository;
+import org.com.elearningservice.repository.QuestionRepository;
 import org.com.elearningservice.service.ELearningService;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ELearningServiceImpl implements ELearningService {
     private final GradeRepository gradeRepository;
+    private final QuestionRepository questionRepository;
 
     @Override
     public List<AnalyzeData> getListDataAnalyze(List<Long> accountIds) throws Exception {
@@ -86,6 +90,26 @@ public class ELearningServiceImpl implements ELearningService {
             }else{
                 return null;
             }
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public String saveQuestion(List<QuestionDTO> questionDTOS, Long subjectId) throws Exception {
+        try{
+            List<Question> saveAllQuestion= new ArrayList<>();
+            for(QuestionDTO questionDTO: questionDTOS){
+                Question question= Question.builder()
+                        .questionText(questionDTO.getQuestion())
+                        .correctAnswer(questionDTO.getCorrectAnswer())
+                        .subjectId(subjectId)
+                        .options(questionDTO.getOptions())
+                        .build();
+                saveAllQuestion.add(question);
+            }
+            questionRepository.saveAll(saveAllQuestion);
+            return "Save all question successful";
         }catch (Exception e){
             throw new Exception(e);
         }

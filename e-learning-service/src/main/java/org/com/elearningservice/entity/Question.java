@@ -2,8 +2,10 @@ package org.com.elearningservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.com.elearningservice.config.JsonToMapConverter;
 
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "question")
@@ -19,7 +21,8 @@ public class Question extends AbstractDefault {
     private Long subjectId;
     private String questionText;
     private String correctAnswer;
-    @Column(columnDefinition = "TEXT")
-    private String options;
+    @Convert(converter = JsonToMapConverter.class)
+    @Column(columnDefinition = "text")
+    private Map<String, Object> options;
 }
 

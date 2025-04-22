@@ -9,5 +9,5 @@ import java.util.Map;
 public class QuestionDTO {
     private String question;
     private String correctAnswer;
-    private Map<String, String> options;
+    private Map<String, Object> options;
 }

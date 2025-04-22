@@ -24,10 +24,6 @@ public class CronjobController {
     public ApiResponse<List<RatingDto>> getRatingNotCheckedByDay() throws Exception {
         return CreateApiResponse.createResponse(ratingService.getAllRatingByDayCheckedIsFalse(),false);
     }
-//    @PostMapping("/ratings/update-checked")
-//    public ApiResponse<String> updateRating(@RequestBody List<Long> ratingIds) throws Exception {
-//        return CreateApiResponse.createResponse(ratingService.saveRatingIsChecked(ratingIds),false);
-//    }
     @GetMapping("/collect-data")
     public ApiResponse<MultipleNewData> getDataNew() throws Exception {
         MultipleNewData multipleNewData= new MultipleNewData();
@@ -44,5 +40,9 @@ public class CronjobController {
     @PostMapping("/documents/update-file")
     public ApiResponse<String> updateFileStatus(@RequestBody List<Long> docIds) throws Exception {
         return CreateApiResponse.createResponse(documentService.updateFileStatus(docIds),false);
+    }
+    @GetMapping("/documents/new-upload")
+    public ApiResponse<List<DocumentDto>> getAllNewDocument() throws Exception {
+        return CreateApiResponse.createResponse(documentService.getAllNewDocuments(),false);
     }
 }
