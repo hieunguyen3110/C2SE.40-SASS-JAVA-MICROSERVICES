@@ -1,18 +1,17 @@
-package org.com.websocketserver.dto.request;
+package org.com.studygroupservice.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MessageRequest {
+public class MessageResponse {
     private Long groupId;
     private String content;
     private String timestamp;
     private String username;
     private String profilePicture;
+    private Long messageId;
 }
