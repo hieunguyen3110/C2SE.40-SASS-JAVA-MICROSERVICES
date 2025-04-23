@@ -35,6 +35,7 @@ public interface DocumentService {
     List<PopularDocumentDto> getPopularDocuments(AccountDto accountDto);
     List<DocumentDto> getAllDocumentByDay() throws Exception;
     String updateFileStatus(List<Long> docIds) throws Exception;
+    String updateStatusGenQuestion(List<Long> docIds) throws Exception;
     Map<String, List<DocumentData>> collectNewData();
     List<DocumentDto> getAllNewDocuments() throws Exception;
 }

@@ -20,4 +20,6 @@ public interface DocumentClient {
     ApiResponse<String> updateFileStatus(@RequestBody List<Long> docIds);
     @GetExchange("/cronjob/documents/new-upload")
     ApiResponse<List<DocumentDto>> getAllNewDocuments();
+    @PostExchange("/cronjob/document/update-status-gen-question")
+    ApiResponse<String> updateGenStatus(@RequestBody List<Long> docIds);
 }

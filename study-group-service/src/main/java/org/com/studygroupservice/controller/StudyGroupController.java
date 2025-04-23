@@ -13,6 +13,8 @@ import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -68,7 +70,7 @@ public class StudyGroupController {
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
         if(!(authentication instanceof AnonymousAuthenticationToken)){
             AccountDto accountDto= (AccountDto) authentication.getPrincipal();
-            groupService.joinGroup(groupId, accountDto.getAccountId());
+            groupService.joinGroup(groupId, accountDto);
             return CreateApiResponse.createResponse("Send request join group successful", false);
         }else{
             throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Token is expires");
@@ -140,11 +142,10 @@ public class StudyGroupController {
     }
 
     @GetMapping("/{groupId}/messages")
-    public ApiResponse<Page<Message>> getGroupMessages(@PathVariable Long groupId,
-                                                       @RequestParam(defaultValue = "0") int page,
-                                                       @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Message> messages = groupService.getGroupMessages(groupId, pageable);
+    public ApiResponse<Page<MessageResponse>> getGroupMessages(
+            @PathVariable Long groupId,
+            @PageableDefault(size = 10, page = 0, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<MessageResponse> messages = groupService.getGroupMessages(groupId, pageable);
         return CreateApiResponse.createResponse(messages, false);
     }
 

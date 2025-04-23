@@ -45,4 +45,8 @@ public class CronjobController {
     public ApiResponse<List<DocumentDto>> getAllNewDocument() throws Exception {
         return CreateApiResponse.createResponse(documentService.getAllNewDocuments(),false);
     }
+    @PostMapping("/document/update-status-gen-question")
+    public ApiResponse<String> updateStatusGenerateQuestion(@RequestBody List<Long> docIds) throws Exception {
+        return CreateApiResponse.createResponse(documentService.updateStatusGenQuestion(docIds), false);
+    }
 }

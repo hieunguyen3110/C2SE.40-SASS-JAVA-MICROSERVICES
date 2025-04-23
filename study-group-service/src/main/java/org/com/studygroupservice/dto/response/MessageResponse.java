@@ -2,6 +2,8 @@ package org.com.studygroupservice.dto.response;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Builder
@@ -15,4 +17,5 @@ public class MessageResponse {
     private String username;
     private String profilePicture;
     private Long messageId;
+    private LocalDateTime createdAt;
 }

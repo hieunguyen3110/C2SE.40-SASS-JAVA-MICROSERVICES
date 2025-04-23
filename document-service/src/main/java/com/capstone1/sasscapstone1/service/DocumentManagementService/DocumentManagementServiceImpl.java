@@ -37,7 +37,7 @@ public class DocumentManagementServiceImpl implements DocumentManagementService 
     public Page<DocumentListDto> listDocuments(int page, int size) {
         try {
             Pageable pageable = PageRequest.of(page, size);
-            return documentsRepository.findActiveDocuments(pageable)
+            return documentsRepository.findAll(pageable)
                     .map(this::mapToDocumentListDto);
         } catch (Exception e) {
             throw new RuntimeException("Error listing documents: " + e.getMessage(), e);

@@ -1,5 +1,6 @@
 package org.com.batchservice.reader;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.com.batchservice.dto.response.DocumentDto;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Getter
 @Slf4j
 public class GenerateQuestionReaderCustom implements ItemReader<DocumentDto> {
     private final DocumentClient documentClient;

@@ -1,10 +1,7 @@
 package org.com.studygroupservice.service;
 
 import org.com.studygroupservice.dto.request.CreateGroupRequest;
-import org.com.studygroupservice.dto.response.AccountDto;
-import org.com.studygroupservice.dto.response.GroupResponse;
-import org.com.studygroupservice.dto.response.StudyGroupEventDto;
-import org.com.studygroupservice.dto.response.SubjectDto;
+import org.com.studygroupservice.dto.response.*;
 import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
@@ -32,7 +29,7 @@ public interface StudyGroupService {
     void addMember(Long groupId, Long userId);
 
     @Transactional
-    void joinGroup(Long groupId, Long accountId) throws Exception;
+    void joinGroup(Long groupId, AccountDto accountDto) throws Exception;
 
     void removeMember(Long groupId, Long userId);
 
@@ -55,7 +52,7 @@ public interface StudyGroupService {
 
     Page<Message> getPinnedMessages(Long groupId, Pageable pageable);
 
-    Page<Message> getGroupMessages(Long groupId, Pageable pageable);
+    Page<MessageResponse> getGroupMessages(Long groupId, Pageable pageable);
 
     @Transactional
     Message shareDocumentToGroup(Long groupId, String documentId, String shareUrl);
