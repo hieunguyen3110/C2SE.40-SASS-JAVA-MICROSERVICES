@@ -61,6 +61,7 @@ public interface DocumentsRepository extends JpaRepository<Documents,Long> {
                                                                      @Param("endDate") LocalDateTime endDate,
                                                                      @Param("isCheck") Boolean isCheck,
                                                                      @Param("isTrain") Boolean isTrain);
+    List<Documents> findAllByIsActiveIsTrueAndIsGenerateQuestionIsFalse();
     List<Documents> findAllByIsActiveIsTrue();
 
     List<Documents> findAllByDocIdIn(List<Long> docIds);

@@ -3,12 +3,11 @@ package org.com.studygroupservice.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.com.studygroupservice.dto.request.*;
-import org.com.studygroupservice.dto.response.ApiResponse;
-import org.com.studygroupservice.dto.response.GroupResponse;
-import org.com.studygroupservice.dto.response.StudyGroupEventDto;
-import org.com.studygroupservice.dto.response.SubjectDto;
+import org.com.studygroupservice.dto.response.*;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
+import org.com.studygroupservice.enums.ErrorCode;
+import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.helpers.CreateApiResponse;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.data.domain.Page;
@@ -16,6 +15,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -62,9 +64,16 @@ public class StudyGroupController {
     }
 
     @PostMapping("/{groupId}/join")
-    public ApiResponse<Void> joinGroup(@PathVariable Long groupId, @RequestParam Long userId) {
-        groupService.joinGroup(groupId, userId);
-        return CreateApiResponse.createResponse(null, false);
+    public ApiResponse<String> joinGroup(@PathVariable Long groupId) throws Exception {
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+        if(!(authentication instanceof AnonymousAuthenticationToken)){
+            AccountDto accountDto= (AccountDto) authentication.getPrincipal();
+            groupService.joinGroup(groupId, accountDto.getAccountId());
+            return CreateApiResponse.createResponse("Send request join group successful", false);
+        }else{
+            throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Token is expires");
+        }
+
     }
 
     @DeleteMapping("/{groupId}/members/{userId}")
@@ -168,6 +177,18 @@ public class StudyGroupController {
     public ApiResponse<List<StudyGroupEventDto>> getGroupsByUserId() {
         List<StudyGroupEventDto> groups = groupService.getGroupsByUserId();
         return CreateApiResponse.createResponse(groups, false);
+    }
+
+    @PostMapping("/join-requests/{joinRequestId}/approve")
+    public ApiResponse<Void> approveJoinRequest(@PathVariable Long joinRequestId) {
+        groupService.approveJoinRequest(joinRequestId);
+        return CreateApiResponse.createResponse(null, false);
+    }
+
+    @PostMapping("/join-requests/{joinRequestId}/reject")
+    public ApiResponse<Void> rejectJoinRequest(@PathVariable Long joinRequestId) {
+        groupService.rejectJoinRequest(joinRequestId);
+        return CreateApiResponse.createResponse(null, false);
     }
 
 }

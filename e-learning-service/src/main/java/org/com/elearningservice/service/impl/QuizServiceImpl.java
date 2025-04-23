@@ -140,7 +140,7 @@ public class QuizServiceImpl implements QuizService {
                 question.setQuestionText(dto.getQuestion());
                 question.setCorrectAnswer(dto.getCorrectAnswer());
                 try {
-                    question.setOptions(objectMapper.writeValueAsString(dto.getOptions()));
+                    question.setOptions(dto.getOptions());
                 } catch (Exception e) {
                     throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error serializing options: " + e.getMessage());
                 }
@@ -176,7 +176,7 @@ public class QuizServiceImpl implements QuizService {
             QuestionDTO dto = new QuestionDTO();
             dto.setQuestion(question.getQuestionText());
             dto.setCorrectAnswer(question.getCorrectAnswer());
-            dto.setOptions(objectMapper.readValue(question.getOptions(), new TypeReference<Map<String, String>>() {}));
+            dto.setOptions(question.getOptions());
             return dto;
         } catch (Exception e) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error deserializing options: " + e.getMessage());

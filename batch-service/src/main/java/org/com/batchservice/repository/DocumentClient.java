@@ -18,4 +18,6 @@ public interface DocumentClient {
     ApiResponse<MultipleNewData> collectData();
     @PostExchange("/cronjob/documents/update-file")
     ApiResponse<String> updateFileStatus(@RequestBody List<Long> docIds);
+    @GetExchange("/cronjob/documents/new-upload")
+    ApiResponse<List<DocumentDto>> getAllNewDocuments();
 }

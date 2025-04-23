@@ -33,7 +33,7 @@ public class SearchStudyGroupServiceImpl implements SearchStudyGroupService{
     public List<SearchGroupResponse> searchStudyGroup(String keyword) {
         try {
             List<StudyGroup> groups;
-            groups = studyGroupRepository.searchPublicGroupsByName(keyword);
+            groups = studyGroupRepository.searchGroupsByName(keyword);
 
 
             // Lấy tất cả SubjectDto một lần
@@ -48,6 +48,7 @@ public class SearchStudyGroupServiceImpl implements SearchStudyGroupService{
                 groupResponse.setGroupId(group.getId());
                 groupResponse.setGroupName(group.getName());
                 groupResponse.setDescription(group.getDescription());
+                groupResponse.setMemberLimited(group.getMemberLimited());
 
                 String subjectName = subjectMap.get(group.getSubjectId());
                 if (subjectName == null || subjectName.isEmpty()) {

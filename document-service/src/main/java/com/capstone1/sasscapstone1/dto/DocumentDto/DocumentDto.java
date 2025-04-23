@@ -21,6 +21,7 @@ public class DocumentDto {
     private Long facultyId;
     private String facultyName;
     private String subjectCode;
+    private Long subjectId;
     private Folder folder;
     private String authorName;
     private String authorProfilePicture;

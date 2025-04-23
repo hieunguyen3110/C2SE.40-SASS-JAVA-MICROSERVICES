@@ -2,6 +2,7 @@ package org.com.elearningservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.com.elearningservice.config.JsonToMapConverter;
 
 import java.util.List;
 
@@ -20,10 +21,11 @@ public class Question extends AbstractDefault {
     private Long subjectId;
     private String questionText;
     private String correctAnswer;
-    @Column(columnDefinition = "TEXT")
-    private String options;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GradeQuestion> gradeQuestions;
+    @Convert(converter = JsonToMapConverter.class)
+    @Column(columnDefinition = "text")
+    private Map<String, Object> options;
 }
 
