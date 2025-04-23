@@ -3,6 +3,9 @@ package org.com.elearningservice.entity;
 import lombok.*;
 import jakarta.persistence.*;
 import org.com.elearningservice.enums.ResultType;
+
+import java.util.List;
+
 @Entity
 @Table(name = "grade")
 @Getter
@@ -13,12 +16,17 @@ import org.com.elearningservice.enums.ResultType;
 public class Grade extends AbstractDefault {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "grade_id")
     private Long id;
     private Long accountId;
     private Long subjectId;
     private Float score;
     private int totalQuestions;
+
     @Enumerated(EnumType.STRING)
     private ResultType type;
+
+    @OneToMany(mappedBy = "grade", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GradeQuestion> gradeQuestions;
 
 }

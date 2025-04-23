@@ -17,10 +17,14 @@ import java.util.Map;
 public class Question extends AbstractDefault {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "question_id")
     private Long id;
     private Long subjectId;
     private String questionText;
     private String correctAnswer;
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GradeQuestion> gradeQuestions;
     @Convert(converter = JsonToMapConverter.class)
     @Column(columnDefinition = "text")
     private Map<String, Object> options;
