@@ -48,6 +48,7 @@ public class SearchStudyGroupServiceImpl implements SearchStudyGroupService{
                 groupResponse.setGroupId(group.getId());
                 groupResponse.setGroupName(group.getName());
                 groupResponse.setDescription(group.getDescription());
+                groupResponse.setMemberLimited(group.getMemberLimited());
 
                 String subjectName = subjectMap.get(group.getSubjectId());
                 if (subjectName == null || subjectName.isEmpty()) {

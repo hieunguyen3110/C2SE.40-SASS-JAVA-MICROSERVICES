@@ -204,7 +204,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                                 dto.setAvatar(null);
                                 dto.setEmail("Unknown");
                             } else {
-                                dto.setName(account.getUsername());
+                                dto.setName(account.getFirstName() + " " + account.getLastName());
                                 dto.setAvatar(account.getProfilePicture());
                                 dto.setEmail(account.getEmail());
                             }
