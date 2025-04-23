@@ -5,6 +5,7 @@ import org.quartz.CronScheduleBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,8 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 @RequiredArgsConstructor
 public class QuartzConfig {
     private final AutowiringSpringBeanJobFactory jobFactory;
+    @Value("${quartz.config.time}")
+    private String quartzConfigTime;
 
     @Bean
     public SchedulerFactoryBean schedulerFactoryBean(Trigger trigger, JobDetail jobDetail, ApplicationContext applicationContext) {
@@ -30,7 +33,7 @@ public class QuartzConfig {
     public Trigger jobTrigger(JobDetail jobDetail) {
         return TriggerBuilder.newTrigger()
                 .forJob(jobDetail)
-                .withSchedule(CronScheduleBuilder.cronSchedule("0 0 3 * * ?"))
+                .withSchedule(CronScheduleBuilder.cronSchedule(quartzConfigTime))
                 .build();
     }
 
