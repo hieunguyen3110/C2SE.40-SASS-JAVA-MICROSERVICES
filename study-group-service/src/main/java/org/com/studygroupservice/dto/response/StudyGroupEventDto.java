@@ -3,6 +3,7 @@ package org.com.studygroupservice.dto.response;
 import lombok.*;
 import org.com.studygroupservice.entity.JoinRequest;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -19,6 +20,7 @@ public class StudyGroupEventDto {
     private int memberLimited;
     private int memberCount;
     private List<JoinRequestDto> joinRequests;
+    private LocalDateTime createdAt;
 
     public StudyGroupEventDto(Long groupId, Long userId, String message, Boolean isPrivate) {
         this.groupId = groupId;
@@ -27,7 +29,7 @@ public class StudyGroupEventDto {
         this.isPrivate = isPrivate;
     }
 
-    public StudyGroupEventDto(Long groupId, Long userId, Boolean isPrivate, String groupName, String description, String subjectName, String picture, int memberLimited, List<JoinRequestDto> joinRequests, int memberCount) {
+    public StudyGroupEventDto(Long groupId, Long userId, Boolean isPrivate, String groupName, String description, String subjectName, String picture, int memberLimited, List<JoinRequestDto> joinRequests, int memberCount, LocalDateTime createdAt) {
         this.groupId = groupId;
         this.userId = userId;
         this.isPrivate = isPrivate;
@@ -37,5 +39,7 @@ public class StudyGroupEventDto {
         this.picture = picture;
         this.memberLimited = memberLimited;
         this.joinRequests = joinRequests;
+        this.memberCount = memberCount;
+        this.createdAt = createdAt;
     }
 }
