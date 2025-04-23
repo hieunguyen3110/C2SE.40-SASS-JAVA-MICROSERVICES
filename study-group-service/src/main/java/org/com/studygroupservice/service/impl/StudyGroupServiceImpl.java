@@ -19,6 +19,7 @@ import org.com.studygroupservice.repository.StudyGroupRepository;
 import org.com.studygroupservice.repository.httpClient.IdentityClient;
 import org.com.studygroupservice.service.RedisService;
 import org.com.studygroupservice.service.StudyGroupService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -72,6 +73,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             studyGroup.setOwnerId(owner.getAccountId());
             studyGroup.setIsPrivate(isPrivate);
 
+            groupRepository.save(studyGroup);
+
             Set<Long> uniqueMembers = new HashSet<>(memberIds);
             uniqueMembers.add(owner.getAccountId());
 
@@ -82,14 +85,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             }
 
             memberRepository.saveAll(groupMembers);
-
-            StudyGroupEventDto event = new StudyGroupEventDto(
-                    studyGroup.getId(),
-                    owner.getAccountId(),
-                    "Study group '" + groupName + "' has been created!",
-                    isPrivate
-            );
-            kafkaProducerService.sendStudyGroupEvent(event);
 
             return studyGroup;
         } catch (Exception e) {
@@ -470,8 +465,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 }
             }
 
-            joinRequest.setStatus(JoinRequest.RequestStatus.REJECTED);
-            joinRequestRepository.save(joinRequest);
+            joinRequestRepository.delete(joinRequest);
 
             Long accountId = joinRequest.getAccountId();
             kafkaProducerService.sendMessageEvent(new MessageEventDto(
@@ -490,8 +484,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             throw new ApiException(500, "Failed to reject join request: " + e.getMessage());
         }
     }
-
-
 
     @Transactional
     @Override
@@ -640,7 +632,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited) {
+    public StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited, boolean isPrivate) {
         try {
             StudyGroup group = groupRepository.findById(groupId)
                     .orElseThrow(() -> new ApiException(404, "Group not found."));
@@ -675,6 +667,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             if (memberLimited > 0) {
                 group.setMemberLimited(memberLimited);
             }
+
+            group.setIsPrivate(isPrivate);
 
             StudyGroup savedGroup = groupRepository.save(group);
 
@@ -724,10 +718,51 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     }
 
     @Override
-    public Page<Message> getPinnedMessages(Long groupId, Pageable pageable) {
+    public Page<MessageResponse> getPinnedMessages(Long groupId, Pageable pageable) {
         try {
+            if (!pageable.getSort().isSorted()) {
+                pageable = PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Sort.by(Sort.Direction.DESC, "createdAt")
+                );
+            }
+
             Page<Message> pinnedMessages = messageRepository.findByGroupIdAndIsPinnedTrue(groupId, pageable);
-            return pinnedMessages.isEmpty() ? Page.empty(pageable) : pinnedMessages;
+
+            if (pinnedMessages.isEmpty()) {
+                return Page.empty(pageable);
+            }
+
+            Set<Long> senderIds = pinnedMessages.getContent().stream()
+                    .map(Message::getSenderId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            Map<Long, AccountDto> userDetailsMap = senderIds.isEmpty() ? Collections.emptyMap() : getAccountsWithCache(senderIds);
+
+
+            return pinnedMessages.map(message -> {
+                MessageResponse dto = new MessageResponse();
+                dto.setMessageId(message.getId());
+                dto.setGroupId(message.getGroup().getId());
+                dto.setSenderId(message.getSenderId());
+                dto.setContent(message.getContent());
+                dto.setCreatedAt(message.getCreatedAt());
+
+                AccountDto account = userDetailsMap.get(message.getSenderId());
+                if (account == null) {
+                    log.warn("Account not found for sender ID: {}", message.getSenderId());
+                    dto.setUsername("Unknown");
+                    dto.setProfilePicture(null);
+                } else {
+                    String fullName = (account.getFirstName() != null ? account.getFirstName() : "") +
+                            (account.getLastName() != null ? " " + account.getLastName() : "");
+                    dto.setUsername(fullName.trim().isEmpty() ? "Unknown" : fullName.trim());
+                    dto.setProfilePicture(account.getProfilePicture());
+                }
+                return dto;
+            });
         } catch (Exception e) {
             log.error("Failed to fetch pinned messages: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to fetch pinned messages: " + e.getMessage());
@@ -967,6 +1002,53 @@ public class StudyGroupServiceImpl implements StudyGroupService {
         } catch (Exception e) {
             log.error("Failed to fetch groups by user ID: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to fetch groups by user ID: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    @Override
+    public void setRoleForMember(Long groupId, Long userId, GroupMemberRole role) {
+        if (groupId == null || groupId <= 0) {
+            throw new ApiException(400, "Invalid group ID");
+        }
+        if (userId == null || userId <= 0) {
+            throw new ApiException(400, "Invalid user ID");
+        }
+        if (role == null) {
+            throw new ApiException(400, "Role cannot be null");
+        }
+
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUser = (AccountDto) authentication.getPrincipal();
+            StudyGroup group = groupRepository.findById(groupId)
+                    .orElseThrow(() -> new ApiException(404, "Group not found"));
+            if (!group.getOwnerId().equals(currentUser.getAccountId())) {
+                GroupMember membership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUser.getAccountId())
+                        .orElseThrow(() -> new ApiException(403, "User is not a member of this group"));
+                if (!membership.getRole().equals(GroupMemberRole.ADMIN)) {
+                    throw new ApiException(403, "Only owner or admin can set member roles");
+                }
+            }
+
+            GroupMember member = memberRepository.findByStudyGroupIdAndAccountId(groupId, userId)
+                    .orElseThrow(() -> new ApiException(404, "Member not found"));
+            member.setRole(role);
+            memberRepository.save(member);
+
+            String cacheKey = "group:member:" + groupId + ":" + userId;
+            redisService.deleteData(cacheKey);
+            log.info("Updated role {} for user {} in group {}", role, userId, groupId);
+
+            AccountDto user = identityClient.getAccountId(userId).getData();
+            kafkaProducerService.sendRoleUpdateNotification(groupId, userId, role, group.getName(), user);
+
+        } catch (DataIntegrityViolationException e) {
+            log.error("Data integrity violation for group {} user {}: {}", groupId, userId, e.getMessage(), e);
+            throw new ApiException(400, "Invalid data provided for role update");
+        } catch (Exception e) {
+            log.error("Failed to set role {} for user {} in group {}: {}", role, userId, groupId, e.getMessage(), e);
+            throw new ApiException(500, "Internal server error");
         }
     }
 }

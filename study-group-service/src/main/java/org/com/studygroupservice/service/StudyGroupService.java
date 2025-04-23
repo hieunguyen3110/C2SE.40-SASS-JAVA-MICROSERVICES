@@ -5,6 +5,7 @@ import org.com.studygroupservice.dto.response.*;
 import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
+import org.com.studygroupservice.enums.GroupMemberRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,12 +46,12 @@ public interface StudyGroupService {
     Page<GroupResponse> listMembers(Long groupId, Pageable pageable);
 
     @Transactional
-    StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited);
+    StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited, boolean isPrivate);
 
     @Transactional
     StudyGroup updatePrivacySetting(Long groupId, boolean isPrivate);
 
-    Page<Message> getPinnedMessages(Long groupId, Pageable pageable);
+    Page<MessageResponse> getPinnedMessages(Long groupId, Pageable pageable);
 
     Page<MessageResponse> getGroupMessages(Long groupId, Pageable pageable);
 
@@ -73,4 +74,6 @@ public interface StudyGroupService {
     void approveJoinRequest(Long joinRequestId);
 
     void rejectJoinRequest(Long joinRequestId);
+
+    void setRoleForMember(Long groupId, Long userId, GroupMemberRole role);
 }

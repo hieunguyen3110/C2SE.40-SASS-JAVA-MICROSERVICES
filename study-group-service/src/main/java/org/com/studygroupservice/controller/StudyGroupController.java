@@ -7,6 +7,7 @@ import org.com.studygroupservice.dto.response.*;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.com.studygroupservice.enums.ErrorCode;
+import org.com.studygroupservice.enums.GroupMemberRole;
 import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.helpers.CreateApiResponse;
 import org.com.studygroupservice.service.StudyGroupService;
@@ -120,7 +121,8 @@ public class StudyGroupController {
                 request.getDescription(),
                 request.getSubjectId(),
                 request.getPicture(),
-                request.getMemberLimited()
+                request.getMemberLimited(),
+                request.isPrivate()
         );
         return CreateApiResponse.createResponse(updatedGroup, false);
     }
@@ -133,17 +135,14 @@ public class StudyGroupController {
     }
 
     @GetMapping("/{groupId}/pinned-messages")
-    public ApiResponse<Page<Message>> getPinnedMessages(@PathVariable Long groupId,
-                                                        @RequestParam(defaultValue = "0") int page,
-                                                        @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Message> pinnedMessages = groupService.getPinnedMessages(groupId, pageable);
+    public ApiResponse<Page<MessageResponse>> getPinnedMessages(@PathVariable Long groupId,
+                                                                @PageableDefault(size = 10, page = 0, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+                Page<MessageResponse> pinnedMessages = groupService.getPinnedMessages(groupId, pageable);
         return CreateApiResponse.createResponse(pinnedMessages, false);
     }
 
     @GetMapping("/{groupId}/messages")
-    public ApiResponse<Page<MessageResponse>> getGroupMessages(
-            @PathVariable Long groupId,
+    public ApiResponse<Page<MessageResponse>> getGroupMessages(@PathVariable Long groupId,
             @PageableDefault(size = 10, page = 0, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<MessageResponse> messages = groupService.getGroupMessages(groupId, pageable);
         return CreateApiResponse.createResponse(messages, false);
@@ -189,6 +188,13 @@ public class StudyGroupController {
     @PostMapping("/join-requests/{joinRequestId}/reject")
     public ApiResponse<Void> rejectJoinRequest(@PathVariable Long joinRequestId) {
         groupService.rejectJoinRequest(joinRequestId);
+        return CreateApiResponse.createResponse(null, false);
+    }
+
+    @PutMapping("/groups/{groupId}/members/{userId}/role")
+    public ApiResponse<Void> setRoleForMember(@PathVariable Long groupId, @PathVariable Long userId,
+                                              @RequestParam GroupMemberRole role) {
+        groupService.setRoleForMember(groupId, userId, role);
         return CreateApiResponse.createResponse(null, false);
     }
 
