@@ -20,7 +20,7 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
 
     Optional<StudyGroup> findByIdAndIsPrivateFalse(Long l);
 
-    List<StudyGroup> searchGroupsByName(String name);
+    List<StudyGroup> searchGroupByNameContainingIgnoreCase(String name);
 
     @Query("SELECT COUNT(m) FROM StudyGroup g JOIN g.members m WHERE g.id = :groupId")
     int getMemberCount(Long groupId);

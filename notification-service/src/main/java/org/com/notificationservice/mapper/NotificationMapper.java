@@ -7,7 +7,7 @@ public class NotificationMapper {
     public static Notification mapToNotification(NotificationDto notificationDto){
         return Notification.builder()
                 .notificationId(notificationDto.getNotificationId())
-                .accountId(notificationDto.getNotificationId())
+                .accountId(notificationDto.getAccountId())
                 .type(notificationDto.getType())
                 .message(notificationDto.getMessage())
                 .deletedFlag(notificationDto.getDeletedFlag())
@@ -18,7 +18,7 @@ public class NotificationMapper {
     public static NotificationDto mapToNotificationDto(Notification notification){
         return NotificationDto.builder()
                 .notificationId(notification.getNotificationId())
-                .accountId(notification.getNotificationId())
+                .accountId(notification.getAccountId())
                 .type(notification.getType())
                 .message(notification.getMessage())
                 .deletedFlag(notification.getDeletedFlag())
