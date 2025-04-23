@@ -4,9 +4,11 @@ import com.capstone1.sasscapstone1.entity.Documents;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -65,4 +67,9 @@ public interface DocumentsRepository extends JpaRepository<Documents,Long> {
     List<Documents> findAllByIsActiveIsTrue();
 
     List<Documents> findAllByDocIdIn(List<Long> docIds);
+
+    @Transactional
+    @Modifying
+    @Query("Update Documents d set d.isGenerateQuestion=true where d.docId in :docIds")
+    int updateDocumentGenQuestion(@Param("docIds") List<Long> docIds);
 }

@@ -21,7 +21,7 @@ public class Grade extends AbstractDefault {
     private Long accountId;
     private Long subjectId;
     private Float score;
-    private int totalQuestions;
+    private Integer totalQuestions;
 
     @Enumerated(EnumType.STRING)
     private ResultType type;
