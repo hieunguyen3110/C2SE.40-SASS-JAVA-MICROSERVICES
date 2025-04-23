@@ -8,6 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MessageResponse {
+    private Long senderId;
     private Long groupId;
     private String content;
     private String timestamp;
