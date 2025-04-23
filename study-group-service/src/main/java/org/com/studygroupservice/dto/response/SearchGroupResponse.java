@@ -13,5 +13,6 @@ public class SearchGroupResponse {
     private String subjectName;
     private int memberCount;
     private String picture;
+    private int memberLimited;
     List<Long> memberIds;
 }
