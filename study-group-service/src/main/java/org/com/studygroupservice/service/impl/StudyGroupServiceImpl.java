@@ -9,6 +9,7 @@ import org.com.studygroupservice.entity.JoinRequest;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.StudyGroup;
+import org.com.studygroupservice.enums.ErrorCode;
 import org.com.studygroupservice.enums.GroupMemberRole;
 import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.handler.KafkaProducerService;
@@ -337,42 +338,44 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             throw new ApiException(500, "Failed to add member: " + e.getMessage());
         }
     }
-
     @Transactional
     @Override
-    public void joinGroup(Long groupId, Long accountId) {
-        try {
-            StudyGroup group = groupRepository.findById(groupId)
-                    .orElseThrow(() -> new ApiException(404, "Group not found."));
+    public void joinGroup(Long groupId, AccountDto accountDto) throws Exception {
+        try{
+            StudyGroup group =  groupRepository.findById(groupId)
+                    .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Group not found"));
 
-            if (isMember(groupId, accountId)) {
+            if (isMember(groupId, accountDto.getAccountId())) {
                 throw new ApiException(400, "User is already a member of the group.");
+            }
+            if(group.getMemberLimited()==group.getMembers().size()){
+                throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"The group enough members");
             }
 
             if (group.getIsPrivate()) {
-                if (joinRequestRepository.findByStudyGroupIdAndAccountId(groupId, accountId).isPresent()) {
+                // Kiểm tra nếu đã có yêu cầu đang chờ
+                if (joinRequestRepository.findByStudyGroupIdAndAccountId(groupId, accountDto.getAccountId()).isPresent()) {
                     throw new ApiException(400, "You have already sent a request to join this private group.");
                 }
-
+                // Tạo yêu cầu tham gia nhóm
                 JoinRequest joinRequest = new JoinRequest();
                 joinRequest.setStudyGroup(group);
-                joinRequest.setAccountId(accountId);
+                joinRequest.setAccountId(accountDto.getAccountId());
                 joinRequest.setStatus(JoinRequest.RequestStatus.PENDING);
-
                 joinRequestRepository.save(joinRequest);
-
-                log.info("User {} requested to join private group {}", accountId, groupId);
+                List<Long> filterAdminMember= group.getMembers().stream()
+                        .filter(member-> member.getRole().equals(GroupMemberRole.ADMIN))
+                        .map(GroupMember::getAccountId)
+                        .toList();
+                kafkaProducerService.sendJoinRequestEvent(accountDto,group.getOwnerId(),filterAdminMember,group.getName());
+                log.info("User {} requested to join private group {}", accountDto.getAccountId(), groupId);
             } else {
-                GroupMember member = new GroupMember(null, accountId, group);
+                // Nếu là nhóm công khai, cho phép tham gia ngay lập tức
+                GroupMember member = new GroupMember(null, accountDto.getAccountId(), group);
                 memberRepository.save(member);
-
-                kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, accountId, "join", null, null));
             }
-        } catch (ApiException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Failed to join group: {}", e.getMessage(), e);
-            throw new ApiException(500, "Failed to join group: " + e.getMessage());
+        }catch (Exception e){
+            throw new Exception(e);
         }
     }
 

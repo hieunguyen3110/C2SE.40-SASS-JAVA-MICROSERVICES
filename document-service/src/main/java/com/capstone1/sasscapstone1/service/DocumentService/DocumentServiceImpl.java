@@ -386,6 +386,16 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    public String updateStatusGenQuestion(List<Long> docIds) throws Exception {
+        try{
+            int save= documentsRepository.updateDocumentGenQuestion(docIds);
+            return "Update status success";
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
+    @Override
     public Map<String, List<DocumentData>> collectNewData() {
         LocalDateTime now= LocalDateTime.now();
         LocalDateTime startDate= now.minusDays(1);
