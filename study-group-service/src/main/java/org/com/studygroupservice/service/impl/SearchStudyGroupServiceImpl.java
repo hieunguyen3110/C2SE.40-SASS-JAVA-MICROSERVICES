@@ -33,7 +33,7 @@ public class SearchStudyGroupServiceImpl implements SearchStudyGroupService{
     public List<SearchGroupResponse> searchStudyGroup(String keyword) {
         try {
             List<StudyGroup> groups;
-            groups = studyGroupRepository.searchGroupsByName(keyword);
+            groups = studyGroupRepository.searchGroupByNameContainingIgnoreCase(keyword);
 
 
             // Lấy tất cả SubjectDto một lần

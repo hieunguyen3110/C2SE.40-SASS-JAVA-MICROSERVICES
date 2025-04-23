@@ -2,6 +2,7 @@ package org.com.studygroupservice.repository;
 
 import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.StudyGroup;
+import org.com.studygroupservice.enums.GroupMemberRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     List<GroupMember> findStudyGroupsByAccountId(Long accountId);
 
     Long countByAccountId(Long accountId);
+
+    List<GroupMember> findByStudyGroupIdAndRole(Long groupId, GroupMemberRole groupMemberRole);
 }
