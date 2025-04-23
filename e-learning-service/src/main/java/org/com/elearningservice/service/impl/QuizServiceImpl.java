@@ -268,11 +268,7 @@ public class QuizServiceImpl implements QuizService {
                     question.setSubjectId(subjectId);
                     question.setQuestionText(questionDTO.getQuestion());
                     question.setCorrectAnswer(questionDTO.getCorrectAnswer());
-                    try {
-                        question.setOptions(objectMapper.writeValueAsString(questionDTO.getOptions()));
-                    } catch (Exception e) {
-                        throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error serializing options: " + e.getMessage());
-                    }
+                    question.setOptions(questionDTO.getOptions());
                     question = questionRepository.save(question);
                 } else {
                     // Nếu là quiz, câu hỏi đã tồn tại trong DB
