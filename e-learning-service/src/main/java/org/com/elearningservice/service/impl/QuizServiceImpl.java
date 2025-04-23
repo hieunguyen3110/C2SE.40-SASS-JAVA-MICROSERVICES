@@ -8,6 +8,7 @@ import org.com.elearningservice.dto.response.QuestionDTO;
 import org.com.elearningservice.dto.response.QuizSessionDTO;
 import org.com.elearningservice.dto.response.SubjectDTO;
 import org.com.elearningservice.entity.Grade;
+import org.com.elearningservice.entity.GradeQuestion;
 import org.com.elearningservice.entity.Question;
 import org.com.elearningservice.enums.ResultType;
 import org.com.elearningservice.exception.ApiException;
@@ -242,16 +243,12 @@ public class QuizServiceImpl implements QuizService {
                 throw new ApiException(HttpStatus.NOT_FOUND.value(), "Session not found");
             }
 
-            int correctAnswers = 0;
+            float score = 0;
             for (int i = 0; i < userAnswers.size(); i++) {
                 if (userAnswers.get(i).equals(session.getQuestions().get(i).getCorrectAnswer())) {
-                    correctAnswers++;
+                    score++;
                 }
             }
-
-            float rawScore = ((float) correctAnswers / userAnswers.size()) * 100;
-            Float score = Math.min(100.0f, Math.max(0.0f, Math.round(rawScore * 100) / 100.0f));
-
 
             Grade result = new Grade();
             result.setAccountId(accountId);
@@ -260,6 +257,37 @@ public class QuizServiceImpl implements QuizService {
             result.setTotalQuestions(userAnswers.size());
             result.setCreatedAt(LocalDateTime.now());
             result.setType(isAssignment ? ResultType.ASSIGNMENT : ResultType.QUIZ);
+
+            List<GradeQuestion> gradeQuestions = new ArrayList<>();
+            for (int i = 0; i < session.getQuestions().size(); i++) {
+                QuestionDTO questionDTO = session.getQuestions().get(i);
+
+                Question question;
+                if (isAssignment) {
+                    question = new Question();
+                    question.setSubjectId(subjectId);
+                    question.setQuestionText(questionDTO.getQuestion());
+                    question.setCorrectAnswer(questionDTO.getCorrectAnswer());
+                    try {
+                        question.setOptions(objectMapper.writeValueAsString(questionDTO.getOptions()));
+                    } catch (Exception e) {
+                        throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error serializing options: " + e.getMessage());
+                    }
+                    question = questionRepository.save(question);
+                } else {
+                    // Nếu là quiz, câu hỏi đã tồn tại trong DB
+                    question = questionRepository.findByQuestionTextAndSubjectId(questionDTO.getQuestion(), subjectId)
+                            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "Question not found in DB"));
+                }
+
+                GradeQuestion gradeQuestion = new GradeQuestion();
+                gradeQuestion.setGrade(result);
+                gradeQuestion.setQuestion(question);
+                gradeQuestion.setUserAnswer(userAnswers.get(i));
+                gradeQuestions.add(gradeQuestion);
+            }
+
+            result.setGradeQuestions(gradeQuestions);
             gradeRepository.save(result);
 
             redisTemplate.delete(sessionKey);

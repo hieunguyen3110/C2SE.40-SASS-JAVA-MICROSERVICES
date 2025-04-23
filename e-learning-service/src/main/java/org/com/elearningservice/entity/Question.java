@@ -15,11 +15,15 @@ import java.util.List;
 public class Question extends AbstractDefault {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "question_id")
     private Long id;
     private Long subjectId;
     private String questionText;
     private String correctAnswer;
     @Column(columnDefinition = "TEXT")
     private String options;
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GradeQuestion> gradeQuestions;
 }
 
