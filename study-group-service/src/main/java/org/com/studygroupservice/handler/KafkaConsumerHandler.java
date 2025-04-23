@@ -48,6 +48,7 @@ public class KafkaConsumerHandler {
             newMessage.setUpdatedAt(timeStamp);
             Message message= messageRepository.save(newMessage);
             MessageResponse response= MessageResponse.builder()
+                    .senderId(Long.parseLong(senderId))
                     .content(message.getContent())
                     .groupId(messageRequest.getGroupId())
                     .profilePicture(messageRequest.getProfilePicture())
