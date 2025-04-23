@@ -20,7 +20,9 @@ import org.com.studygroupservice.repository.httpClient.IdentityClient;
 import org.com.studygroupservice.service.RedisService;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -223,7 +225,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     group.getPicture(),
                     group.getMemberLimited(),
                     joinRequestDtos,
-                    groupRepository.getMemberCount(group.getId())
+                    groupRepository.getMemberCount(group.getId()),
+                    group.getCreatedAt()
             );
         } catch (ApiException e) {
             throw e;
@@ -732,10 +735,50 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     }
 
     @Override
-    public Page<Message> getGroupMessages(Long groupId, Pageable pageable) {
+    public Page<MessageResponse> getGroupMessages(Long groupId, Pageable pageable) {
         try {
+            // Nếu pageable không có sort, đặt mặc định là sort theo createdAt DESC
+            if (!pageable.getSort().isSorted()) {
+                pageable = PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Sort.by(Sort.Direction.DESC, "createdAt")
+                );
+            }
+
             Page<Message> messages = messageRepository.findByGroupId(groupId, pageable);
-            return messages.isEmpty() ? Page.empty(pageable) : messages;
+            if (messages.isEmpty()) {
+                return Page.empty(pageable);
+            }
+
+            Set<Long> senderIds = messages.getContent().stream()
+                    .map(Message::getSenderId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            Map<Long, AccountDto> userDetailsMap = senderIds.isEmpty() ? Collections.emptyMap() : getAccountsWithCache(senderIds);
+
+            return messages.map(message -> {
+                MessageResponse dto = new MessageResponse();
+                dto.setMessageId(message.getId());
+                dto.setGroupId(message.getGroup().getId());
+                dto.setSenderId(message.getSenderId());
+                dto.setContent(message.getContent());
+                dto.setCreatedAt(message.getCreatedAt());
+
+                AccountDto account = userDetailsMap.get(message.getSenderId());
+                if (account == null) {
+                    log.warn("Account not found for sender ID: {}", message.getSenderId());
+                    dto.setUsername("Unknown");
+                    dto.setProfilePicture(null);
+                } else {
+                    String fullName = (account.getFirstName() != null ? account.getFirstName() : "") +
+                            (account.getLastName() != null ? " " + account.getLastName() : "");
+                    dto.setUsername(fullName.trim().isEmpty() ? "Unknown" : fullName.trim());
+                    dto.setProfilePicture(account.getProfilePicture());
+                }
+                return dto;
+            });
         } catch (Exception e) {
             log.error("Failed to fetch group messages: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to fetch group messages: " + e.getMessage());
