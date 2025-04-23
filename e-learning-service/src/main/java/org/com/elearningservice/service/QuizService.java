@@ -13,5 +13,5 @@ public interface QuizService {
     QuizSessionDTO restoreSession(boolean isAssignment);
     Grade submitSession(Long subjectId, List<String> userAnswers, boolean isAssignment);
     List<Grade> getHistory();
-    QuizSessionDTO updateSessionAnswer(List<String> userAnswers, boolean isAssignment);
+    QuizSessionDTO updateSessionAnswer(int index, String userAnswers, boolean isAssignment);
 }

@@ -243,12 +243,18 @@ public class QuizServiceImpl implements QuizService {
                 throw new ApiException(HttpStatus.NOT_FOUND.value(), "Session not found");
             }
 
-            float score = 0;
-            for (int i = 0; i < userAnswers.size(); i++) {
-                if (userAnswers.get(i).equals(session.getQuestions().get(i).getCorrectAnswer())) {
-                    score++;
+            int correctCount = 0;
+            int totalQuestions = session.getQuestions().size();
+
+            for (int i = 0; i < totalQuestions; i++) {
+                String userAnswer = (i < userAnswers.size()) ? userAnswers.get(i) : null;
+                String correctAnswer = session.getQuestions().get(i).getCorrectAnswer();
+                if (userAnswer != null && userAnswer.equals(correctAnswer)) {
+                    correctCount++;
                 }
             }
+
+            float score = ((float) correctCount / totalQuestions) * 100;
 
             Grade result = new Grade();
             result.setAccountId(accountId);
@@ -297,20 +303,24 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
-    public QuizSessionDTO updateSessionAnswer(List<String> userAnswers, boolean isAssignment) {
+    public QuizSessionDTO updateSessionAnswer(int index, String userAnswer, boolean isAssignment) {
         try {
             Long accountId = getCurrentAccountId();
             String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
             QuizSessionDTO session = (QuizSessionDTO) redisTemplate.opsForValue().get(sessionKey);
+
             if (session == null) {
                 throw new ApiException(HttpStatus.NOT_FOUND.value(), "Session not found");
             }
 
-            session.setUserAnswers(userAnswers);
+            while (session.getUserAnswers().size() <= index) {
+                session.getUserAnswers().add("");
+            }
+
+            session.getUserAnswers().set(index, userAnswer);
 
             long remainingTtl = redisTemplate.getExpire(sessionKey, TimeUnit.SECONDS);
-
-            if(remainingTtl <= 0) {
+            if (remainingTtl <= 0) {
                 throw new ApiException(HttpStatus.BAD_REQUEST.value(), "Session has expired");
             }
 
@@ -323,6 +333,7 @@ public class QuizServiceImpl implements QuizService {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error updating session answer: " + e.getMessage());
         }
     }
+
 
     @Override
     public List<Grade> getHistory() {
