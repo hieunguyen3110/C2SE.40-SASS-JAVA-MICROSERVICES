@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,7 +35,9 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         try{
             String userInfoJson= request.getHeader("X-User-Info");
             if(userInfoJson != null){
-                AccountDto accountDto= objectMapper.readValue(userInfoJson,AccountDto.class);
+                byte[] decodedBytes = Base64.getDecoder().decode(userInfoJson);
+                String json = new String(decodedBytes, StandardCharsets.UTF_8);
+                AccountDto accountDto= objectMapper.readValue(json,AccountDto.class);
                 List<GrantedAuthority> authorities = accountDto.getRoles().stream()
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toUpperCase()))
                         .collect(Collectors.toList());

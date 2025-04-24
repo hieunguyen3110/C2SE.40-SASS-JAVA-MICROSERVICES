@@ -17,7 +17,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 @Component
@@ -64,8 +66,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         return identityService.verifyToken(token).flatMap(res->{
             if(res) {
                 String json= (String) redisService.getData(token);
+                String base64Json = Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
                 ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                        .header("X-User-Info", json)
+                        .header("X-User-Info", base64Json)
                         .build();
                 return chain.filter(exchange.mutate().request(modifiedRequest).build());
             }else{
