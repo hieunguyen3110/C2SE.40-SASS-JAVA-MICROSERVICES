@@ -47,9 +47,10 @@ public class QuizController {
     }
 
     @PostMapping("/session/update-answer")
-    public ApiResponse<QuizSessionDTO> updateSessionAnswer(@RequestBody List<String> userAnswers,
-                                                            @RequestParam boolean isAssignment) {
-        QuizSessionDTO session = quizService.updateSessionAnswer(userAnswers, isAssignment);
+    public ApiResponse<QuizSessionDTO> updateSessionAnswer(@RequestBody String userAnswers,
+                                                            @RequestParam boolean isAssignment,
+                                                            @RequestParam int questionIndex) {
+        QuizSessionDTO session = quizService.updateSessionAnswer(questionIndex, userAnswers, isAssignment);
         return CreateApiResponse.createResponse(session, false);
     }
 
