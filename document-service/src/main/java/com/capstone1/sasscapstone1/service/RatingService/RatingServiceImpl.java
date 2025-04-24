@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 public class RatingServiceImpl implements RatingService{
     private final RatingsRepository ratingsRepository;
     private final DocumentsRepository documentsRepository;
-    private final IdentityClient identityClientWithoutSecurity;
     private final DocumentViewRepository documentViewRepository;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
