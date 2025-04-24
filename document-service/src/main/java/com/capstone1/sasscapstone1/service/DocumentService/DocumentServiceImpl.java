@@ -53,7 +53,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final FacultyRepository facultyRepository;
     private final FirebaseService firebaseService;
     private final SubjectRepository subjectRepository;
-    private final RestTemplate restTemplate;
+    private final HistoryRepository historyRepository;
     private final IdentityClient identityClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
@@ -326,6 +326,7 @@ public class DocumentServiceImpl implements DocumentService {
             List<Documents> documentsList= documentsRepository.findAllByDocIdIn(dataParseLong);
             return documentsList.stream().map(document->{
                 AccountDto account= identityClient.getAccountId(document.getAccountId()).getData();
+                Long totalDownload= historyRepository.getTotalDownloadCountByDocumentId(document.getDocId());
                 return PopularDocumentDto.builder()
                         .authorName(account.getLastName())
                         .filePath(document.getFilePath())
@@ -335,6 +336,7 @@ public class DocumentServiceImpl implements DocumentService {
                         .subject(document.getSubject().getSubjectName())
                         .description(document.getDescription())
                         .facultyName(document.getFaculty().getFacultyName())
+                        .downloadCount(totalDownload.intValue())
                         .build();
             }).toList();
         } catch (Exception e) {
