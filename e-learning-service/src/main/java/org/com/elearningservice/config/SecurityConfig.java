@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> {
                     request
                             .requestMatchers(PUBLIC_ENDPOINT).permitAll()
-                            .requestMatchers("/e-learning-group/**").hasRole("STUDENT")
+                            .requestMatchers("/e-learning/**").hasRole("STUDENT")
                             .anyRequest().authenticated();
                 });
 
