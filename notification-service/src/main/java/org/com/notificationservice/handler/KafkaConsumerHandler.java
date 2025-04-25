@@ -124,6 +124,12 @@ public class KafkaConsumerHandler {
     public void listenUserUpdateEvent(ConsumerRecord<String, Object> record) throws Exception {
         try{
             String token = record.key();
+            Object value = record.value();
+
+            if(!(value instanceof AccountDto)) {
+                throw new Exception("Invalid data type for user update event: " + value.getClass().getName());
+            }
+
             AccountDto accountDto = (AccountDto) record.value();
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.registerModule(new JavaTimeModule());
@@ -131,6 +137,8 @@ public class KafkaConsumerHandler {
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Bỏ qua thuộc tính không mong muốn
             String json= objectMapper.writeValueAsString(accountDto);
             redisService.updateData(token,json);
+            String accountKey = "account:" + accountDto.getAccountId();
+            redisService.updateData(accountKey,json);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
