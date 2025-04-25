@@ -35,4 +35,7 @@ public interface HistoryRepository extends JpaRepository<History, Long> {
     Optional<History> findByAccountId(Long accountId);
     List<History> findAllByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
+    @Query("select sum(h.downloadCount) from History h where h.document.docId=:docId")
+    Long getTotalDownloadCountByDocumentId(Long docId);
+
 }

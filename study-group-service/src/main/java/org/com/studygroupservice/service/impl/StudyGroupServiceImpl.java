@@ -17,6 +17,7 @@ import org.com.studygroupservice.repository.GroupMemberRepository;
 import org.com.studygroupservice.repository.JoinRequestRepository;
 import org.com.studygroupservice.repository.MessageRepository;
 import org.com.studygroupservice.repository.StudyGroupRepository;
+import org.com.studygroupservice.repository.httpClient.DocumentClient;
 import org.com.studygroupservice.repository.httpClient.IdentityClient;
 import org.com.studygroupservice.service.RedisService;
 import org.com.studygroupservice.service.StudyGroupService;
@@ -29,7 +30,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -45,12 +45,12 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final StudyGroupRepository groupRepository;
     private final GroupMemberRepository memberRepository;
     private final MessageRepository messageRepository;
-    private final WebClient.Builder webClientBuilder;
     private final KafkaProducerService kafkaProducerService;
     private final JoinRequestRepository joinRequestRepository;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
     private final IdentityClient identityClient;
+    private final DocumentClient documentClient;
     private final GroupMemberRepository groupMemberRepository;
 
     @Transactional
@@ -134,15 +134,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             }
 
             log.warn("Subjects not found in Redis. Fetching from document-service via Eureka.");
-            List<SubjectDto> subjects = webClientBuilder
-                    .baseUrl("http://document-service")
-                    .build()
-                    .get()
-                    .uri("/api/v1/document/subjects")
-                    .retrieve()
-                    .bodyToFlux(SubjectDto.class)
-                    .collectList()
-                    .block();
+            List<SubjectDto> subjects = documentClient.getAllSubject().getData();
 
             if (subjects == null || subjects.isEmpty()) {
                 return Collections.emptyList();

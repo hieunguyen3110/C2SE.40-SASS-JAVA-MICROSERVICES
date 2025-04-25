@@ -4,6 +4,7 @@ import com.capstone1.sasscapstone1.dto.ChatbotDTO.ChatbotResponse;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.entity.Documents;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
+import com.capstone1.sasscapstone1.repository.httpClient.ChatbotClient;
 import com.capstone1.sasscapstone1.request.SendMessageRequest;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,19 +24,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ChatbotServiceImpl implements ChatbotService{
-    private final RestTemplate restTemplate;
     private final DocumentsRepository documentsRepository;
-    @Value("${chatbot.url}")
-    private String chatbotUrl;
+    private final ChatbotClient chatbotClient;
 
     @Override
     public ApiResponse<ChatbotResponse> sendMessage(SendMessageRequest request) throws Exception {
         try{
-            HttpHeaders httpHeaders= new HttpHeaders();
-            httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-            HttpEntity<SendMessageRequest> entity= new HttpEntity<>(request,httpHeaders);
-            String uri = chatbotUrl+"/search";
-            ChatbotResponse result= restTemplate.postForEntity(uri,entity,ChatbotResponse.class).getBody();
+            ChatbotResponse result= chatbotClient.sendQuery(request).getData();
             assert result != null;
             if (!result.getParts().get(0).getFile_source().isEmpty()) {
                 Map<String, Long> fileFrequency = result.getParts().get(0).getFile_source().stream()

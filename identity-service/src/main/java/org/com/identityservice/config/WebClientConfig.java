@@ -22,6 +22,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.support.WebClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
 @Configuration
 @RequiredArgsConstructor
 public class WebClientConfig {
@@ -40,14 +43,15 @@ public class WebClientConfig {
     @Primary
     DocumentClient documentClient(WebClient.Builder builder){
         WebClient webClient = builder
-                .baseUrl("lb://document-service/api/v1/document")
+                .baseUrl("http://document-service/api/v1/document")
                 .defaultRequest(request->{
                     Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
                     if(authentication != null && !(authentication instanceof AnonymousAuthenticationToken)){
                         try{
                             AccountDto accountDto= (AccountDto) authentication.getPrincipal();
                             String userInfoJson = objectMapper.writeValueAsString(accountDto);
-                            request.header("X-User-Info", userInfoJson);
+                            String base64Json = Base64.getEncoder().encodeToString(userInfoJson.getBytes(StandardCharsets.UTF_8));
+                            request.header("X-User-Info", base64Json);
                         }catch (JsonProcessingException e){
                             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),"Error serializing X-User-Info");
                         }
@@ -68,7 +72,8 @@ public class WebClientConfig {
                         try{
                             AccountDto accountDto= (AccountDto) authentication.getPrincipal();
                             String userInfoJson = objectMapper.writeValueAsString(accountDto);
-                            request.header("X-User-Info", userInfoJson);
+                            String base64Json = Base64.getEncoder().encodeToString(userInfoJson.getBytes(StandardCharsets.UTF_8));
+                            request.header("X-User-Info", base64Json);
                         }catch (JsonProcessingException e){
                             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),"Error serializing X-User-Info");
                         }

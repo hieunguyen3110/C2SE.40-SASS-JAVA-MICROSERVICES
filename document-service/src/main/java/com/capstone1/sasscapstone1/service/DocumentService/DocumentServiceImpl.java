@@ -16,6 +16,7 @@ import com.capstone1.sasscapstone1.repository.Faculty.FacultyRepository;
 import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
 import com.capstone1.sasscapstone1.repository.History.HistoryRepository;
 import com.capstone1.sasscapstone1.repository.Subject.SubjectRepository;
+import com.capstone1.sasscapstone1.repository.httpClient.ChatbotClient;
 import com.capstone1.sasscapstone1.repository.httpClient.IdentityClient;
 import com.capstone1.sasscapstone1.repository.httpClient.RecommendationClient;
 import com.capstone1.sasscapstone1.request.TrainDocumentRequest;
@@ -52,12 +53,13 @@ public class DocumentServiceImpl implements DocumentService {
     private final FacultyRepository facultyRepository;
     private final FirebaseService firebaseService;
     private final SubjectRepository subjectRepository;
-    private final RestTemplate restTemplate;
+    private final HistoryRepository historyRepository;
     private final IdentityClient identityClient;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
     private final UpdateDocumentPopularity updateDocumentPopularity;
     private final RecommendationClient recommendationClient;
+    private final ChatbotClient chatbotClient;
     private List<Documents> documents;
 
     @Value("${chatbot.url}")
@@ -132,6 +134,8 @@ public class DocumentServiceImpl implements DocumentService {
             document.setIsCheck(false);
             document.setIsTrain(false);
             document.setIsDeleted(false);
+            document.setIsGenerateQuestion(false);
+            document.setPopularity(0);
             documentsRepository.save(document);
 
             return CreateApiResponse.createResponse("Document uploaded successfully! ID: " + document.getDocId() + ", URL: " + filePath,true);
@@ -194,17 +198,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public ApiResponse<String> trainDocument(TrainDocumentRequest request) {
         try {
-            String uri = chatbotUrl+"/upload-file";
-            HttpHeaders headers = new HttpHeaders();
-            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-            HttpEntity<TrainDocumentRequest> entity = new HttpEntity<>(request, headers);
-            ResponseEntity<ApiResponse<String>> response = restTemplate.exchange(
-                    uri,
-                    HttpMethod.POST,
-                    entity,
-                    new ParameterizedTypeReference<>() {}
-            );
-            ApiResponse<String> result = response.getBody();
+            ApiResponse<String> result = chatbotClient.trainFile(request);
             if(result.getCode()==200){
                 Optional<Documents> findDocByFilePath= documentsRepository.findByFilePath(request.getFilePath());
                 if(findDocByFilePath.isPresent()){
@@ -332,6 +326,7 @@ public class DocumentServiceImpl implements DocumentService {
             List<Documents> documentsList= documentsRepository.findAllByDocIdIn(dataParseLong);
             return documentsList.stream().map(document->{
                 AccountDto account= identityClient.getAccountId(document.getAccountId()).getData();
+                Long totalDownload= historyRepository.getTotalDownloadCountByDocumentId(document.getDocId());
                 return PopularDocumentDto.builder()
                         .authorName(account.getLastName())
                         .filePath(document.getFilePath())
@@ -341,6 +336,7 @@ public class DocumentServiceImpl implements DocumentService {
                         .subject(document.getSubject().getSubjectName())
                         .description(document.getDescription())
                         .facultyName(document.getFaculty().getFacultyName())
+                        .downloadCount(totalDownload!=null?totalDownload.intValue():0)
                         .build();
             }).toList();
         } catch (Exception e) {
@@ -398,7 +394,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public Map<String, List<DocumentData>> collectNewData() {
         LocalDateTime now= LocalDateTime.now();
-        LocalDateTime startDate= now.minusDays(1);
+        LocalDateTime startDate= now.minusDays(2);
         List<Documents> updateDocPopularity= updateDocumentPopularity.updateDocumentPopularity(startDate,now);
         List<Documents> newlyCreateDoc= new ArrayList<>();
         List<Documents> docUpdated= new ArrayList<>();

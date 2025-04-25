@@ -8,7 +8,9 @@ import com.capstone1.sasscapstone1.entity.Folder;
 import com.capstone1.sasscapstone1.repository.DocumentShares.DocumentSharesRepository;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import com.capstone1.sasscapstone1.repository.Folder.FolderRepository;
+import com.capstone1.sasscapstone1.repository.httpClient.StudyGroupClient;
 import com.capstone1.sasscapstone1.util.CreateApiResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,21 +23,13 @@ import java.util.Map;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class DocumentSharesServiceImpl implements DocumentSharesService {
 
     private final DocumentSharesRepository documentShareRepository;
     private final DocumentsRepository documentsRepository;
     private final FolderRepository foldersRepository;
-    private final WebClient studyGroupWebClient;
-
-    public DocumentSharesServiceImpl(DocumentSharesRepository documentShareRepository,
-                                     DocumentsRepository documentsRepository,
-                                     FolderRepository foldersRepository, WebClient studyGroupWebClient) {
-        this.documentShareRepository = documentShareRepository;
-        this.documentsRepository = documentsRepository;
-        this.foldersRepository = foldersRepository;
-        this.studyGroupWebClient = studyGroupWebClient;
-    }
+//    private final StudyGroupClient studyGroupClient;
 
     @Override
     public ApiResponse<DocumentShares> shareDocument(Long documentId, Long folderId, String email, String shareUrl) throws Exception {
@@ -94,14 +88,14 @@ public class DocumentSharesServiceImpl implements DocumentSharesService {
 
             Map<String, Object> requestBody = createRequestBody(documentId, shareUrl, senderId);
 
-            String response = studyGroupWebClient.post()
-                    .uri("/groups/{groupId}/share-document", groupId)
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+//            String response = studyGroupWebClient.post()
+//                    .uri("/groups/{groupId}/share-document", groupId)
+//                    .bodyValue(requestBody)
+//                    .retrieve()
+//                    .bodyToMono(String.class)
+//                    .block();
 
-            return CreateApiResponse.createResponse(response, false);
+            return CreateApiResponse.createResponse("response", false);
         } catch (Exception e) {
             throw new Exception("Lỗi khi chia sẻ tài liệu vào nhóm: " + e.getMessage());
         }
