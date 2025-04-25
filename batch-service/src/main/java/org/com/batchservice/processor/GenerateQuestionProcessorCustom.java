@@ -34,7 +34,7 @@ public class GenerateQuestionProcessorCustom implements ItemProcessor<DocumentDt
             return questionMap;
         }catch (Exception e){
             log.error("Error when try generate question:" + e);
-            throw new Exception(e);
+            return null;
         }
     }
 }
