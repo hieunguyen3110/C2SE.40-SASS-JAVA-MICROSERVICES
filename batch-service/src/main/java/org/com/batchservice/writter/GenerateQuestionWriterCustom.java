@@ -39,7 +39,7 @@ public class GenerateQuestionWriterCustom implements ItemWriter<Map<Long,List<Qu
                 log.info("Message: "+ message);
             }
         }catch (Exception e){
-            throw new RuntimeException("Failed to run job with exception: "+ e.getMessage());
+            log.error("Failed to run job with exception: "+ e);
         }
     }
 }

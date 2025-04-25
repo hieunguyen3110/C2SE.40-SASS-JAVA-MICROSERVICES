@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 public class CookieUtils {
     @Value("${jwt.access_token_expires}")
@@ -21,16 +23,20 @@ public class CookieUtils {
     public void generatorTokenCookie(HttpServletResponse response, String accessToken, String refreshToken) {
         Cookie accessTokenCookie= new Cookie("accessToken",accessToken);
         Cookie refreshTokenCookie= new Cookie("userId",refreshToken);
+        Cookie publicUserCookie= new Cookie("sessionId", UUID.randomUUID().toString());
         if(accessToken==null || refreshToken==null){
             accessTokenCookie=addAttributeForCookie(accessTokenCookie, 0);
             refreshTokenCookie= addAttributeForCookie(refreshTokenCookie,0);
+            publicUserCookie= addAttributeForCookie(publicUserCookie,0);
         }else{
             accessTokenCookie=addAttributeForCookie(accessTokenCookie, Integer.parseInt(expiresAccessToken)/1000);
             refreshTokenCookie= addAttributeForCookie(refreshTokenCookie,Integer.parseInt(expiresRefreshToken)/1000);
+            publicUserCookie= addAttributeForCookie(publicUserCookie,Integer.parseInt(expiresRefreshToken)/1000);
         }
         refreshTokenCookie.setHttpOnly(true);
         response.addCookie(accessTokenCookie);
         response.addCookie(refreshTokenCookie);
+        response.addCookie(publicUserCookie);
     }
     public void saveAccessTokenCookie(HttpServletResponse response, String accessToken){
         Cookie accessTokenCookie= new Cookie("accessToken", accessToken);
