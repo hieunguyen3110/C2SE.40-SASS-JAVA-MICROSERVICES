@@ -3,10 +3,7 @@ package org.com.elearningservice.service.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.com.elearningservice.dto.response.AccountDto;
-import org.com.elearningservice.dto.response.QuestionDTO;
-import org.com.elearningservice.dto.response.QuizSessionDTO;
-import org.com.elearningservice.dto.response.SubjectDTO;
+import org.com.elearningservice.dto.response.*;
 import org.com.elearningservice.entity.Grade;
 import org.com.elearningservice.entity.GradeQuestion;
 import org.com.elearningservice.entity.Question;
@@ -14,6 +11,7 @@ import org.com.elearningservice.enums.ResultType;
 import org.com.elearningservice.exception.ApiException;
 import org.com.elearningservice.repository.GradeRepository;
 import org.com.elearningservice.repository.QuestionRepository;
+import org.com.elearningservice.repository.http.DocumentClient;
 import org.com.elearningservice.service.QuizService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -23,6 +21,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.security.auth.Subject;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +37,7 @@ public class QuizServiceImpl implements QuizService {
     private final GradeRepository gradeRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
+    private final DocumentClient documentClient;
 
     @Value("${app.ai-service.url}")
     private String aiServiceUrl;
@@ -53,18 +54,29 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public List<SubjectDTO> getSubjectsFromRedis() {
+        String subjectsKey = "subjects";
         try {
-            String subjectsKey = "subjects";
             Object subjectsObj = redisTemplate.opsForValue().get(subjectsKey);
-            if (subjectsObj == null) {
-                throw new ApiException(HttpStatus.NOT_FOUND.value(), "Subjects not found in Redis");
+            if (subjectsObj != null) {
+                return objectMapper.convertValue(subjectsObj, new TypeReference<List<SubjectDTO>>() {});
             }
 
-            return objectMapper.convertValue(subjectsObj, new TypeReference<List<SubjectDTO>>() {});
+            List<SubjectDTO> subjects = documentClient.getAllSubject().getData();
+
+            if (subjects == null || subjects.isEmpty()) {
+                throw new ApiException(HttpStatus.NOT_FOUND.value(), "No subjects found from document-service");
+            }
+
+            redisTemplate.opsForValue().set(subjectsKey, subjects, Duration.ofHours(1));
+
+            return subjects;
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error deserializing subjects from Redis: " + e.getMessage());
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error retrieving subjects: " + e.getMessage());
         }
     }
+
 
     public void validateSubjectId(Long subjectId) {
         try {
