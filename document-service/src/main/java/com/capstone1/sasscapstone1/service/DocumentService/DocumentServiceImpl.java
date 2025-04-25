@@ -336,7 +336,7 @@ public class DocumentServiceImpl implements DocumentService {
                         .subject(document.getSubject().getSubjectName())
                         .description(document.getDescription())
                         .facultyName(document.getFaculty().getFacultyName())
-                        .downloadCount(totalDownload.intValue())
+                        .downloadCount(totalDownload!=null?totalDownload.intValue():0)
                         .build();
             }).toList();
         } catch (Exception e) {
