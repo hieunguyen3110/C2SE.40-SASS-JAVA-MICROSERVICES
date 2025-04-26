@@ -23,7 +23,9 @@ import java.util.Map;
 public class DocumentCheckServiceImpl implements DocumentCheckService {
 
     private final DocumentsRepository documentsRepository;
-    private final ChatbotClient chatbotClient;
+    private final RestTemplate restTemplate;
+    @Value("${chatbot.url}")
+    private String chatbotUrl;
 
     @Override
     public void checkDocument(Long docId) {
@@ -34,10 +36,22 @@ public class DocumentCheckServiceImpl implements DocumentCheckService {
             if(document.getIsCheck()){
                 throw new Exception("Tài liệu đã được check");
             }
+            // Đọc nội dung file
+            HttpHeaders httpHeaders= new HttpHeaders();
             Map<String,String> request= new HashMap<>();
             request.put("filePath",document.getFilePath());
-            CheckFileResponse result = chatbotClient.checkFile(request).getData();
-            if((!result.isContainsSensitiveWords() && result.getSensitiveWords()==null) ||
+            httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+            HttpEntity<Map<String,String>> entity= new HttpEntity<>(request,httpHeaders);
+            String uri = chatbotUrl+"/check-file";
+            ResponseEntity<ApiResponse<CheckFileResponse>> response = restTemplate.exchange(
+                    uri,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<>() {}
+            );
+
+            CheckFileResponse result = response.getBody().getData();
+            if((!result.isContainsSensitiveWords() && result.getSensitiveWords().isEmpty()) ||
                     (result.isContainsSensitiveWords() && result.getSensitiveWords().size()<10)){
                 throw new Exception("File chứa từ nhạy cảm quá nhiều!");
             }
