@@ -160,6 +160,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 throw new ApiException(ErrorCode.UNAUTHORIZED.getStatusCode().value(),"refresh token is not found");
             }
             String refreshToken= (String) redisService.getData(userId);
+            if(refreshToken==null){
+                throw new ExpiredJwtException(null,null,"Token not found, please login");
+            }
             String userName= jwtService.ExtractUsername(refreshToken);
             if(userName != null){
                 Optional<Account> findAccount= accountRepository.findAccountByEmail(userName.toLowerCase());
