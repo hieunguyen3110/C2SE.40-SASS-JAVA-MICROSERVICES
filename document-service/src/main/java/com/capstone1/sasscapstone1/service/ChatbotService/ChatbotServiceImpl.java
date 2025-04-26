@@ -24,13 +24,19 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ChatbotServiceImpl implements ChatbotService{
+    private final RestTemplate restTemplate;
     private final DocumentsRepository documentsRepository;
-    private final ChatbotClient chatbotClient;
+    @Value("${chatbot.url}")
+    private String chatbotUrl;
 
     @Override
     public ApiResponse<ChatbotResponse> sendMessage(SendMessageRequest request) throws Exception {
         try{
-            ChatbotResponse result= chatbotClient.sendQuery(request).getData();
+            HttpHeaders httpHeaders= new HttpHeaders();
+            httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+            HttpEntity<SendMessageRequest> entity= new HttpEntity<>(request,httpHeaders);
+            String uri = chatbotUrl+"/search";
+            ChatbotResponse result= restTemplate.postForEntity(uri,entity,ChatbotResponse.class).getBody();
             assert result != null;
             if (!result.getParts().get(0).getFile_source().isEmpty()) {
                 Map<String, Long> fileFrequency = result.getParts().get(0).getFile_source().stream()
