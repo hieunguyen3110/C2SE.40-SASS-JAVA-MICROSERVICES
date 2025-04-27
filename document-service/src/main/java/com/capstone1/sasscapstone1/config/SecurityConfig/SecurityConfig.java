@@ -32,10 +32,10 @@ public class SecurityConfig {
                             .requestMatchers(
                                     "/document/**",
                                     "/folder/**",
-                                    "/test/**",
                                     "/download/**",
                                     "/chat-bot/**",
-                                    "/user/**"
+                                    "/user/**",
+                                    "/subject/**"
                             ).hasAnyRole("STUDENT","LECTURE")
                             .requestMatchers(
                                     "/admin/**"
