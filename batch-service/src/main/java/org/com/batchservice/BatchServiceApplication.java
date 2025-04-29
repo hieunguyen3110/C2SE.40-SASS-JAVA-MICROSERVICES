@@ -9,11 +9,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class BatchServiceApplication {
 
     public static void main(String[] args) {
-//        Dotenv dotenv = Dotenv.configure()
-//                .filename(".env")
-//                .directory(AppConstant.SERVICE_NAME)
-//                .load();
-//        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+        Dotenv dotenv = Dotenv.configure()
+                .filename(".env")
+                .directory(AppConstant.SERVICE_NAME)
+                .load();
+        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
         SpringApplication.run(BatchServiceApplication.class, args);
     }
 
