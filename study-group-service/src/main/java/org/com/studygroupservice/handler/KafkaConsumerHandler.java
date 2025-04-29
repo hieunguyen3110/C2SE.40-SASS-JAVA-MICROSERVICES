@@ -13,6 +13,7 @@ import org.com.studygroupservice.enums.ErrorCode;
 import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.repository.MessageRepository;
 import org.com.studygroupservice.repository.StudyGroupRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,8 @@ public class KafkaConsumerHandler {
     private final StudyGroupRepository studyGroupRepository;
     private final MessageRepository messageRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
+    @Value("${spring.utc.time}")
+    private String timeUtc;
 
     @KafkaListener(topics = "send-message-topic", groupId = "websocket-group")
     public void sendNotificationFollowForClient(ConsumerRecord<String, String> records) {
@@ -43,7 +46,7 @@ public class KafkaConsumerHandler {
                     .documentLink(false)
                     .isPinned(false)
                     .build();
-            LocalDateTime timeStamp= LocalDateTime.parse(messageRequest.getTimestamp());
+            LocalDateTime timeStamp= LocalDateTime.parse(messageRequest.getTimestamp()).plusHours(Long.parseLong(timeUtc));
             newMessage.setCreatedAt(timeStamp);
             newMessage.setUpdatedAt(timeStamp);
             Message message= messageRepository.save(newMessage);
@@ -54,7 +57,7 @@ public class KafkaConsumerHandler {
                     .profilePicture(messageRequest.getProfilePicture())
                     .username(messageRequest.getUsername())
                     .messageId(message.getId())
-                    .timestamp(messageRequest.getTimestamp())
+                    .timestamp(timeStamp.toString())
                     .build();
             String responseJson= objectMapper.writeValueAsString(response);
             kafkaTemplate.send("send-message-ws-topic",response.getGroupId().toString(),responseJson);
