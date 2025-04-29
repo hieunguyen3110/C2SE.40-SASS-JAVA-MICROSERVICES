@@ -10,11 +10,11 @@ import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 public class DiscoveryServerApplication {
 
 	public static void main(String[] args) {
-//		Dotenv dotenv = Dotenv.configure()
-//				.filename(".env")
-//				.directory("discovery-server")
-//				.load();
-//		dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+		Dotenv dotenv = Dotenv.configure()
+				.filename(".env")
+				.directory("discovery-server")
+				.load();
+		dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 		SpringApplication.run(DiscoveryServerApplication.class, args);
 	}
 
