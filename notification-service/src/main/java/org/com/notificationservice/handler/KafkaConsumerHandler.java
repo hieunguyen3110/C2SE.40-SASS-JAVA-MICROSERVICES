@@ -121,16 +121,11 @@ public class KafkaConsumerHandler {
     }
 
     @KafkaListener(topics = "user-update-topic", groupId = "notification-group")
-    public void listenUserUpdateEvent(ConsumerRecord<String, Object> record) throws Exception {
+    public void listenUserUpdateEvent(ConsumerRecord<String, String> record) throws Exception {
         try{
             String token = record.key();
-            Object value = record.value();
-
-            if(!(value instanceof AccountDto)) {
-                throw new Exception("Invalid data type for user update event: " + value.getClass().getName());
-            }
-
-            AccountDto accountDto = (AccountDto) record.value();
+            String accountJson = record.value();
+            AccountDto accountDto = objectMapper.readValue(accountJson,AccountDto.class);
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.registerModule(new JavaTimeModule());
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Sử dụng định dạng ISO

@@ -8,11 +8,11 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class UserUpdateProducer {
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
-    public void sendEventUpdateUser(String token, AccountDto accountDto) throws Exception {
+    public void sendEventUpdateUser(String token, String accountJson) throws Exception {
         try{
-            kafkaTemplate.send("user-update-topic",token,accountDto);
+            kafkaTemplate.send("user-update-topic",token,accountJson);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
