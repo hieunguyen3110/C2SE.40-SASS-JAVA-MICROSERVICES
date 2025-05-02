@@ -18,7 +18,8 @@ public class SecurityConfig {
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
     private static final String[] PUBLIC_ENDPOINT={
             "/ws/**",
-            "/cronjob/**"
+            "/cronjob/**",
+            "/actuator/**"
     };
 
     @Bean

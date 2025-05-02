@@ -36,7 +36,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             "/identity/auth/update/new-password",
             "/identity/auth/delete/clear-token",
             "/ws/**",
-            "/eureka/web/**"
+            "/eureka/web/**",
+            "/actuator/**"
     };
     private final IdentityService identityService;
     private final RedisService redisService;

@@ -85,7 +85,8 @@ public class AccountController {
                     String json= (String) redisService.getData(token);
                     AccountDto extractAccountFromRedis= objectMapper.readValue(json,AccountDto.class);
                     updateAccountDto(extractAccountFromRedis,response.getData());
-                    userUpdateProducer.sendEventUpdateUser(token,extractAccountFromRedis);
+                    String accountJson= objectMapper.writeValueAsString(extractAccountFromRedis);
+                    userUpdateProducer.sendEventUpdateUser(token,accountJson);
                 }
                 return response;
             } catch (Exception e) {

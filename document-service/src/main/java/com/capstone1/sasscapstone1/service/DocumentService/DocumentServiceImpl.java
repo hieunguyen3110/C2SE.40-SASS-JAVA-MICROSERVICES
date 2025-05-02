@@ -198,8 +198,8 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public ApiResponse<String> trainDocument(TrainDocumentRequest request) {
         try {
-            ApiResponse<String> result = chatbotClient.trainFile(request);
-            if(result.getCode()==200){
+            ApiResponse<String> response= chatbotClient.trainFile(request);
+            if(response.getCode()==200){
                 Optional<Documents> findDocByFilePath= documentsRepository.findByFilePath(request.getFilePath());
                 if(findDocByFilePath.isPresent()){
                     Documents documents= findDocByFilePath.get();
@@ -207,7 +207,7 @@ public class DocumentServiceImpl implements DocumentService {
                     documentsRepository.save(documents);
                 }
             }
-            return result;
+            return response;
         } catch (Exception e) {
             throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error during document training.");
         }

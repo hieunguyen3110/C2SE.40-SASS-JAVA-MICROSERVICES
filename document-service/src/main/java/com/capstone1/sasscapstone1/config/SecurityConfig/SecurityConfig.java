@@ -19,7 +19,8 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINT={
             "/user/count-stats",
             "/faculty/**",
-            "/cronjob/**"
+            "/cronjob/**",
+            "/actuator/**"
     };
 
     @Bean
