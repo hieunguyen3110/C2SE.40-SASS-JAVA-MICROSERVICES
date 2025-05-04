@@ -13,12 +13,15 @@ import org.com.identityservice.producer.UserUpdateProducer;
 import org.com.identityservice.service.AccountService;
 import org.com.identityservice.service.RedisService;
 
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -67,17 +70,39 @@ public class AccountController {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");
         }
     }
-
-    @PutMapping("/update-profile")
+    @PutMapping(value = "/update-profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<UserProfileResponse> updateUserProfile(
-            @ModelAttribute UpdateUserProfileRequest request,
-            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture, HttpServletRequest httpServletRequest)
+            @RequestParam("firstName") String firstName,
+            @RequestParam("lastName") String lastName,
+            @RequestParam("birthDate") String birthDate,
+            @RequestParam("gender") String gender,
+            @RequestParam("hometown") String hometown,
+            @RequestParam("phoneNumber") String phoneNumber,
+            @RequestParam("facultyId") Long facultyId,
+            @RequestParam("major") String major,
+            @RequestParam("enrollmentYear") Integer enrollmentYear,
+            @RequestParam("classNumber") String classNumber,
+            @RequestParam(value = "profilePicture", required = false) MultipartFile profilePicture,
+            HttpServletRequest httpServletRequest)
     {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
             AccountDto account = (AccountDto) authentication.getPrincipal();
             try {
+                LocalDate time= LocalDate.parse(birthDate);
+                UpdateUserProfileRequest request= UpdateUserProfileRequest.builder()
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .birthDate(time)
+                        .gender(gender)
+                        .hometown(hometown)
+                        .phoneNumber(phoneNumber)
+                        .facultyId(facultyId)
+                        .major(major)
+                        .enrollmentYear(enrollmentYear)
+                        .classNumber(classNumber)
+                        .build();
                 ApiResponse<UserProfileResponse> response= accountService.updateUserProfile(account, request, profilePicture);
                 String authHeader= httpServletRequest.getHeader("Authorization");
                 if(authHeader != null){
