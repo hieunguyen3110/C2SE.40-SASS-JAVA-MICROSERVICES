@@ -2,6 +2,7 @@ package org.com.identityservice.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.com.identityservice.dto.request.AnalyzeRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +64,7 @@ public class AccountServiceImpl implements AccountService {
     private final ELearningClient eLearningClient;
     private final RecommendationClient recommendationClient;
     private final StudyGroupClient studyGroupClient;
+    private final EntityManager entityManager;
     private List<Account> newAccounts;
     private String uploadProfilePicture(MultipartFile profilePicture) {
         try {
@@ -467,34 +469,10 @@ public class AccountServiceImpl implements AccountService {
         try{
             Account account= accountRepository.findByAccountId(accountDto.getAccountId())
                     .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(), "Account not found"));
-            AnalyzeData analyzeData= eLearningClient.getAnalyzeDataByAccountId(account.getAccountId()).getData();
             account.setIsAnalyze(true);
             account.setLastAnalyzeTime(LocalDateTime.now());
             accountRepository.save(account);
-            if(analyzeData!=null){
-                Boolean checkParticipateGroup= studyGroupClient.checkAccountIsParticipateGroup(account.getAccountId()).getData();
-                AnalyzeRequest analyzeRequest= AnalyzeRequest.builder()
-                        .Assignment_Completion_Rate(List.of(analyzeData.getAssignmentScore()))
-                        .Exam_Score(List.of(analyzeData.getExamScore()))
-                        .Online_Courses_Completed(List.of(analyzeData.getOnlineCourseComplete()+analyzeData.getOnlineTestComplete()))
-                        .Participation_in_Discussions(List.of(checkParticipateGroup?"Yes":"No"))
-                        .build();
-                String response= recommendationClient.getSolutionByAI(analyzeRequest).getData();
-                Analyze analyze;
-                if(account.getAnalyzes().isEmpty()){
-                    analyze= Analyze.builder()
-                            .account(account)
-                            .message(response)
-                            .build();
-                }else{
-                    analyze= account.getAnalyzes().get(0);
-                    analyze.setMessage(response);
-                }
-                analyzeRepository.save(analyze);
-                return response;
-            }else{
-                return null;
-            }
+            return "enable study analyze is successful";
         }catch (Exception e){
             throw new Exception(e);
         }
@@ -508,6 +486,47 @@ public class AccountServiceImpl implements AccountService {
             account.setIsAnalyze(false);
             accountRepository.save(account);
             return "Disable study analyze is successful";
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public String saveCoursePeriod(EnableAnalyzeRequest request, AccountDto accountDto) throws Exception {
+        try{
+            String response= eLearningClient.saveCoursePeriod(request).getData();
+            if(response!=null){
+                AnalyzeData analyzeData= eLearningClient.getAnalyzeDataByAccountId(accountDto.getAccountId()).getData();
+                if(analyzeData!=null){
+                    Boolean checkParticipateGroup= studyGroupClient.checkAccountIsParticipateGroup(accountDto.getAccountId()).getData();
+                    AnalyzeRequest analyzeRequest= AnalyzeRequest.builder()
+                            .Assignment_Completion_Rate(List.of(analyzeData.getAssignmentScore()))
+                            .Exam_Score(List.of(analyzeData.getExamScore()))
+                            .Online_Courses_Completed(List.of(analyzeData.getOnlineCourseComplete()+analyzeData.getOnlineTestComplete()))
+                            .Participation_in_Discussions(List.of(checkParticipateGroup?"Yes":"No"))
+                            .build();
+                    String message= recommendationClient.getSolutionByAI(analyzeRequest).getData();
+                    Optional<Analyze> analyzeExist= analyzeRepository.findByAccount_AccountId(accountDto.getAccountId());
+                    Account accountMapper= AccountMapper.mapToAccount(accountDto);
+                    Account accountEntity= entityManager.merge(accountMapper);
+                    Analyze analyze;
+                    if(analyzeExist.isEmpty()){
+                        analyze= Analyze.builder()
+                                .account(accountEntity)
+                                .message(message)
+                                .build();
+                    }else{
+                        analyze= analyzeExist.get();
+                        analyze.setMessage(message);
+                    }
+                    analyzeRepository.save(analyze);
+                    return message;
+                }else{
+                    return null;
+                }
+            }else{
+                throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE.getStatusCode().value(),"Having error when try leaning analytic");
+            }
         }catch (Exception e){
             throw new Exception(e);
         }

@@ -31,5 +31,6 @@ public interface AccountService {
 
     String enableStudyAnalyze(AccountDto accountDto) throws Exception;
     String disableStudyAnalyze(AccountDto accountDto) throws Exception;
+    String saveCoursePeriod(EnableAnalyzeRequest request, AccountDto accountDto) throws Exception;
     List<AccountDto> findByIds(Set<Long> accountIds);
 }

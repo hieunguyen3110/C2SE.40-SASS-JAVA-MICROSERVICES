@@ -146,4 +146,14 @@ public class AccountController {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
         }
     }
+    @PostMapping("/save-course-period")
+    public ApiResponse<String> handleSaveCoursePeriod(@RequestBody EnableAnalyzeRequest request) throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(!(authentication instanceof AnonymousAuthenticationToken)){
+            AccountDto accountDto= (AccountDto) authentication.getPrincipal();
+            return CreateApiResponse.createResponse(accountService.saveCoursePeriod(request,accountDto), false);
+        }else{
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
+        }
+    }
 }
