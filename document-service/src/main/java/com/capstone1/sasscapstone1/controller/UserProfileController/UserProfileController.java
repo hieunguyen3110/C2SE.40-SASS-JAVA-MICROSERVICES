@@ -30,7 +30,7 @@ public class UserProfileController {
         // Kiểm tra người dùng đã đăng nhập
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
             AccountDto account = (AccountDto) authentication.getPrincipal();
-            UserProfileResponse profile = userProfileService.getUserProfile(account.getEmail());
+            UserProfileResponse profile = userProfileService.getUserProfile(account);
             return CreateApiResponse.createResponse(profile,false);
         } else {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"You are not authorized to perform this action.");

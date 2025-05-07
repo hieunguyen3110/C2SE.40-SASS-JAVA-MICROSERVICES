@@ -2,12 +2,15 @@ package org.com.identityservice.repository.httpClient;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
+import org.com.identityservice.dto.request.EnableAnalyzeRequest;
 import org.com.identityservice.dto.response.AnalyzeData;
 import org.com.identityservice.dto.response.ApiResponse;
 import org.com.identityservice.enums.ErrorCode;
 import org.com.identityservice.exception.ApiException;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
 public interface ELearningClient {
     @GetExchange("/analyze-data")

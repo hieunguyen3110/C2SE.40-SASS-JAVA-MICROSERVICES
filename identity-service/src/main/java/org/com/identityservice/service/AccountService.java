@@ -1,5 +1,6 @@
 package org.com.identityservice.service;
 
+import org.com.identityservice.dto.request.EnableAnalyzeRequest;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
 import org.com.identityservice.dto.response.*;
 import org.com.identityservice.entity.Account;
