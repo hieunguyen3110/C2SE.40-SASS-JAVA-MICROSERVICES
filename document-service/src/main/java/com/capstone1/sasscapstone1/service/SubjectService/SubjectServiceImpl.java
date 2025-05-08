@@ -63,8 +63,7 @@ public class SubjectServiceImpl implements SubjectService {
 
     private void cacheSubjectsInRedis(List<SubjectDto> subjects) {
         try {
-            String jsonSubjects = objectMapper.writeValueAsString(subjects);
-            redisService.saveData(SUBJECT_KEY, jsonSubjects, TTL_IN_SECONDS);
+            redisService.saveData(SUBJECT_KEY, subjects, TTL_IN_SECONDS);
             log.info("Cached {} subjects in Redis under key: {} with TTL {} seconds (30 days)", subjects.size(), SUBJECT_KEY, TTL_IN_SECONDS);
         } catch (Exception e) {
             log.error("Failed to cache subjects in Redis: {}", e.getMessage(), e);

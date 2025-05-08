@@ -13,6 +13,7 @@ import org.com.elearningservice.repository.GradeRepository;
 import org.com.elearningservice.repository.QuestionRepository;
 import org.com.elearningservice.repository.http.DocumentClient;
 import org.com.elearningservice.service.QuizService;
+import org.com.elearningservice.service.RedisService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import javax.security.auth.Subject;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -36,6 +36,7 @@ public class QuizServiceImpl implements QuizService {
     private final QuestionRepository questionRepository;
     private final GradeRepository gradeRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisService redisService;
     private final ObjectMapper objectMapper;
     private final DocumentClient documentClient;
 
@@ -57,8 +58,8 @@ public class QuizServiceImpl implements QuizService {
         String subjectsKey = "subjects";
         try {
             Object subjectsObj = redisTemplate.opsForValue().get(subjectsKey);
-            if (subjectsObj != null) {
-                return objectMapper.convertValue(subjectsObj, new TypeReference<List<SubjectDTO>>() {});
+            if (subjectsObj instanceof List) {
+                return (List<SubjectDTO>) subjectsObj;
             }
 
             List<SubjectDTO> subjects = documentClient.getAllSubject().getData();
@@ -81,7 +82,7 @@ public class QuizServiceImpl implements QuizService {
     public void validateSubjectId(Long subjectId) {
         try {
             List<SubjectDTO> subjects = getSubjectsFromRedis();
-            boolean subjectExists = subjects.stream().anyMatch(subject -> subject.getId().equals(subjectId));
+            boolean subjectExists = subjects.stream().anyMatch(subject -> subject.getSubjectId().equals(subjectId));
             if (!subjectExists) {
                 throw new ApiException(HttpStatus.BAD_REQUEST.value(), "Invalid subjectId: " + subjectId);
             }
