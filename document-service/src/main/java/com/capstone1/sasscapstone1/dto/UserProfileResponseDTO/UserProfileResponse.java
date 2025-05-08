@@ -1,5 +1,6 @@
 package com.capstone1.sasscapstone1.dto.UserProfileResponseDTO;
 
+import com.capstone1.sasscapstone1.dto.CoursePeriodDto.CoursePeriodDto;
 import com.capstone1.sasscapstone1.dto.DocumentDto.DocumentDto;
 import lombok.*;
 
@@ -31,5 +32,6 @@ public class UserProfileResponse {
     private List<DocumentDto> documentDtos;
     private long totalDocument;
     private int totalPage;
+    private CoursePeriodDto coursePeriodDto;
 }
 

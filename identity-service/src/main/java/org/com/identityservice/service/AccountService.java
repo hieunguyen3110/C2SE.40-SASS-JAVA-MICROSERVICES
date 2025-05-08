@@ -1,5 +1,6 @@
 package org.com.identityservice.service;
 
+import org.com.identityservice.dto.request.EnableAnalyzeRequest;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
 import org.com.identityservice.dto.response.*;
 import org.com.identityservice.entity.Account;
@@ -30,5 +31,6 @@ public interface AccountService {
 
     String enableStudyAnalyze(AccountDto accountDto) throws Exception;
     String disableStudyAnalyze(AccountDto accountDto) throws Exception;
+    String saveCoursePeriod(EnableAnalyzeRequest request, AccountDto accountDto) throws Exception;
     List<AccountDto> findByIds(Set<Long> accountIds);
 }

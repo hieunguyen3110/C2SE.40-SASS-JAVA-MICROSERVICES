@@ -3,6 +3,7 @@ package org.com.identityservice.controller.Web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.com.identityservice.dto.request.EnableAnalyzeRequest;
 import org.com.identityservice.dto.request.UpdateUserProfileRequest;
 import org.com.identityservice.dto.response.*;
 import org.com.identityservice.entity.Account;
@@ -145,5 +146,14 @@ public class AccountController {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
         }
     }
-
+    @PostMapping("/save-course-period")
+    public ApiResponse<String> handleSaveCoursePeriod(@RequestBody EnableAnalyzeRequest request) throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(!(authentication instanceof AnonymousAuthenticationToken)){
+            AccountDto accountDto= (AccountDto) authentication.getPrincipal();
+            return CreateApiResponse.createResponse(accountService.saveCoursePeriod(request,accountDto), false);
+        }else{
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
+        }
+    }
 }

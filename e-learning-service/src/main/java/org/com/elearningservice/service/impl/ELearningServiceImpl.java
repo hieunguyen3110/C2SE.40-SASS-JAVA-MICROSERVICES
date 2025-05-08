@@ -47,12 +47,12 @@ public class ELearningServiceImpl implements ELearningService {
                         examGrade += grade.getScore();
                     }
                 }
-                if(numberOfAssignment!=0 || numberOfExam!=0){
+                if(numberOfAssignment!=0 && numberOfExam!=0){
                     analyzeData.add(AnalyzeData.builder()
                             .onlineCourseComplete(numberOfAssignment)
                             .onlineTestComplete(numberOfExam)
-                            .assignmentScore(numberOfAssignment==0?0:(assignmentGrade/numberOfAssignment))
-                            .examScore(numberOfExam==0?0:(examGrade/numberOfExam))
+                            .assignmentScore(assignmentGrade/numberOfAssignment)
+                            .examScore(examGrade/numberOfExam)
                             .build());
                 }
             }
