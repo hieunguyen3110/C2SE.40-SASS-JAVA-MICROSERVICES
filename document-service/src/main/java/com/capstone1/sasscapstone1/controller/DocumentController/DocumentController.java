@@ -38,7 +38,7 @@ public class DocumentController {
     @PostMapping("/upload")
     public ApiResponse<String> uploadDocument(@RequestPart("file") MultipartFile file,
                                               @RequestPart("title") String title,
-                                              @RequestPart("description") String description,
+                                              @Nullable @RequestPart("description") String description,
                                               @Nullable @RequestPart("content") String content,
                                               @RequestPart("type") String type,
                                               @RequestPart("subjectCode") String subjectCode,

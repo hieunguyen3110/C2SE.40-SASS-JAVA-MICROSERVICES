@@ -1,9 +1,12 @@
 package org.com.elearningservice.controller;
 
+import org.com.elearningservice.dto.request.SubmitRequest;
+import org.com.elearningservice.dto.request.TestRequest;
+import org.com.elearningservice.dto.request.UpdateAnswerRequest;
 import org.com.elearningservice.dto.response.ApiResponse;
+import org.com.elearningservice.dto.response.GradeDto;
 import org.com.elearningservice.dto.response.QuizSessionDTO;
 import org.com.elearningservice.dto.response.SubjectDTO;
-import org.com.elearningservice.entity.Grade;
 import org.com.elearningservice.helper.CreateApiResponse;
 import org.com.elearningservice.service.QuizService;
 import org.springframework.web.bind.annotation.*;
@@ -26,17 +29,15 @@ public class QuizController {
     }
 
     @PostMapping("/quiz/start")
-    public ApiResponse<QuizSessionDTO> startQuiz(@RequestParam Long subjectId, @RequestParam int numberOfQuestions,
-                                                 @RequestParam int duration) {
-        QuizSessionDTO session = quizService.startSession(subjectId, numberOfQuestions, duration, false);
+    public ApiResponse<QuizSessionDTO> startQuiz(@RequestBody TestRequest request) {
+        QuizSessionDTO session = quizService.startSession(request.getSubjectId(), request.getNumberOfQuestions(), request.getDuration(), false);
         return CreateApiResponse.createResponse(session, true);
     }
 
     @PostMapping("/assignment/start")
-    public ApiResponse<QuizSessionDTO> startAssignment(@RequestParam Long subjectId,
-                                                       @RequestParam int numberOfQuestions,
-                                                       @RequestParam int duration) {
-        QuizSessionDTO session = quizService.startSession(subjectId, numberOfQuestions, duration, true);
+    public ApiResponse<QuizSessionDTO> startAssignment(@RequestBody TestRequest request) {
+        QuizSessionDTO session = quizService
+                .startSession(request.getSubjectId(), request.getNumberOfQuestions(), request.getDuration(), true);
         return CreateApiResponse.createResponse(session, true);
     }
 
@@ -47,23 +48,20 @@ public class QuizController {
     }
 
     @PostMapping("/session/update-answer")
-    public ApiResponse<QuizSessionDTO> updateSessionAnswer(@RequestBody String userAnswers,
-                                                            @RequestParam boolean isAssignment,
-                                                            @RequestParam int questionIndex) {
-        QuizSessionDTO session = quizService.updateSessionAnswer(questionIndex, userAnswers, isAssignment);
+    public ApiResponse<QuizSessionDTO> updateSessionAnswer(@RequestBody UpdateAnswerRequest request) {
+        QuizSessionDTO session = quizService.updateSessionAnswer(request.getQuestionIndex(), request.getUserAnswer(), request.getIsAssignment());
         return CreateApiResponse.createResponse(session, false);
     }
 
     @PostMapping("/submit")
-    public ApiResponse<Grade> submit(@RequestParam Long subjectId, @RequestBody List<String> userAnswers,
-                                     @RequestParam boolean isAssignment) {
-        Grade result = quizService.submitSession(subjectId, userAnswers, isAssignment);
+    public ApiResponse<GradeDto> submit(@RequestBody SubmitRequest request) {
+        GradeDto result = quizService.submitSession(request.getSubjectId(), request.getUserAnswers(), request.getIsAssignment());
         return CreateApiResponse.createResponse(result, true);
     }
 
     @GetMapping("/history")
-    public ApiResponse<List<Grade>> getHistory() {
-        List<Grade> history = quizService.getHistory();
+    public ApiResponse<List<GradeDto>> getHistory() {
+        List<GradeDto> history = quizService.getHistory();
         return CreateApiResponse.createResponse(history, false);
     }
 }

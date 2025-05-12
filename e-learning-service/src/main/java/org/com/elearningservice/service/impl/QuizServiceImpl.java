@@ -55,11 +55,14 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public List<SubjectDTO> getSubjectsFromRedis() {
-        String subjectsKey = "subjects";
+        String subjectsKey = "subject";
         try {
-            Object subjectsObj = redisTemplate.opsForValue().get(subjectsKey);
-            if (subjectsObj instanceof List) {
-                return (List<SubjectDTO>) subjectsObj;
+            String json = (String) redisService.getData(subjectsKey);
+            if (json != null) {
+                return objectMapper.readValue(
+                        json,
+                        new TypeReference<>() {}
+                );
             }
 
             List<SubjectDTO> subjects = documentClient.getAllSubject().getData();
@@ -220,7 +223,7 @@ public class QuizServiceImpl implements QuizService {
             session.setAssignment(isAssignment);
 
             String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
-            redisTemplate.opsForValue().set(sessionKey, session, (duration+5) * 60L , TimeUnit.SECONDS);
+            redisService.saveData(sessionKey, session, (duration+5) * 60L);
 
             return session;
         } catch (ApiException e) {
@@ -235,7 +238,7 @@ public class QuizServiceImpl implements QuizService {
         try {
             Long accountId = getCurrentAccountId();
             String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
-            QuizSessionDTO session = (QuizSessionDTO) redisTemplate.opsForValue().get(sessionKey);
+            QuizSessionDTO session = (QuizSessionDTO) redisService.getData(sessionKey);
             return session != null ? session : startSession(null, 0, 0, isAssignment);
         } catch (ApiException e) {
             throw e;
@@ -245,13 +248,13 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
-    public Grade submitSession(Long subjectId, List<String> userAnswers, boolean isAssignment) {
+    public GradeDto submitSession(Long subjectId, List<String> userAnswers, boolean isAssignment) {
         try {
             Long accountId = getCurrentAccountId();
             validateSubjectId(subjectId);
 
             String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
-            QuizSessionDTO session = (QuizSessionDTO) redisTemplate.opsForValue().get(sessionKey);
+            QuizSessionDTO session = (QuizSessionDTO) redisService.getData(sessionKey);
             if (session == null) {
                 throw new ApiException(HttpStatus.NOT_FOUND.value(), "Session not found");
             }
@@ -303,11 +306,26 @@ public class QuizServiceImpl implements QuizService {
             }
 
             result.setGradeQuestions(gradeQuestions);
-            gradeRepository.save(result);
-
-            redisTemplate.delete(sessionKey);
-
-            return result;
+            Grade saveGrade= gradeRepository.save(result);
+            List<GradeQuestionResponse> gradeQuestionResponses= saveGrade.getGradeQuestions().stream()
+                            .map(gradeQuestion -> GradeQuestionResponse.builder()
+                                    .question(QuestionDTO.builder()
+                                            .question(gradeQuestion.getQuestion().getQuestionText())
+                                            .correctAnswer(gradeQuestion.getQuestion().getCorrectAnswer())
+                                            .options(gradeQuestion.getQuestion().getOptions())
+                                            .build())
+                                    .userAnswer(gradeQuestion.getUserAnswer())
+                                    .build())
+                            .toList();
+            redisService.deleteData(sessionKey);
+            return GradeDto.builder()
+                    .id(saveGrade.getId())
+                    .score(saveGrade.getScore())
+                    .totalQuestions(saveGrade.getTotalQuestions())
+                    .subjectId(saveGrade.getSubjectId())
+                    .type(saveGrade.getType().name())
+                    .gradeQuestions(gradeQuestionResponses)
+                    .build();
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -320,7 +338,7 @@ public class QuizServiceImpl implements QuizService {
         try {
             Long accountId = getCurrentAccountId();
             String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
-            QuizSessionDTO session = (QuizSessionDTO) redisTemplate.opsForValue().get(sessionKey);
+            QuizSessionDTO session = (QuizSessionDTO) redisService.getData(sessionKey);
 
             if (session == null) {
                 throw new ApiException(HttpStatus.NOT_FOUND.value(), "Session not found");
@@ -337,7 +355,7 @@ public class QuizServiceImpl implements QuizService {
                 throw new ApiException(HttpStatus.BAD_REQUEST.value(), "Session has expired");
             }
 
-            redisTemplate.opsForValue().set(sessionKey, session, remainingTtl, TimeUnit.SECONDS);
+            redisService.saveData(sessionKey, session, remainingTtl);
 
             return session;
         } catch (ApiException e) {
@@ -349,10 +367,20 @@ public class QuizServiceImpl implements QuizService {
 
 
     @Override
-    public List<Grade> getHistory() {
+    public List<GradeDto> getHistory() {
         try {
             Long accountId = getCurrentAccountId();
-            return gradeRepository.findByAccountId(accountId);
+            List<Grade> grades= gradeRepository.findByAccountId(accountId);
+            return grades.stream()
+                    .map(grade -> GradeDto.builder()
+                            .id(grade.getId())
+                            .score(grade.getScore())
+                            .totalQuestions(grade.getTotalQuestions())
+                            .subjectId(grade.getSubjectId())
+                            .type(grade.getType().name())
+                            .gradeQuestions(null)
+                            .build())
+                    .toList();
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
