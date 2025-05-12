@@ -125,11 +125,11 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     @Override
     public List<SubjectDto> fetchSubjects() {
         try {
-            Object cachedValue = redisService.getData(SUBJECT_KEY);
-            if (cachedValue != null) {
+            String json = (String) redisService.getData(SUBJECT_KEY);
+            if (json != null) {
                 return objectMapper.readValue(
-                        cachedValue.toString(),
-                        new TypeReference<List<SubjectDto>>() {}
+                        json,
+                        new TypeReference<>() {}
                 );
             }
 

@@ -1,11 +1,15 @@
 package org.com.elearningservice.dto.response;
 
-import lombok.Data;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
 
-@Data
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class QuestionDTO {
     private String question;
     private String correctAnswer;

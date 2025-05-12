@@ -1,5 +1,6 @@
 package org.com.elearningservice.service;
 
+import org.com.elearningservice.dto.response.GradeDto;
 import org.com.elearningservice.dto.response.QuizSessionDTO;
 import org.com.elearningservice.dto.response.SubjectDTO;
 import org.com.elearningservice.entity.Grade;
@@ -11,7 +12,7 @@ public interface QuizService {
     List<SubjectDTO> getSubjectsFromRedis();
     QuizSessionDTO startSession(Long subjectId, int numberOfQuestions, int duration, boolean isAssignment);
     QuizSessionDTO restoreSession(boolean isAssignment);
-    Grade submitSession(Long subjectId, List<String> userAnswers, boolean isAssignment);
-    List<Grade> getHistory();
+    GradeDto submitSession(Long subjectId, List<String> userAnswers, boolean isAssignment);
+    List<GradeDto> getHistory();
     QuizSessionDTO updateSessionAnswer(int index, String userAnswers, boolean isAssignment);
 }
