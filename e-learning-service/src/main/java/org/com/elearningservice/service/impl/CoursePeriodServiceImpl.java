@@ -46,7 +46,7 @@ public class CoursePeriodServiceImpl implements CoursePeriodService {
             LocalDateTime endDate= now.plusDays(60);
             Map<Long, String> subjectMaps= new HashMap<>();
             for(SubjectDTO subjectDTO: request.getSubjects()){
-                subjectMaps.put(subjectDTO.getId(), subjectDTO.getName());
+                subjectMaps.put(subjectDTO.getSubjectId(), subjectDTO.getSubjectName());
             }
             CoursePeriod coursePeriod= CoursePeriod.builder()
                     .accountId(accountDto.getAccountId())

@@ -53,10 +53,11 @@ public class UserProfileServiceImpl implements UserProfileService {
             response.setTotalDocument(getAllDocumentByAccountId.getTotalElements());
             response.setTotalPage(getAllDocumentByAccountId.getTotalPages());
             List<RoleDto> convertRoleToList= new ArrayList<>(accountDto.getRoles());
-            if(Objects.equals(convertRoleToList.getFirst().getName(), "STUDENT")){
-                CoursePeriodDto coursePeriodDto= eLearningClient.checkExistCoursePeriod(accountDto.getAccountId()).getData();
+            if (!convertRoleToList.isEmpty() && "STUDENT".equals(convertRoleToList.get(0).getName())) {
+                CoursePeriodDto coursePeriodDto = eLearningClient.checkExistCoursePeriod(accountDto.getAccountId()).getData();
                 response.setCoursePeriodDto(coursePeriodDto);
             }
+
 //            findFacultyByAccount.ifPresent(faculty -> response.setFacultyId(faculty.getFacultyId()));
             return response;
         } catch (Exception e) {
