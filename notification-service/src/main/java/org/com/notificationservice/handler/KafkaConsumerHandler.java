@@ -26,7 +26,6 @@ import java.util.Map;
 public class KafkaConsumerHandler {
     private final NotificationRepository notificationRepository;
     private final RedisService redisService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     private Notification convertToNotification(NotificationEventRequest request){
@@ -125,11 +124,13 @@ public class KafkaConsumerHandler {
         try{
             String token = record.key();
             String accountJson = record.value();
-            AccountDto accountDto = objectMapper.readValue(accountJson,AccountDto.class);
             ObjectMapper objectMapper = new ObjectMapper();
+            // Đăng ký module Jackson cho kiểu Java 8 date/time
             objectMapper.registerModule(new JavaTimeModule());
-            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Sử dụng định dạng ISO
+            // Cấu hình ObjectMapper để không sử dụng timestamp cho ngày tháng
+            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Định dạng ngày theo ISO
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Bỏ qua thuộc tính không mong muốn
+            AccountDto accountDto = objectMapper.readValue(accountJson,AccountDto.class);
             String json= objectMapper.writeValueAsString(accountDto);
             redisService.updateData(token,json);
             String accountKey = "account:" + accountDto.getAccountId();
@@ -142,6 +143,7 @@ public class KafkaConsumerHandler {
     @KafkaListener(topics = "study-group-topic", groupId = "notification-group")
     public void listenUserDeleteEvent(ConsumerRecord<String, Object> record) throws Exception {
         try{
+            ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.registerModule(new JavaTimeModule());
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

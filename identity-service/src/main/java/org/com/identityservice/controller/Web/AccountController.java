@@ -20,6 +20,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Nullable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -71,14 +74,35 @@ public class AccountController {
 
     @PutMapping("/update-profile")
     public ApiResponse<UserProfileResponse> updateUserProfile(
-            @ModelAttribute UpdateUserProfileRequest request,
-            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture, HttpServletRequest httpServletRequest)
+            @Nullable @RequestPart("firstName") String firstName,
+            @Nullable @RequestPart("lastName") String lastName,
+            @Nullable @RequestPart("birthDate") String birthDate,
+            @Nullable @RequestPart("gender") String gender,
+            @Nullable @RequestPart("hometown") String hometown,
+            @Nullable @RequestPart("phoneNumber") String phoneNumber,
+            @Nullable @RequestPart("facultyId") String facultyId,
+            @Nullable @RequestPart("major") String major,
+            @Nullable @RequestPart("enrollmentYear") String enrollmentYear,
+            @Nullable @RequestPart("classNumber") String classNumber,
+            @Nullable @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture, HttpServletRequest httpServletRequest)
     {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (!(authentication instanceof AnonymousAuthenticationToken)) {
             AccountDto account = (AccountDto) authentication.getPrincipal();
             try {
+                UpdateUserProfileRequest request = UpdateUserProfileRequest.builder()
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .birthDate(birthDate != null ? LocalDate.parse(birthDate) : null)
+                        .gender(gender)
+                        .hometown(hometown)
+                        .phoneNumber(phoneNumber)
+                        .facultyId((facultyId != null && Long.parseLong(facultyId) != 0) ? Long.parseLong(facultyId) : null)
+                        .major(major)
+                        .enrollmentYear(enrollmentYear != null ? Integer.parseInt(enrollmentYear) : null)
+                        .classNumber(classNumber)
+                        .build();
                 ApiResponse<UserProfileResponse> response= accountService.updateUserProfile(account, request, profilePicture);
                 String authHeader= httpServletRequest.getHeader("Authorization");
                 if(authHeader != null){
