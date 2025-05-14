@@ -2,6 +2,7 @@ package org.com.elearningservice.dto.response;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -12,6 +13,8 @@ import java.util.List;
 public class GradeDto {
     private Long id;
     private Long subjectId;
+    private String subjectName;
+    private String createdAt;
     private Float score;
     private Integer totalQuestions;
     private String type;

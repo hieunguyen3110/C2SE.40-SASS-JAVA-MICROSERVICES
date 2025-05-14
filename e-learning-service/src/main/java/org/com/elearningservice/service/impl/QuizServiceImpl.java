@@ -371,16 +371,32 @@ public class QuizServiceImpl implements QuizService {
         try {
             Long accountId = getCurrentAccountId();
             List<Grade> grades= gradeRepository.findByAccountId(accountId);
-            return grades.stream()
-                    .map(grade -> GradeDto.builder()
-                            .id(grade.getId())
-                            .score(grade.getScore())
-                            .totalQuestions(grade.getTotalQuestions())
-                            .subjectId(grade.getSubjectId())
-                            .type(grade.getType().name())
-                            .gradeQuestions(null)
-                            .build())
-                    .toList();
+            List<SubjectDTO> subjectDTOS = getSubjectsFromRedis();
+            List<GradeDto> gradeDtos= new ArrayList<>();
+            for(Grade grade : grades){
+                List<GradeQuestionResponse> gradeQuestionResponse= grade.getGradeQuestions().stream()
+                        .map(gradeQuestion -> GradeQuestionResponse.builder()
+                                .userAnswer(gradeQuestion.getUserAnswer())
+                                .question(QuestionDTO.builder()
+                                        .options(gradeQuestion.getQuestion().getOptions())
+                                        .question(gradeQuestion.getQuestion().getQuestionText())
+                                        .correctAnswer(gradeQuestion.getQuestion().getCorrectAnswer())
+                                        .build())
+                                .build())
+                        .toList();
+                GradeDto gradeDto= GradeDto.builder()
+                        .id(grade.getId())
+                        .score(grade.getScore())
+                        .totalQuestions(grade.getTotalQuestions())
+                        .subjectId(grade.getSubjectId())
+                        .type(grade.getType().name())
+                        .gradeQuestions(gradeQuestionResponse)
+                        .createdAt(grade.getCreatedAt().toString())
+                        .subjectName(subjectDTOS.stream().filter(subjectDTO -> subjectDTO.getSubjectId().equals(grade.getSubjectId())).toList().get(0).getSubjectName())
+                        .build();
+                gradeDtos.add(gradeDto);
+            }
+            return gradeDtos;
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
