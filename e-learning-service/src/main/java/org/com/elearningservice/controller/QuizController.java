@@ -1,5 +1,6 @@
 package org.com.elearningservice.controller;
 
+import org.com.elearningservice.dto.request.StartAssignmentRequest;
 import org.com.elearningservice.dto.request.SubmitRequest;
 import org.com.elearningservice.dto.request.TestRequest;
 import org.com.elearningservice.dto.request.UpdateAnswerRequest;
@@ -35,9 +36,8 @@ public class QuizController {
     }
 
     @PostMapping("/assignment/start")
-    public ApiResponse<QuizSessionDTO> startAssignment(@RequestBody TestRequest request) {
-        QuizSessionDTO session = quizService
-                .startSession(request.getSubjectId(), request.getNumberOfQuestions(), request.getDuration(), true);
+    public ApiResponse<QuizSessionDTO> startAssignment(@RequestBody StartAssignmentRequest request) throws Exception {
+        QuizSessionDTO session = quizService.startAssignmentWithDoc(request);
         return CreateApiResponse.createResponse(session, true);
     }
 

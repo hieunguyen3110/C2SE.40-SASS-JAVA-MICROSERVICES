@@ -3,14 +3,17 @@ package org.com.elearningservice.service.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.com.elearningservice.dto.request.StartAssignmentRequest;
 import org.com.elearningservice.dto.response.*;
 import org.com.elearningservice.entity.Grade;
 import org.com.elearningservice.entity.GradeQuestion;
 import org.com.elearningservice.entity.Question;
+import org.com.elearningservice.enums.ErrorCode;
 import org.com.elearningservice.enums.ResultType;
 import org.com.elearningservice.exception.ApiException;
 import org.com.elearningservice.repository.GradeRepository;
 import org.com.elearningservice.repository.QuestionRepository;
+import org.com.elearningservice.repository.http.ChatbotClient;
 import org.com.elearningservice.repository.http.DocumentClient;
 import org.com.elearningservice.service.QuizService;
 import org.com.elearningservice.service.RedisService;
@@ -39,6 +42,7 @@ public class QuizServiceImpl implements QuizService {
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
     private final DocumentClient documentClient;
+    private final ChatbotClient chatbotClient;
 
     @Value("${app.ai-service.url}")
     private String aiServiceUrl;
@@ -175,18 +179,6 @@ public class QuizServiceImpl implements QuizService {
         }
     }
 
-    private List<QuestionDTO> generateAssignmentQuestions(Long subjectId, int numberOfQuestions) {
-        try {
-            validateSubjectId(subjectId);
-            List<String> docIds = getDocIdsFromRedis(subjectId);
-            return callAiService(docIds, numberOfQuestions);
-        } catch (ApiException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error generating assignment questions: " + e.getMessage());
-        }
-    }
-
     private QuestionDTO convertToQuestionDTO(Question question) {
         try {
             QuestionDTO dto = new QuestionDTO();
@@ -208,13 +200,7 @@ public class QuizServiceImpl implements QuizService {
 
             Long accountId = getCurrentAccountId();
 
-            List<QuestionDTO> questions;
-            if (isAssignment) {
-                questions = generateAssignmentQuestions(subjectId, numberOfQuestions);
-            } else {
-                questions = generateQuizQuestions(subjectId, numberOfQuestions);
-            }
-
+            List<QuestionDTO> questions = generateQuizQuestions(subjectId, numberOfQuestions);
             QuizSessionDTO session = new QuizSessionDTO();
             session.setAccountId(accountId);
             session.setSubjectId(subjectId);
@@ -222,14 +208,48 @@ public class QuizServiceImpl implements QuizService {
             session.setUserAnswers(new ArrayList<>());
             session.setAssignment(isAssignment);
 
-            String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
+            String sessionKey = "session:" + accountId + ":quiz";
             redisService.saveData(sessionKey, session, (duration+5) * 60L);
-
             return session;
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error starting session: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public QuizSessionDTO startAssignmentWithDoc(StartAssignmentRequest request) throws Exception {
+        try{
+            if (request.getDuration() <= 0) {
+                throw new ApiException(HttpStatus.BAD_REQUEST.value(), "Duration must be greater than 0");
+            }
+            validateSubjectId(request.getSubjectId());
+            Long accountId = getCurrentAccountId();
+            List<QuestionResponse> responses = chatbotClient.generateQuestion(List.of(request.getDocId())).getData();
+            if(responses.size()>request.getNumberOfQuestion()){
+                responses = responses.subList(0,request.getNumberOfQuestion()+1);
+            }
+            List<QuestionDTO> questionDTOS = responses.stream()
+                    .map(question -> QuestionDTO.builder()
+                            .question(question.getQuestion())
+                            .options(question.getOptions())
+                            .correctAnswer(question.getCorrect_answer())
+                            .build())
+                    .toList();
+            QuizSessionDTO session = QuizSessionDTO.builder()
+                    .accountId(accountId)
+                    .subjectId(request.getSubjectId())
+                    .docId(request.getDocId())
+                    .questions(questionDTOS)
+                    .userAnswers(new ArrayList<>())
+                    .isAssignment(true)
+                    .build();
+            String sessionKey = "session:" + accountId + ":assignment";
+            redisService.saveData(sessionKey, session, (request.getDuration()+5) * 60L);
+            return session;
+        }catch (Exception e){
+            throw new Exception(e);
         }
     }
 
@@ -340,8 +360,8 @@ public class QuizServiceImpl implements QuizService {
             String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
             QuizSessionDTO session = (QuizSessionDTO) redisService.getData(sessionKey);
 
-            if (session == null) {
-                throw new ApiException(HttpStatus.NOT_FOUND.value(), "Session not found");
+            if(index >= session.getQuestions().size()){
+                throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Index not valid");
             }
 
             while (session.getUserAnswers().size() <= index) {

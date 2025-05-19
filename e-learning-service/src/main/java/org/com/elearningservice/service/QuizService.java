@@ -1,16 +1,16 @@
 package org.com.elearningservice.service;
 
+import org.com.elearningservice.dto.request.StartAssignmentRequest;
 import org.com.elearningservice.dto.response.GradeDto;
 import org.com.elearningservice.dto.response.QuizSessionDTO;
 import org.com.elearningservice.dto.response.SubjectDTO;
-import org.com.elearningservice.entity.Grade;
-import org.com.elearningservice.repository.GradeRepository;
 
 import java.util.List;
 
 public interface QuizService {
     List<SubjectDTO> getSubjectsFromRedis();
     QuizSessionDTO startSession(Long subjectId, int numberOfQuestions, int duration, boolean isAssignment);
+    QuizSessionDTO startAssignmentWithDoc(StartAssignmentRequest request) throws Exception;
     QuizSessionDTO restoreSession(boolean isAssignment);
     GradeDto submitSession(Long subjectId, List<String> userAnswers, boolean isAssignment);
     List<GradeDto> getHistory();

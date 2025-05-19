@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.com.elearningservice.dto.response.AccountDto;
 import org.com.elearningservice.enums.ErrorCode;
 import org.com.elearningservice.exception.ApiException;
+import org.com.elearningservice.repository.http.ChatbotClient;
 import org.com.elearningservice.repository.http.DocumentClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +27,8 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class WebClientConfig {
     private final ObjectMapper objectMapper;
+    @Value("${app.ai-service.url}")
+    private String chatbotUrl;
 
     @Bean
     @LoadBalanced
@@ -67,5 +71,17 @@ public class WebClientConfig {
                 .build();
         HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
         return httpServiceProxyFactory.createClient(DocumentClient.class);
+    }
+
+    @Bean
+    public ChatbotClient chatbotClient() {
+        WebClient webClient = WebClient.builder()
+                .baseUrl(chatbotUrl)
+                .build();
+        HttpServiceProxyFactory factory = HttpServiceProxyFactory
+                .builderFor(WebClientAdapter.create(webClient))
+                .build();
+
+        return factory.createClient(ChatbotClient.class);
     }
 }
