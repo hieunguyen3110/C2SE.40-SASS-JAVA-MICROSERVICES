@@ -72,4 +72,7 @@ public interface DocumentsRepository extends JpaRepository<Documents,Long> {
     @Modifying
     @Query("Update Documents d set d.isGenerateQuestion=true where d.docId in :docIds")
     int updateDocumentGenQuestion(@Param("docIds") List<Long> docIds);
+
+    @Query("select d from Documents d where d.subject.subjectId in :subjectIds")
+    List<Documents> findAllBySubjectIds(@Param("subjectIds") List<Long> subjectIds);
 }

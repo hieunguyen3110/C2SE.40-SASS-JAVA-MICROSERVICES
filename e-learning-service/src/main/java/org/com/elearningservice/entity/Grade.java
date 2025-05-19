@@ -20,6 +20,7 @@ public class Grade extends AbstractDefault {
     private Long id;
     private Long accountId;
     private Long subjectId;
+    private Long docId;
     private Float score;
     private Integer totalQuestions;
 

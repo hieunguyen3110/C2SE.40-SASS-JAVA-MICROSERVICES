@@ -10,8 +10,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class AnalyzeRequest {
-    private List<Integer> Online_Courses_Completed;
-    private List<String> Participation_in_Discussions;
-    private List<Float> Assignment_Completion_Rate;
-    private List<Float> Exam_Score;
+    private List<Integer> online_courses_completed;
+    private List<String> participation_in_discussions;
+    private List<AssignmentCompletionRequest> assignment_completion_rate;
+    private List<TestRequest> exam_score;
+    private List<CoursePeriodRequest> course_period;
 }

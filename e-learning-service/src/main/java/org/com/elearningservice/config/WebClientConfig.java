@@ -55,4 +55,17 @@ public class WebClientConfig {
         HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
         return httpServiceProxyFactory.createClient(DocumentClient.class);
     }
+
+    @Bean
+    @LoadBalanced
+    DocumentClient documentClientBatch(WebClient.Builder builder){
+        WebClient webClient = builder
+                .baseUrl("http://document-service/api/v1/document")
+                .defaultRequest(request->{
+                    request.header("origin", "batch-service");
+                })
+                .build();
+        HttpServiceProxyFactory httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(WebClientAdapter.create(webClient)).build();
+        return httpServiceProxyFactory.createClient(DocumentClient.class);
+    }
 }

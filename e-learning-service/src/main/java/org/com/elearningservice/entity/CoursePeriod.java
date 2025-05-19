@@ -3,6 +3,7 @@ package org.com.elearningservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.com.elearningservice.config.JsonToMapConverter;
+import org.com.elearningservice.config.JsonToMapConverterLong;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -23,7 +24,7 @@ public class CoursePeriod extends AbstractDefault{
     private LocalDateTime startDate;
     @Column(name = "end_date", nullable = false)
     private LocalDateTime endDate;
-    @Convert(converter = JsonToMapConverter.class)
+    @Convert(converter = JsonToMapConverterLong.class)
     @Column(columnDefinition = "text")
     private Map<Long, String> subjects;
     @Column(name = "account_id", nullable = false)

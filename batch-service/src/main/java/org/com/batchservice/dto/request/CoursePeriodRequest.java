@@ -1,4 +1,4 @@
-package org.com.identityservice.dto.response;
+package org.com.batchservice.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class SubjectDto {
-    private Long subjectId;
-    private String subjectName;
+public class CoursePeriodRequest {
+    private Long subject_id;
+    private String subject_name;
 }
