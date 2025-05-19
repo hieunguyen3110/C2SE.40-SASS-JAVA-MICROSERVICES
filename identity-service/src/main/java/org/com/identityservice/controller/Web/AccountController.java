@@ -180,4 +180,14 @@ public class AccountController {
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
         }
     }
+    @GetMapping("/get-analyze")
+    public ApiResponse<LearningAnalyzeResponse> handleGetAnalyze() throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(!(authentication instanceof AnonymousAuthenticationToken)){
+            AccountDto accountDto= (AccountDto) authentication.getPrincipal();
+            return CreateApiResponse.createResponse(accountService.getAnalyzeData(accountDto), false);
+        }else{
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
+        }
+    }
 }

@@ -1,10 +1,9 @@
 package org.com.identityservice.controller.Cronjob;
 
 import lombok.RequiredArgsConstructor;
-import org.com.identityservice.dto.request.UpdateMessageAnalyzeRequest;
 import org.com.identityservice.dto.response.AccountDto;
-import org.com.identityservice.dto.response.AccountRatingDto;
 import org.com.identityservice.dto.response.ApiResponse;
+import org.com.identityservice.dto.response.MessageAnalyze;
 import org.com.identityservice.helpers.CreateApiResponse;
 import org.com.identityservice.service.AccountService;
 import org.com.identityservice.service.AnalyzeService;
@@ -44,7 +43,7 @@ public class CronjobController {
     }
 
     @PostMapping("/account/update-analyze-message")
-    public ApiResponse<String> updateMessageAnalyze(@RequestBody UpdateMessageAnalyzeRequest request) throws Exception {
+    public ApiResponse<String> updateMessageAnalyze(@RequestBody MessageAnalyze request) throws Exception {
         return CreateApiResponse.createResponse(analyzeService.updateAnalyzeMessage(request), false);
     }
 }

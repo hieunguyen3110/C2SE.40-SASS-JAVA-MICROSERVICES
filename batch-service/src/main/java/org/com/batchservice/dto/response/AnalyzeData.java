@@ -1,6 +1,11 @@
 package org.com.batchservice.dto.response;
 
 import lombok.*;
+import org.com.batchservice.dto.request.AssignmentCompletionRequest;
+import org.com.batchservice.dto.request.CoursePeriodRequest;
+import org.com.batchservice.dto.request.TestRequest;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -8,9 +13,9 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AnalyzeData {
+    private List<AssignmentCompletionRequest> assignment_completion_rate;
+    private List<TestRequest> exam_score;
+    private Integer online_courses_completed;
+    private List<CoursePeriodRequest> course_period;
     private Long accountId;
-    private Float examScore;
-    private Float assignmentScore;
-    private Integer onlineCourseComplete;
-    private Integer onlineTestComplete;
 }

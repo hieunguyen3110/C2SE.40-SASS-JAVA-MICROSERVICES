@@ -38,4 +38,5 @@ public interface DocumentService {
     String updateStatusGenQuestion(List<Long> docIds) throws Exception;
     Map<String, List<DocumentData>> collectNewData();
     List<DocumentDto> getAllNewDocuments() throws Exception;
+    List<DocumentDto> getAllDocumentBySubjectIds(List<Long> subjectIds) throws Exception;
 }

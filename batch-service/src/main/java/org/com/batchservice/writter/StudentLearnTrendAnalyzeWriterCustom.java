@@ -19,7 +19,7 @@ public class StudentLearnTrendAnalyzeWriterCustom implements ItemWriter<MessageA
         try{
             for(MessageAnalyze data : chunk){
                 //save into database
-                sendNotificationProducer.sendNotificationToAccount(data.getAccountId(),data.getMessage());
+                sendNotificationProducer.sendNotificationToAccount(data.getAccountId(),"Có một phân tích mới đã được gửi đến trang cá nhân, bạn hãy vào xem nhé!!!");
                 String message= identityClient.updateAnalyzeMessage(data).getData();
                 log.info(message);
             }

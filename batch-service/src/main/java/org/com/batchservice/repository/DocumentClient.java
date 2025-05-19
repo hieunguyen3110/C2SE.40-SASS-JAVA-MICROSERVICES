@@ -22,4 +22,7 @@ public interface DocumentClient {
     ApiResponse<List<DocumentDto>> getAllNewDocuments();
     @PostExchange("/cronjob/document/update-status-gen-question")
     ApiResponse<String> updateGenStatus(@RequestBody List<Long> docIds);
+
+    @GetExchange("/cronjob/documents/get-by-subjects")
+    ApiResponse<List<DocumentDto>> getAllDocumentsBySubjectIds(@RequestBody List<Long> subjectIds);
 }

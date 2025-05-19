@@ -17,7 +17,7 @@ public class ELearningController {
     private final ELearningService eLearningService;
 
     @GetMapping("/analyze-data")
-    public ApiResponse<AnalyzeData> getAnalyzeDataByAccountId(@RequestParam("accountId") Long accountId,@RequestBody EnableAnalyzeRequest request) throws Exception {
+    public ApiResponse<AnalyzeData> getAnalyzeDataByAccountId(@RequestParam("accountId") Long accountId) throws Exception {
         return CreateApiResponse.createResponse(eLearningService.getAnalyzeDataByAccountId(accountId),false);
     }
 }

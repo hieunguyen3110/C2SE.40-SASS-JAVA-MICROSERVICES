@@ -434,4 +434,22 @@ public class DocumentServiceImpl implements DocumentService {
             throw new Exception(e);
         }
     }
+
+    @Override
+    public List<DocumentDto> getAllDocumentBySubjectIds(List<Long> subjectIds) throws Exception {
+        try{
+            List<Documents> documentsList = documentsRepository.findAllBySubjectIds(subjectIds);
+            return documentsList.stream()
+                    .map(document->{
+                        DocumentDto dto= mapToDocumentDto(document);
+                        dto.setSubjectId(document.getSubject().getSubjectId());
+                        dto.setSubjectCode(document.getSubject().getSubjectCode());
+                        dto.setSubjectName(document.getSubject().getSubjectName());
+                        return dto;
+                    })
+                    .toList();
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
 }

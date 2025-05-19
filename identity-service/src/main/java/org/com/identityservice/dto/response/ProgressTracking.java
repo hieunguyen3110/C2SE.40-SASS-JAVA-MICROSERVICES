@@ -3,11 +3,15 @@ package org.com.identityservice.dto.response;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.List;
 
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class SubjectDto {
-    private Long subjectId;
-    private String subjectName;
+public class ProgressTracking {
+    private List<String> adjustment_strategies;
+    private List<String> metrics_to_monitor;
 }

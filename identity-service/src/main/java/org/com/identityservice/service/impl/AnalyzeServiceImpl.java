@@ -1,7 +1,7 @@
 package org.com.identityservice.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.com.identityservice.dto.request.UpdateMessageAnalyzeRequest;
+import org.com.identityservice.dto.response.MessageAnalyze;
 import org.com.identityservice.entity.Account;
 import org.com.identityservice.entity.Analyze;
 import org.com.identityservice.enums.ErrorCode;
@@ -17,7 +17,7 @@ public class AnalyzeServiceImpl implements AnalyzeService {
     private final AnalyzeRepository analyzeRepository;
     private final AccountRepository accountRepository;
     @Override
-    public String updateAnalyzeMessage(UpdateMessageAnalyzeRequest request) throws Exception {
+    public String updateAnalyzeMessage(MessageAnalyze request) throws Exception {
         try{
             Account existAccount= accountRepository.findByAccountId(request.getAccountId())
                     .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Account is not found"));

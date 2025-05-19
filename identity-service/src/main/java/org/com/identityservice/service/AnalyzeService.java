@@ -1,7 +1,7 @@
 package org.com.identityservice.service;
 
-import org.com.identityservice.dto.request.UpdateMessageAnalyzeRequest;
+import org.com.identityservice.dto.response.MessageAnalyze;
 
 public interface AnalyzeService {
-    String updateAnalyzeMessage(UpdateMessageAnalyzeRequest request) throws Exception;
+    String updateAnalyzeMessage(MessageAnalyze request) throws Exception;
 }

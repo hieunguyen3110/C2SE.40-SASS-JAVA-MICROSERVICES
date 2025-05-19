@@ -184,15 +184,16 @@ public class AccountServiceImpl implements AccountService {
     public List<AccountDto> getAllAccountIsAnalyze() throws Exception {
         try{
             LocalDate now= LocalDate.now();
-            List<Account> accountList= accountRepository.findAllByIsAnalyzeIsTrue();
-            List<Account> accountFilters= accountList.stream()
-                    .filter(account-> now.isEqual(account.getLastAnalyzeTime().plusDays(7).toLocalDate()))
-                    .toList();
-            return accountFilters.stream()
-                    .map(account->AccountDto.builder()
-                            .accountId(account.getAccountId())
-                            .build())
-                    .toList();
+            if(now.getDayOfWeek().getValue() == 1){
+                List<Account> accountList= accountRepository.findAllByIsAnalyzeIsTrue();
+                return accountList.stream()
+                        .map(account->AccountDto.builder()
+                                .accountId(account.getAccountId())
+                                .build())
+                        .toList();
+            }else{
+                return new ArrayList<>();
+            }
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
@@ -496,38 +497,60 @@ public class AccountServiceImpl implements AccountService {
         try{
             String response= eLearningClient.saveCoursePeriod(request).getData();
             if(response!=null){
-                AnalyzeData analyzeData= eLearningClient.getAnalyzeDataByAccountId(accountDto.getAccountId()).getData();
-                if(analyzeData!=null){
-                    Boolean checkParticipateGroup= studyGroupClient.checkAccountIsParticipateGroup(accountDto.getAccountId()).getData();
-                    AnalyzeRequest analyzeRequest= AnalyzeRequest.builder()
-                            .Assignment_Completion_Rate(List.of(analyzeData.getAssignmentScore()))
-                            .Exam_Score(List.of(analyzeData.getExamScore()))
-                            .Online_Courses_Completed(List.of(analyzeData.getOnlineCourseComplete()+analyzeData.getOnlineTestComplete()))
-                            .Participation_in_Discussions(List.of(checkParticipateGroup?"Yes":"No"))
-                            .build();
-                    String message= recommendationClient.getSolutionByAI(analyzeRequest).getData();
-                    Optional<Analyze> analyzeExist= analyzeRepository.findByAccount_AccountId(accountDto.getAccountId());
-                    Account accountMapper= AccountMapper.mapToAccount(accountDto);
-                    Account accountEntity= entityManager.merge(accountMapper);
-                    Analyze analyze;
-                    if(analyzeExist.isEmpty()){
-                        analyze= Analyze.builder()
-                                .account(accountEntity)
-                                .message(message)
-                                .build();
-                    }else{
-                        analyze= analyzeExist.get();
-                        analyze.setMessage(message);
-                    }
-                    analyzeRepository.save(analyze);
-                    return message;
-                }else{
-                    return null;
-                }
+                return "Bạn đã bật chức năng phân tích học tập bằng AI, Hãy hoàn thành các bài tập và các bài thi của các môn học trong kì. Những môn học sẽ được phân tích vào thứ 2 hàng tuần.";
+//                LocalDateTime now = LocalDateTime.now();
+//                if(now.getDayOfWeek().getValue() == 1){
+//                    AnalyzeData analyzeData= eLearningClient.getAnalyzeDataByAccountId(accountDto.getAccountId()).getData();
+//                    if(analyzeData!=null){
+//                        Boolean checkParticipateGroup= studyGroupClient.checkAccountIsParticipateGroup(accountDto.getAccountId()).getData();
+//                        AnalyzeRequest analyzeRequest= AnalyzeRequest.builder()
+//                                .Assignment_Completion_Rate(List.of(analyzeData.getAssignmentScore()))
+//                                .Exam_Score(List.of(analyzeData.getExamScore()))
+//                                .Online_Courses_Completed(List.of(analyzeData.getOnlineCourseComplete()+analyzeData.getOnlineTestComplete()))
+//                                .Participation_in_Discussions(List.of(checkParticipateGroup?"Yes":"No"))
+//                                .build();
+//                        String message= recommendationClient.getSolutionByAI(analyzeRequest).getData();
+//                        Optional<Analyze> analyzeExist= analyzeRepository.findByAccount_AccountId(accountDto.getAccountId());
+//                        Account accountMapper= AccountMapper.mapToAccount(accountDto);
+//                        Account accountEntity= entityManager.merge(accountMapper);
+//                        Analyze analyze;
+//                        if(analyzeExist.isEmpty()){
+//                            analyze= Analyze.builder()
+//                                    .account(accountEntity)
+//                                    .message(message)
+//                                    .build();
+//                        }else{
+//                            analyze= analyzeExist.get();
+//                            analyze.setMessage(message);
+//                        }
+//                        analyzeRepository.save(analyze);
+//                        return message;
+//                    }else{
+//                        return null;
+//                    }
+//                }else{
+//
+//                }
+
             }else{
                 throw new ApiException(ErrorCode.SERVICE_UNAVAILABLE.getStatusCode().value(),"Having error when try leaning analytic");
             }
         }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public LearningAnalyzeResponse getAnalyzeData(AccountDto accountDto) throws Exception {
+        try{
+            Optional<Analyze> analyzeOpt = analyzeRepository.findByAccount_AccountId(accountDto.getAccountId());
+            if(analyzeOpt.isPresent()){
+                Analyze analyze = analyzeOpt.get();
+                return objectMapper.readValue(analyze.getMessage(), LearningAnalyzeResponse.class);
+            }else{
+                return null;
+            }
+        }catch(Exception e){
             throw new Exception(e);
         }
     }
