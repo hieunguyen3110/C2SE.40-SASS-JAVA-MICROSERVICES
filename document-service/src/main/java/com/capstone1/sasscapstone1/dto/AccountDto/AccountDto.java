@@ -28,5 +28,6 @@ public class AccountDto {
     private String classNumber;
     private Boolean isDeleted;
     private Boolean isActive;
+    private Boolean isEnableAnalyze;
     private Set<RoleDto> roles;
 }

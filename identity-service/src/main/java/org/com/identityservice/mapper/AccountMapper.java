@@ -22,6 +22,7 @@ public class AccountMapper{
                 .classNumber(accountDto.getClassNumber())
                 .isDeleted(accountDto.getIsDeleted())
                 .isActive(accountDto.getIsActive())
+                .isAnalyze(accountDto.getIsEnableAnalyze())
                 .roles(accountDto.getRoles())
                 .build();
     }
@@ -45,6 +46,7 @@ public class AccountMapper{
                 .classNumber(account.getClassNumber())
                 .isDeleted(account.getIsDeleted())
                 .isActive(account.getIsActive())
+                .isEnableAnalyze(account.getIsAnalyze())
                 .build();
     }
 }
