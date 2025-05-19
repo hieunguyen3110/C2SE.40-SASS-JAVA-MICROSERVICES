@@ -44,6 +44,7 @@ public class UserProfileUtils {
         if (followings != null) {
             response.setFollowing(followings.size());
         }
+        response.setIsEnableAnalyze(account.getIsEnableAnalyze());
 
 //        if (account.getFaculty() != null) {
 //            response.setFacultyName(account.getFaculty().getFacultyName());

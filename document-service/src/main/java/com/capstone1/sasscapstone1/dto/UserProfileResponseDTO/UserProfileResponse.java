@@ -32,6 +32,7 @@ public class UserProfileResponse {
     private List<DocumentDto> documentDtos;
     private long totalDocument;
     private int totalPage;
+    private Boolean isEnableAnalyze;
     private CoursePeriodDto coursePeriodDto;
 }
 
