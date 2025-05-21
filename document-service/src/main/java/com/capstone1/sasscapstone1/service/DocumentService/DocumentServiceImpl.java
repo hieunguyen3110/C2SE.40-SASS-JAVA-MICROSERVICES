@@ -298,7 +298,7 @@ public class DocumentServiceImpl implements DocumentService {
         dto.setSubjectName(document.getSubject().getSubjectName());
         dto.setFacultyName(document.getFaculty().getFacultyName());
         dto.setCreatedAt(document.getCreatedAt());
-        dto.setFileSize((float)document.getFileSize()/1000);
+        dto.setFileSize((float)document.getFileSize()/1000000);
         AccountDto getAccount= identityClient.getAccountId(document.getAccountId()).getData();
         if(getAccount != null){
             dto.setAuthorName(getAccount.getFirstName() + " " + getAccount.getLastName());
