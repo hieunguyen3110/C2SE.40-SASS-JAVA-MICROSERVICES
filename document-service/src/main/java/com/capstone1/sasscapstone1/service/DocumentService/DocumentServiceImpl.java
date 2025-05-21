@@ -295,6 +295,7 @@ public class DocumentServiceImpl implements DocumentService {
         dto.setTitle(document.getTitle());
         dto.setFilePath(document.getFilePath());
         dto.setFolderName(document.getFolder() != null ? document.getFolder().getFolderName() : null);
+        dto.setSubjectId(document.getSubject().getSubjectId());
         dto.setSubjectName(document.getSubject().getSubjectName());
         dto.setFacultyName(document.getFaculty().getFacultyName());
         dto.setCreatedAt(document.getCreatedAt());

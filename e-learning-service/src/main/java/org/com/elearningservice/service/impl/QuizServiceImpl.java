@@ -225,9 +225,9 @@ public class QuizServiceImpl implements QuizService {
                 throw new ApiException(HttpStatus.BAD_REQUEST.value(), "Duration must be greater than 0");
             }
             validateSubjectId(request.getSubjectId());
-            Long accountId = getCurrentAccountId();
-            List<QuestionResponse> responses = chatbotClient.generateQuestion(List.of(request.getDocId())).getData();
+            List<QuestionResponse> responses = chatbotClient.generateAssignment(request.getDocId(), Long.valueOf(request.getNumberOfQuestion())).getData();
             if(responses.size()>request.getNumberOfQuestion()){
+                Collections.shuffle(responses);
                 responses = responses.subList(0,request.getNumberOfQuestion()+1);
             }
             List<QuestionDTO> questionDTOS = responses.stream()
@@ -237,6 +237,7 @@ public class QuizServiceImpl implements QuizService {
                             .correctAnswer(question.getCorrect_answer())
                             .build())
                     .toList();
+            Long accountId = getCurrentAccountId();
             QuizSessionDTO session = QuizSessionDTO.builder()
                     .accountId(accountId)
                     .subjectId(request.getSubjectId())

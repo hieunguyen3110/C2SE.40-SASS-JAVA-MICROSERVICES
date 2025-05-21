@@ -15,6 +15,7 @@ public class DocumentDetailDto {
     private Long docId;
     private String title;
     private String folderName;
+    private Long subjectId;
     private String subjectName;
     private String facultyName;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
