@@ -21,6 +21,7 @@ public class DocumentDetailDto {
     private LocalDateTime createdAt;
     private String authorName;
     private String filePath;
+    private Float fileSize;
     private String profilePicture;
     private List<AccountRatingDto> accountRatingDtos;
 }
