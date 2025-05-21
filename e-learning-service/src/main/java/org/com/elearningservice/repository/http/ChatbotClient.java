@@ -8,6 +8,6 @@ import org.springframework.web.service.annotation.GetExchange;
 import java.util.List;
 
 public interface ChatbotClient {
-    @GetExchange("/document/generate-question")
-    ApiResponse<List<QuestionResponse>> generateQuestion(@RequestParam("docIds") List<Long> docIds);
+    @GetExchange("/document/generate-assignment")
+    ApiResponse<List<QuestionResponse>> generateAssignment(@RequestParam("docId") Long docId, @RequestParam("numberQuestion") Long numberQuestion);
 }
