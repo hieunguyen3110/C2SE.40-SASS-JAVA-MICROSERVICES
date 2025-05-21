@@ -53,7 +53,6 @@ public class ChatbotServiceImpl implements ChatbotService{
                 if (findDoc.isPresent()) {
                     Documents getDoc = findDoc.get();
                     result.setFileName(getDoc.getFileName());
-//                    result.setUserName(getDoc.getAccount().getFirstName() + " " + getDoc.getAccount().getLastName());
                     result.setFilePath(getDoc.getFilePath());
                     result.setSubjectName(getDoc.getSubject().getSubjectName());
                     result.setDocId(getDoc.getDocId());

@@ -49,6 +49,32 @@ public class AccountController {
         accountDto.setClassNumber(userProfileResponse.getClassNumber());
     }
 
+    private void updateAccountCache(HttpServletRequest request, UserProfileResponse response, Boolean isEnableAnalyze) throws Exception {
+        try{
+            String authHeader= request.getHeader("Authorization");
+            if(authHeader != null){
+                String token= authHeader.substring(7);
+                String json= (String) redisService.getData(token);
+                AccountDto extractAccountFromRedis= objectMapper.readValue(json,AccountDto.class);
+                if(response != null){
+                    updateAccountDto(extractAccountFromRedis,response);
+                }else{
+                    if(isEnableAnalyze == null){
+                        throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Is enable must be not null");
+                    }
+                    extractAccountFromRedis.setIsEnableAnalyze(isEnableAnalyze);
+                }
+                String accountJson= objectMapper.writeValueAsString(extractAccountFromRedis);
+                userUpdateProducer.sendEventUpdateUser(token,accountJson);
+            }else{
+                throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token not found");
+            }
+        }catch (Exception e){
+            throw new Exception(e);
+        }
+    }
+
+
     @GetMapping("/{accountId}")
     public ApiResponse<AccountDto> getUserDetails(@PathVariable Long accountId) {
         return CreateApiResponse.createResponse(accountService.getUserDetails(accountId),false);
@@ -104,15 +130,7 @@ public class AccountController {
                         .classNumber(classNumber)
                         .build();
                 ApiResponse<UserProfileResponse> response= accountService.updateUserProfile(account, request, profilePicture);
-                String authHeader= httpServletRequest.getHeader("Authorization");
-                if(authHeader != null){
-                    String token= authHeader.substring(7);
-                    String json= (String) redisService.getData(token);
-                    AccountDto extractAccountFromRedis= objectMapper.readValue(json,AccountDto.class);
-                    updateAccountDto(extractAccountFromRedis,response.getData());
-                    String accountJson= objectMapper.writeValueAsString(extractAccountFromRedis);
-                    userUpdateProducer.sendEventUpdateUser(token,accountJson);
-                }
+                updateAccountCache(httpServletRequest,response.getData(),null);
                 return response;
             } catch (Exception e) {
                 throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR.getStatusCode().value(),"Error updating profile: " + e.getMessage());
@@ -151,21 +169,29 @@ public class AccountController {
 //    }
 
     @GetMapping("/enable-analyze-data")
-    public ApiResponse<String> handleEnableStudyAnalyze() throws Exception {
+    public ApiResponse<String> handleEnableStudyAnalyze(HttpServletRequest request) throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if(!(authentication instanceof AnonymousAuthenticationToken)){
             AccountDto accountDto= (AccountDto) authentication.getPrincipal();
-            return CreateApiResponse.createResponse(accountService.enableStudyAnalyze(accountDto), false);
+            updateAccountCache(request,null,true);
+            String response = accountService.enableStudyAnalyze(accountDto);
+            if(response == null)
+                throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Having error when try enable analyze data");
+            return CreateApiResponse.createResponse(response, false);
         }else{
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
         }
     }
     @GetMapping("/disable-analyze-data")
-    public ApiResponse<String> handleDisableStudyAnalyze() throws Exception {
+    public ApiResponse<String> handleDisableStudyAnalyze(HttpServletRequest request) throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if(!(authentication instanceof AnonymousAuthenticationToken)){
             AccountDto accountDto= (AccountDto) authentication.getPrincipal();
-            return CreateApiResponse.createResponse(accountService.disableStudyAnalyze(accountDto), false);
+            updateAccountCache(request,null,false);
+            String response = accountService.disableStudyAnalyze(accountDto);
+            if(response == null)
+                throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Having error when try disable analyze data");
+            return CreateApiResponse.createResponse(response, false);
         }else{
             throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Token is expires");
         }
