@@ -631,7 +631,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     if (account == null) {
                         throw new ApiException(404, "Account not found for member ID: " + member.getAccountId());
                     }
-                    return new GroupResponse(member.getAccountId(), account.getUsername(), account.getEmail());
+                    return new GroupResponse(member.getAccountId(), account.getUsername(), account.getEmail(), account.getProfilePicture());
                 } catch (Exception e) {
                     log.error("Error fetching account details: {}", e.getMessage(), e);
                     throw new ApiException(500, "Error fetching account details for member ID " + member.getAccountId());
@@ -818,7 +818,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 } else {
                     String fullName = (account.getFirstName() != null ? account.getFirstName() : "") +
                             (account.getLastName() != null ? " " + account.getLastName() : "");
-                    dto.setUsername(fullName.trim().isEmpty() ? "Unknown" : fullName.trim());
+                    dto.setUsername(fullName.trim().isEmpty() ? account.getEmail() : fullName.trim());
                     dto.setProfilePicture(account.getProfilePicture());
                 }
                 return dto;

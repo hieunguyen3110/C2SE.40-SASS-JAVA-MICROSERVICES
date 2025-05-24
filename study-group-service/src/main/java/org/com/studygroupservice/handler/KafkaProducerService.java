@@ -85,7 +85,7 @@ public class KafkaProducerService {
             String message;
             String username = null;
             if(getAccount.getFirstName() == null || getAccount.getLastName() == null){
-                message = "User " + getAccount.getAccountId() + " has joined the group.";
+                message =  getAccount.getEmail() + " has joined the group.";
             }else{
                 username= getAccount.getFirstName() + " " + getAccount.getLastName();
                 message = username + " has joined the group.";
