@@ -6,7 +6,10 @@ import org.com.studygroupservice.entity.JoinRequest;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class StudyGroupEventDto {
     private Long groupId;
