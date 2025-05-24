@@ -66,75 +66,75 @@ public class KafkaConsumerHandler {
         }
     }
   
-    @KafkaListener(topics = "join-group-ws-topic", groupId = "websocket-group")
+    @KafkaListener(topics = "group-ws-topic", groupId = "websocket-group")
     public void sendNotificationJoinRequest(ConsumerRecord<String, String> records) {
         try{
-            String followerId= records.key();
+            String accountId= records.key();
             String json= records.value();
             NotificationDto notificationDto= objectMapper.readValue(json,NotificationDto.class);
-            simpMessagingTemplate.convertAndSendToUser(followerId, "/queue/notifications-with-join-request", notificationDto);
+            simpMessagingTemplate.convertAndSendToUser(accountId, "/queue/notifications-with-group", notificationDto);
         }catch (JsonProcessingException e){
             log.error("Error: "+ e.getMessage());
         }
     }
 
-    @KafkaListener(topics = "study-group-ws-topic", groupId = "websocket-group")
-    public void sendNotificationStudyGroupForClient(ConsumerRecord<String, String> records) {
-        try {
-            if (records.key() == null || records.value() == null) {
-                log.error("Received null key or value from Kafka");
-                return;
-            }
+//    @KafkaListener(topics = "study-group-ws-topic", groupId = "websocket-group")
+//    public void sendNotificationStudyGroupForClient(ConsumerRecord<String, String> records) {
+//        try {
+//            if (records.key() == null || records.value() == null) {
+//                log.error("Received null key or value from Kafka");
+//                return;
+//            }
+//
+//            String followerId = records.key();
+//            String json = records.value();
+//            NotificationDto notificationDto = objectMapper.readValue(json, NotificationDto.class);
+//
+//            if (notificationDto != null) {
+//                simpMessagingTemplate.convertAndSendToUser(
+//                        followerId, "/queue/notifications-with-studygroup", notificationDto
+//                );
+//                log.info("Sent WebSocket notification to user: {}", followerId);
+//            } else {
+//                log.error("NotificationDto is null after parsing JSON");
+//            }
+//        } catch (JsonProcessingException e) {
+//            log.error("Error parsing JSON: {}", e.getMessage());
+//        }
+//    }
 
-            String followerId = records.key();
-            String json = records.value();
-            NotificationDto notificationDto = objectMapper.readValue(json, NotificationDto.class);
-
-            if (notificationDto != null) {
-                simpMessagingTemplate.convertAndSendToUser(
-                        followerId, "/queue/notifications-with-studygroup", notificationDto
-                );
-                log.info("Sent WebSocket notification to user: {}", followerId);
-            } else {
-                log.error("NotificationDto is null after parsing JSON");
-            }
-        } catch (JsonProcessingException e) {
-            log.error("Error parsing JSON: {}", e.getMessage());
-        }
-    }
-
-    @KafkaListener(topics = "chat-ws-topic", groupId = "websocket-group")
-    public void sendNotificationChatForClient(ConsumerRecord<String, String> records) {
-        try {
-            if (records.key() == null || records.value() == null) {
-                log.error("Received null key or value from Kafka. Key: {}, Value: {}", records.key(), records.value());
-                return;
-            }
-
-            String groupId = records.key();
-            String json = records.value();
-
-            if (groupId.isBlank()) {
-                log.warn("Received blank groupId. Skipping message.");
-                return;
-            }
-
-            NotificationDto notificationDto = objectMapper.readValue(json, NotificationDto.class);
-
-            if (notificationDto != null) {
-                simpMessagingTemplate.convertAndSendToUser(
-                        groupId, "/queue/notifications-with-chat", notificationDto
-                );
-                log.info("Sent WebSocket notification to group '{}': {}", groupId, notificationDto);
-            } else {
-                log.error("NotificationDto is null after parsing JSON: {}", json);
-            }
-        } catch (JsonProcessingException e) {
-            log.error("Failed to parse JSON: {}", e.getMessage(), e);
-        } catch (Exception e) {
-            log.error("Unexpected error in Kafka listener: {}", e.getMessage(), e);
-        }
-    }
+//    @KafkaListener(topics = "chat-ws-topic", groupId = "websocket-group")
+//    public void sendNotificationChatForClient(ConsumerRecord<String, String> records) {
+//        try {
+//            if (records.key() == null || records.value() == null) {
+//                log.error("Received null key or value from Kafka. Key: {}, Value: {}", records.key(), records.value());
+//                return;
+//            }
+//
+//            String groupId = records.key();
+//            String json = records.value();
+//
+//            if (groupId.isBlank()) {
+//                log.warn("Received blank groupId. Skipping message.");
+//                return;
+//            }
+//
+//            NotificationDto notificationDto = objectMapper.readValue(json, NotificationDto.class);
+//
+//            if (notificationDto != null) {
+//                simpMessagingTemplate.convertAndSendToUser(
+//                        groupId, "/queue/notifications-with-chat", notificationDto
+//                );
+//                log.info("Sent WebSocket notification to group '{}': {}", groupId, notificationDto);
+//            } else {
+//                log.error("NotificationDto is null after parsing JSON: {}", json);
+//            }
+//        } catch (JsonProcessingException e) {
+//            log.error("Failed to parse JSON: {}", e.getMessage(), e);
+//        } catch (Exception e) {
+//            log.error("Unexpected error in Kafka listener: {}", e.getMessage(), e);
+//        }
+//    }
 
 
 }

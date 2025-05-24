@@ -55,7 +55,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public StudyGroup createGroup(String groupName, String description, Long subjectId, boolean isPrivate, int memberLimited, List<Long> memberIds) {
+    public StudyGroup createGroup(String groupName, String description, Long subjectId, Boolean isPrivate, Integer memberLimited, List<Long> memberIds) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto owner = (AccountDto) authentication.getPrincipal();
@@ -330,7 +330,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     }
     @Transactional
     @Override
-    public void joinGroup(Long groupId, AccountDto accountDto) throws Exception {
+    public StudyGroupEventDto joinGroup(Long groupId, AccountDto accountDto) throws Exception {
         try{
             StudyGroup group =  groupRepository.findById(groupId)
                     .orElseThrow(()->new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Group not found"));
@@ -359,10 +359,21 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         .toList();
                 kafkaProducerService.sendJoinRequestEvent(accountDto,group.getOwnerId(),filterAdminMember,group.getName());
                 log.info("User {} requested to join private group {}", accountDto.getAccountId(), groupId);
+                return null;
             } else {
                 // Nếu là nhóm công khai, cho phép tham gia ngay lập tức
                 GroupMember member = new GroupMember(null, accountDto.getAccountId(), group);
                 memberRepository.save(member);
+                return StudyGroupEventDto.builder()
+                        .groupName(group.getName())
+                        .groupId(groupId)
+                        .description(group.getDescription())
+                        .createdAt(group.getCreatedAt())
+                        .memberCount(group.getMembers().size())
+                        .picture(group.getPicture())
+                        .memberLimited(group.getMemberLimited())
+                        .isPrivate(group.getIsPrivate())
+                        .build();
             }
         }catch (Exception e){
             throw new Exception(e);
@@ -389,39 +400,36 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             Long groupId = group.getId();
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUser = (AccountDto) authentication.getPrincipal();
-
-            if (!group.getOwnerId().equals(currentUser.getAccountId())) {
-                GroupMember membership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUser.getAccountId())
-                        .orElseThrow(() -> new ApiException(403, "User is not a member of this group."));
-                if (!membership.getRole().equals(GroupMemberRole.ADMIN)) {
-                    throw new ApiException(403, "Only owner or admin can approve join requests.");
-                }
+            List<GroupMember> groupMembers = groupMemberRepository.findByStudyGroupId(groupId);
+            List<Long> adminIds = groupMembers.stream()
+                    .filter(groupMember -> groupMember.getRole().equals(GroupMemberRole.ADMIN))
+                    .map(GroupMember::getAccountId)
+                    .toList();
+            if(!adminIds.contains(currentUser.getAccountId()) || !group.getOwnerId().equals(currentUser.getAccountId()))   {
+                throw new ApiException(403, "Only owner or admin can approve join requests.");
             }
 
             Long accountId = joinRequest.getAccountId();
             if (memberRepository.findByStudyGroupIdAndAccountId(groupId, accountId).isPresent()) {
                 throw new ApiException(400, "User is already a member of the group.");
             }
-
-            int memberCount = groupRepository.getMemberCount(groupId);
-            if (memberCount >= group.getMemberLimited()) {
+            if (groupMembers.size() == group.getMemberLimited()) {
                 throw new ApiException(400, "Group has reached its member limit (" + group.getMemberLimited() + ").");
             }
-
-            joinRequest.setStatus(JoinRequest.RequestStatus.APPROVED);
-            joinRequestRepository.save(joinRequest);
 
             GroupMember member = new GroupMember(null, accountId, group);
             member.setRole(GroupMemberRole.MEMBER);
             memberRepository.save(member);
-
-            kafkaProducerService.sendMessageEvent(new MessageEventDto(
+            joinRequestRepository.delete(joinRequest);
+            MessageEventDto messageEventDto = new MessageEventDto(
                     groupId,
                     accountId,
-                    "join_approved",
+                    "JOIN_APPROVE",
                     null,
                     "User " + accountId + " has been approved to join the group " + groupId
-            ));
+            );
+
+            kafkaProducerService.sendMessageEvent(messageEventDto, group);
 
             log.info("Join request {} approved for user {} in group {}", joinRequestId, accountId, groupId);
         } catch (ApiException e) {
@@ -452,24 +460,20 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUser = (AccountDto) authentication.getPrincipal();
 
-            if (!group.getOwnerId().equals(currentUser.getAccountId())) {
-                GroupMember membership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUser.getAccountId())
-                        .orElseThrow(() -> new ApiException(403, "User is not a member of this group."));
-                if (!membership.getRole().equals(GroupMemberRole.ADMIN)) {
-                    throw new ApiException(403, "Only owner or admin can reject join requests.");
-                }
+            List<GroupMember> groupMembers = groupMemberRepository.findByStudyGroupId(groupId);
+            List<Long> adminIds = groupMembers.stream()
+                    .filter(groupMember -> groupMember.getRole().equals(GroupMemberRole.ADMIN))
+                    .map(GroupMember::getAccountId)
+                    .toList();
+            if(!adminIds.contains(currentUser.getAccountId()) || !group.getOwnerId().equals(currentUser.getAccountId()))   {
+                throw new ApiException(403, "Only owner or admin can approve join requests.");
             }
 
             joinRequestRepository.delete(joinRequest);
 
             Long accountId = joinRequest.getAccountId();
-            kafkaProducerService.sendMessageEvent(new MessageEventDto(
-                    groupId,
-                    accountId,
-                    "join_rejected",
-                    null,
-                    "User " + accountId + " has been rejected from joining the group " + groupId
-            ));
+            String message = "You are not approved to join the group " + group.getName();
+            kafkaProducerService.sendNotificationRejectOrRemoveGroup(accountId,"JOIN_REJECT", message);
 
             log.info("Join request {} rejected for user {} in group {}", joinRequestId, accountId, groupId);
         } catch (ApiException e) {
@@ -502,13 +506,28 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     .orElseThrow(() -> new ApiException(404, "Member not found."));
 
             memberRepository.delete(member);
-
-            kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, userId, "leave", null, null));
+            String message = "You have been forced to leave the group " + group.getName();
+            kafkaProducerService.sendNotificationRejectOrRemoveGroup(member.getAccountId(),"LEAVE_MEMBER", message);
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
             log.error("Failed to remove member: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to remove member: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void leaveGroup(Long groupId, AccountDto accountDto) throws Exception {
+        try{
+            StudyGroup group = groupRepository.findById(groupId)
+                    .orElseThrow(() -> new ApiException(404, "Group not found."));
+            GroupMember member = memberRepository.findByStudyGroupIdAndAccountId(groupId, accountDto.getAccountId())
+                    .orElseThrow(() -> new ApiException(404, "Member not found."));
+            memberRepository.delete(member);
+            String message = "You have been to leave the group " + group.getName();
+            kafkaProducerService.sendNotificationRejectOrRemoveGroup(member.getAccountId(),"LEAVE_MEMBER", message);
+        }catch (Exception e){
+            throw new Exception(e);
         }
     }
 

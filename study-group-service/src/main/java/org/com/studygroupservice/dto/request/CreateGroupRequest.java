@@ -22,8 +22,8 @@ public class CreateGroupRequest {
 
     private String description;
 
-    private boolean isPrivate;
-    private int memberLimited;
+    private Boolean isPrivate;
+    private Integer memberLimited;
     private Long subjectId;
     private String picture;
 }

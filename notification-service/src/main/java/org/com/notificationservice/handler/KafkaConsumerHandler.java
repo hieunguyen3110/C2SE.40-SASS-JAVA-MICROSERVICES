@@ -113,7 +113,7 @@ public class KafkaConsumerHandler {
             notification= notificationRepository.save(notification);
             NotificationDto notificationDto= NotificationMapper.mapToNotificationDto(notification);
             String json= objectMapper.writeValueAsString(notificationDto);
-            kafkaTemplate.send("join-group-ws-topic",accountId,json);
+            kafkaTemplate.send("group-ws-topic",accountId,json);
         }catch (Exception e){
             throw new Exception(e.getMessage());
         }
@@ -140,23 +140,23 @@ public class KafkaConsumerHandler {
         }
     }
 
-    @KafkaListener(topics = "study-group-topic", groupId = "notification-group")
-    public void listenUserDeleteEvent(ConsumerRecord<String, Object> record) throws Exception {
-        try{
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.registerModule(new JavaTimeModule());
-            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-            String userId = record.key();
-            Object notificationData = record.value();
-
-            GroupNotification groupNotification = objectMapper.convertValue(notificationData, GroupNotification.class);
-
-            String destination = "/topic/group-notification/" + groupNotification.getGroupId();
-            kafkaTemplate.send("study-group-ws-topic",userId,"");
-        }catch (Exception e){
-            throw new Exception(e.getMessage());
-        }
-    }
+//    @KafkaListener(topics = "study-group-topic", groupId = "notification-group")
+//    public void listenUserDeleteEvent(ConsumerRecord<String, Object> record) throws Exception {
+//        try{
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            objectMapper.registerModule(new JavaTimeModule());
+//            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+//            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//
+//            String userId = record.key();
+//            Object notificationData = record.value();
+//
+//            GroupNotification groupNotification = objectMapper.convertValue(notificationData, GroupNotification.class);
+//
+//            String destination = "/topic/group-notification/" + groupNotification.getGroupId();
+//            kafkaTemplate.send("study-group-ws-topic",userId,"");
+//        }catch (Exception e){
+//            throw new Exception(e.getMessage());
+//        }
+//    }
 }

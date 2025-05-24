@@ -36,7 +36,7 @@ public class StudyGroupController {
                 request.getGroupName(),
                 request.getDescription(),
                 request.getSubjectId(),
-                request.isPrivate(),
+                request.getIsPrivate(),
                 request.getMemberLimited(),
                 request.getMemberIds()
         );
@@ -67,12 +67,11 @@ public class StudyGroupController {
     }
 
     @PostMapping("/{groupId}/join")
-    public ApiResponse<String> joinGroup(@PathVariable Long groupId) throws Exception {
+    public ApiResponse<StudyGroupEventDto> joinGroup(@PathVariable Long groupId) throws Exception {
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
         if(!(authentication instanceof AnonymousAuthenticationToken)){
             AccountDto accountDto= (AccountDto) authentication.getPrincipal();
-            groupService.joinGroup(groupId, accountDto);
-            return CreateApiResponse.createResponse("Send request join group successful", false);
+            return CreateApiResponse.createResponse(groupService.joinGroup(groupId, accountDto), false);
         }else{
             throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Token is expires");
         }
@@ -83,6 +82,18 @@ public class StudyGroupController {
     public ApiResponse<Void> removeMember(@PathVariable Long groupId, @PathVariable Long userId) {
         groupService.removeMember(groupId, userId);
         return CreateApiResponse.createResponse(null, false);
+    }
+
+    @DeleteMapping("/{groupId}/members/leave-group")
+    public ApiResponse<String> leaveGroup(@PathVariable Long groupId) throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(!(authentication instanceof AnonymousAuthenticationToken)){
+            AccountDto accountDto = (AccountDto) authentication.getPrincipal();
+            groupService.leaveGroup(groupId, accountDto);
+            return CreateApiResponse.createResponse("You have been to leave group.", false);
+        }else{
+            throw new ApiException(ErrorCode.FORBIDDEN.getStatusCode().value(),"Account not permission.");
+        }
     }
 
     @PostMapping("/messages/{messageId}/pin")
@@ -122,7 +133,7 @@ public class StudyGroupController {
                 request.getSubjectId(),
                 request.getPicture(),
                 request.getMemberLimited(),
-                request.isPrivate()
+                request.getIsPrivate()
         );
         return CreateApiResponse.createResponse(updatedGroup, false);
     }

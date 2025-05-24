@@ -6,17 +6,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.com.studygroupservice.dto.request.NotificationEventRequest;
-import org.com.studygroupservice.dto.response.AccountDto;
-import org.com.studygroupservice.dto.response.MessageEventDto;
-import org.com.studygroupservice.dto.response.StudyGroupEventDto;
+import org.com.studygroupservice.dto.response.*;
 import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.JoinRequest;
+import org.com.studygroupservice.entity.Message;
+import org.com.studygroupservice.entity.StudyGroup;
 import org.com.studygroupservice.enums.GroupMemberRole;
 import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.repository.GroupMemberRepository;
+import org.com.studygroupservice.repository.MessageRepository;
+import org.com.studygroupservice.repository.httpClient.IdentityClient;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,16 +30,18 @@ public class KafkaProducerService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final GroupMemberRepository groupMemberRepository;
+    private final MessageRepository messageRepository;
+    private final IdentityClient identityClient;
 
-    public void sendStudyGroupEvent(StudyGroupEventDto event) {
-        try {
-            String message = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send("study-group-ws-topic", event.getUserId().toString(), message);
-            log.info("Sent study group event to Kafka: {}", message);
-        } catch (JsonProcessingException e) {
-            log.error("Error converting event to JSON: {}", e.getMessage());
-        }
-    }
+//    public void sendStudyGroupEvent(StudyGroupEventDto event) {
+//        try {
+//            String message = objectMapper.writeValueAsString(event);
+//            kafkaTemplate.send("study-group-ws-topic", event.getUserId().toString(), message);
+//            log.info("Sent study group event to Kafka: {}", message);
+//        } catch (JsonProcessingException e) {
+//            log.error("Error converting event to JSON: {}", e.getMessage());
+//        }
+//    }
 
     public void sendJoinRequestEvent(AccountDto accountDto, Long ownerId, List<Long> adminIds, String groupName) throws JsonProcessingException {
         String message= "Người dùng có tên "+accountDto.getLastName()+" đã gửi yêu cầu tham gia vào nhóm "+groupName+".";
@@ -57,6 +62,66 @@ public class KafkaProducerService {
                 String adminJson= objectMapper.writeValueAsString(adminNotification);
                 kafkaTemplate.send("save-notification-topic",adminId.toString(),adminJson);
             }
+        }
+    }
+
+    public void sendNotificationRejectOrRemoveGroup(Long accountId, String type, String message){
+        try{
+            NotificationEventRequest request = NotificationEventRequest.builder()
+                    .accountId(accountId)
+                    .type(type)
+                    .message(message)
+                    .build();
+            String jsonNotification = objectMapper.writeValueAsString(request);
+            kafkaTemplate.send("save-notification-topic",accountId.toString(),jsonNotification);
+        }catch (JsonProcessingException e){
+            log.error("Error converting event to JSON: {}", e.getMessage());
+        }
+    }
+
+    public void sendMessageEvent(MessageEventDto event, StudyGroup studyGroup) {
+        try {
+            AccountDto getAccount = identityClient.getAccountId(event.getSenderId()).getData();
+            String message;
+            String username = null;
+            if(getAccount.getFirstName() == null || getAccount.getLastName() == null){
+                message = "User " + getAccount.getAccountId() + " has joined the group.";
+            }else{
+                username= getAccount.getFirstName() + " " + getAccount.getLastName();
+                message = username + " has joined the group.";
+            }
+            Message messageSave = Message.builder()
+                    .senderId(0L)
+                    .isPinned(false)
+                    .documentLink(false)
+                    .group(studyGroup)
+                    .content(message)
+                    .documentId(null)
+                    .build();
+            Message messageResult = messageRepository.save(messageSave);
+            MessageResponse messageResponse = MessageResponse.builder()
+                    .senderId(0L)
+                    .groupId(event.getGroupId())
+                    .content(message)
+                    .messageId(messageResult.getId())
+                    .timestamp(LocalDateTime.now().toString())
+                    .username(username!=null? username : "")
+                    .profilePicture(getAccount.getProfilePicture())
+                    .build();
+            String jsonMessage = objectMapper.writeValueAsString(messageResponse);
+            NotificationEventRequest request = NotificationEventRequest.builder()
+                    .accountId(getAccount.getAccountId())
+                    .type(event.getEventType())
+                    .message("You have been approved to join the group " + studyGroup.getName())
+                    .build();
+            String jsonNotification = objectMapper.writeValueAsString(request);
+            kafkaTemplate.send("save-notification-topic",getAccount.getAccountId().toString(),jsonNotification);
+            kafkaTemplate.send("send-message-ws-topic",event.getGroupId().toString(),jsonMessage);
+
+            log.info("Sent message event to Kafka: {}", jsonMessage);
+            log.info("Sent notification event to Kafka: {}", jsonNotification);
+        } catch (JsonProcessingException e) {
+            log.error("Error converting event to JSON: {}", e.getMessage());
         }
     }
 

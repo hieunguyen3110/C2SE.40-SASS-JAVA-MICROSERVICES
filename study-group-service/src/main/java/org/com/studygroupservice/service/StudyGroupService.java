@@ -15,7 +15,7 @@ import java.util.List;
 public interface StudyGroupService {
 
     @Transactional
-    StudyGroup createGroup(String groupName, String description, Long subjectId, boolean isPrivate, int memberLimited, List<Long> memberIds);
+    StudyGroup createGroup(String groupName, String description, Long subjectId, Boolean isPrivate, Integer memberLimited, List<Long> memberIds);
 
     List<SubjectDto> searchSubjectsByName(String subjectName);
 
@@ -30,9 +30,10 @@ public interface StudyGroupService {
     void addMember(Long groupId, Long userId);
 
     @Transactional
-    void joinGroup(Long groupId, AccountDto accountDto) throws Exception;
+    StudyGroupEventDto joinGroup(Long groupId, AccountDto accountDto) throws Exception;
 
     void removeMember(Long groupId, Long userId);
+    void leaveGroup(Long groupId, AccountDto accountDto) throws Exception;
 
     @Transactional
     void pinMessage(Long messageId);
