@@ -321,8 +321,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             memberRepository.save(member);
 
             kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, userId, "add-member", null, null));
-        } catch (ApiException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Failed to add member: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to add member: " + e.getMessage());
@@ -364,6 +362,15 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 // Nếu là nhóm công khai, cho phép tham gia ngay lập tức
                 GroupMember member = new GroupMember(null, accountDto.getAccountId(), group);
                 memberRepository.save(member);
+                MessageEventDto messageEventDto = new MessageEventDto(
+                        groupId,
+                        accountDto.getAccountId(),
+                        "JOIN_APPROVE",
+                        null,
+                        "User " + accountDto.getAccountId() + " has been to join the group " + group.getName()
+                );
+
+                kafkaProducerService.sendMessageEvent(messageEventDto, group, true);
                 return StudyGroupEventDto.builder()
                         .groupName(group.getName())
                         .groupId(groupId)
@@ -405,8 +412,10 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     .filter(groupMember -> groupMember.getRole().equals(GroupMemberRole.ADMIN))
                     .map(GroupMember::getAccountId)
                     .toList();
-            if(!adminIds.contains(currentUser.getAccountId()) || !group.getOwnerId().equals(currentUser.getAccountId()))   {
-                throw new ApiException(403, "Only owner or admin can approve join requests.");
+            if(!group.getOwnerId().equals(currentUser.getAccountId())){
+                if(!adminIds.contains(currentUser.getAccountId())){
+                    throw new ApiException(403, "Only owner or admin can approve join requests.");
+                }
             }
 
             Long accountId = joinRequest.getAccountId();
@@ -429,11 +438,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     "User " + accountId + " has been approved to join the group " + groupId
             );
 
-            kafkaProducerService.sendMessageEvent(messageEventDto, group);
+            kafkaProducerService.sendMessageEvent(messageEventDto, group,false);
 
             log.info("Join request {} approved for user {} in group {}", joinRequestId, accountId, groupId);
-        } catch (ApiException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Failed to approve join request: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to approve join request: " + e.getMessage());
@@ -465,8 +472,10 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     .filter(groupMember -> groupMember.getRole().equals(GroupMemberRole.ADMIN))
                     .map(GroupMember::getAccountId)
                     .toList();
-            if(!adminIds.contains(currentUser.getAccountId()) || !group.getOwnerId().equals(currentUser.getAccountId()))   {
-                throw new ApiException(403, "Only owner or admin can approve join requests.");
+            if(!group.getOwnerId().equals(currentUser.getAccountId())){
+                if(!adminIds.contains(currentUser.getAccountId())){
+                    throw new ApiException(403, "Only owner or admin can approve join requests.");
+                }
             }
 
             joinRequestRepository.delete(joinRequest);
@@ -476,9 +485,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             kafkaProducerService.sendNotificationRejectOrRemoveGroup(accountId,"JOIN_REJECT", message);
 
             log.info("Join request {} rejected for user {} in group {}", joinRequestId, accountId, groupId);
-        } catch (ApiException e) {
-            throw e;
-        } catch (Exception e) {
+        }catch (Exception e) {
             log.error("Failed to reject join request: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to reject join request: " + e.getMessage());
         }
@@ -508,8 +515,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             memberRepository.delete(member);
             String message = "You have been forced to leave the group " + group.getName();
             kafkaProducerService.sendNotificationRejectOrRemoveGroup(member.getAccountId(),"LEAVE_MEMBER", message);
-        } catch (ApiException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Failed to remove member: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to remove member: " + e.getMessage());
@@ -551,8 +556,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             messageRepository.save(message);
 
             kafkaProducerService.sendMessageEvent(new MessageEventDto(group.getId(), currentUser.getAccountId(), "pin_message", messageId, null));
-        } catch (ApiException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Failed to pin message: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to pin message: " + e.getMessage());
@@ -579,8 +582,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             messageRepository.save(message);
 
             kafkaProducerService.sendMessageEvent(new MessageEventDto(group.getId(), currentUser.getAccountId(), "unpin_message", messageId, null));
-        } catch (ApiException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Failed to unpin message: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to unpin message: " + e.getMessage());
@@ -610,8 +611,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             groupRepository.delete(group);
 
             kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, currentUser.getAccountId(), "delete", null, null));
-        } catch (ApiException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Failed to delete group: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to delete group: " + e.getMessage());
@@ -689,8 +688,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, currentUser.getAccountId(), "update-group", null, null));
 
             return savedGroup;
-        } catch (ApiException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Failed to edit group: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to edit group: " + e.getMessage());
@@ -723,9 +720,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             ));
 
             return savedGroup;
-        } catch (ApiException e) {
-            throw e;
-        } catch (Exception e) {
+        }catch (Exception e) {
             log.error("Failed to update privacy setting: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to update privacy setting: " + e.getMessage());
         }
@@ -861,9 +856,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, sender.getAccountId(), "share_document", savedMessage.getId(), null));
 
             return savedMessage;
-        } catch (ApiException e) {
-            throw e;
-        } catch (Exception e) {
+        }catch (Exception e) {
             log.error("Failed to share document: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to share document: " + e.getMessage());
         }
@@ -922,8 +915,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             );
 
             kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, currentOwner.getAccountId(), "ownership_transfer", null, additionalData.toString()));
-        } catch (ApiException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Failed to transfer ownership: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to transfer ownership: " + e.getMessage());
@@ -949,8 +940,6 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             messageRepository.delete(message);
 
             kafkaProducerService.sendMessageEvent(new MessageEventDto(group.getId(), currentUser.getAccountId(), "delete_message", messageId, null));
-        } catch (ApiException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Failed to delete message: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to delete message: " + e.getMessage());
@@ -1011,9 +1000,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         return dto;
                     })
                     .collect(Collectors.toList());
-        } catch (ApiException e) {
-            throw e;
-        } catch (Exception e) {
+        }catch (Exception e) {
             log.error("Failed to fetch groups by user ID: {}", e.getMessage(), e);
             throw new ApiException(500, "Failed to fetch groups by user ID: " + e.getMessage());
         }

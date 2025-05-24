@@ -79,7 +79,7 @@ public class KafkaProducerService {
         }
     }
 
-    public void sendMessageEvent(MessageEventDto event, StudyGroup studyGroup) {
+    public void sendMessageEvent(MessageEventDto event, StudyGroup studyGroup, Boolean isJoinGroup) {
         try {
             AccountDto getAccount = identityClient.getAccountId(event.getSenderId()).getData();
             String message;
@@ -115,9 +115,12 @@ public class KafkaProducerService {
                     .message("You have been approved to join the group " + studyGroup.getName())
                     .build();
             String jsonNotification = objectMapper.writeValueAsString(request);
-            kafkaTemplate.send("save-notification-topic",getAccount.getAccountId().toString(),jsonNotification);
-            kafkaTemplate.send("send-message-ws-topic",event.getGroupId().toString(),jsonMessage);
-
+            if(isJoinGroup){
+                kafkaTemplate.send("send-message-ws-topic",event.getGroupId().toString(),jsonMessage);
+            }else{
+                kafkaTemplate.send("save-notification-topic",getAccount.getAccountId().toString(),jsonNotification);
+                kafkaTemplate.send("send-message-ws-topic",event.getGroupId().toString(),jsonMessage);
+            }
             log.info("Sent message event to Kafka: {}", jsonMessage);
             log.info("Sent notification event to Kafka: {}", jsonNotification);
         } catch (JsonProcessingException e) {
