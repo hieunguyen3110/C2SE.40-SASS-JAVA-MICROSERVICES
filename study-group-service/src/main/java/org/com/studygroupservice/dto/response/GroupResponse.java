@@ -11,4 +11,5 @@ public class GroupResponse {
     private Long memberId;
     private String name;
     private String email;
+    private String profilePicture;
 }

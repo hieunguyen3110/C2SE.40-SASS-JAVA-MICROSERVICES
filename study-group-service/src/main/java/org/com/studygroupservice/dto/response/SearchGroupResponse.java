@@ -14,5 +14,6 @@ public class SearchGroupResponse {
     private int memberCount;
     private String picture;
     private int memberLimited;
+    private Boolean isPrivate;
     List<Long> memberIds;
 }

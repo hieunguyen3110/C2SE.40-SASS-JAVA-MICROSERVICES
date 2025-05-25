@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 public class StartAssignmentRequest {
     private Long docId;
     private Long subjectId;
-    private Integer numberOfQuestion=5;
+    private Integer numberOfQuestions=5;
     private Integer duration=10;
 }
