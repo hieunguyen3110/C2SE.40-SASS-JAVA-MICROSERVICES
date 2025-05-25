@@ -12,6 +12,7 @@ public class LoginResponse {
     private long accountId;
     private Set<String> listRoles;
     private String username;
+    private String email;
     private String profilePicture;
     private int follower;
     private int following;

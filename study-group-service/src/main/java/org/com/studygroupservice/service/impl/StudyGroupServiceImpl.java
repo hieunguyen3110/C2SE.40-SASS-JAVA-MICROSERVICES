@@ -19,6 +19,7 @@ import org.com.studygroupservice.repository.MessageRepository;
 import org.com.studygroupservice.repository.StudyGroupRepository;
 import org.com.studygroupservice.repository.httpClient.DocumentClient;
 import org.com.studygroupservice.repository.httpClient.IdentityClient;
+import org.com.studygroupservice.service.FirebaseService;
 import org.com.studygroupservice.service.RedisService;
 import org.com.studygroupservice.service.StudyGroupService;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,8 +31,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static org.com.studygroupservice.constant.AppConstant.SUBJECT_KEY;
@@ -52,6 +59,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final IdentityClient identityClient;
     private final DocumentClient documentClient;
     private final GroupMemberRepository groupMemberRepository;
+    private final FirebaseService firebaseService;
 
     @Transactional
     @Override
@@ -645,19 +653,19 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited, boolean isPrivate) {
+    public StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, Integer memberLimited, Boolean isPrivate, MultipartFile file) {
         try {
             StudyGroup group = groupRepository.findById(groupId)
-                    .orElseThrow(() -> new ApiException(404, "Group not found."));
+                    .orElseThrow(() -> new ApiException(400, "Group not found."));
 
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUser = (AccountDto) authentication.getPrincipal();
 
             if (!group.getOwnerId().equals(currentUser.getAccountId())) {
                 GroupMember membership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUser.getAccountId())
-                        .orElseThrow(() -> new ApiException(403, "User is not a member of this group."));
+                        .orElseThrow(() -> new ApiException(400, "User is not a member of this group."));
                 if (!membership.getRole().equals(GroupMemberRole.ADMIN)) {
-                    throw new ApiException(403, "Only owner or admin can edit group.");
+                    throw new ApiException(400, "Only owner or admin can edit group.");
                 }
             }
 
@@ -670,22 +678,55 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             if (subjectId != null) {
                 SubjectDto subject = fetchSubjectById(subjectId);
                 if (subject == null) {
-                    throw new ApiException(404, "Subject with ID " + subjectId + " not found.");
+                    throw new ApiException(400, "Subject with ID " + subjectId + " not found.");
                 }
                 group.setSubjectId(subjectId);
             }
-            if (picture != null) {
-                group.setPicture(picture);
+            if(file!=null){
+                if(group.getPicture()!=null){
+                    firebaseService.delete(group.getPicture());
+                }
+                try {
+                    String originalFileName = file.getOriginalFilename();
+                    if (originalFileName.isBlank()) {
+                        throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Invalid file name.");
+                    }
+
+                    BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
+                    CompletableFuture<String> uploadFuture = firebaseService.save(bufferedImage, originalFileName);
+                    String avatarGroup = uploadFuture.get();
+                    System.out.println("Avatar group URL: " + avatarGroup);
+                    group.setPicture(avatarGroup);
+
+                } catch (IOException e) {
+                    throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error processing profile picture: " + e.getMessage());
+
+                } catch (InterruptedException | ExecutionException e) {
+                    Thread.currentThread().interrupt();
+                    throw new ApiException(ErrorCode.BAD_GATEWAY.getStatusCode().value(),"Error uploading profile picture: " + e.getMessage());
+                }
             }
             if (memberLimited > 0) {
                 group.setMemberLimited(memberLimited);
             }
 
             group.setIsPrivate(isPrivate);
+            String splitUsername;
+            if(currentUser.getUsername().contains("@")){
+                splitUsername = currentUser.getEmail().split("@")[0];
+            }else{
+                splitUsername = currentUser.getUsername();
+            }
 
             StudyGroup savedGroup = groupRepository.save(group);
+            MessageEventDto messageEventDto = new MessageEventDto();
+            messageEventDto.setGroupId(groupId);
+            messageEventDto.setSenderId(currentUser.getAccountId());
+            messageEventDto.setMessageId(null);
+            messageEventDto.setEventType("UPDATE_GROUP");
+            messageEventDto.setContent(splitUsername + " vừa cập nhật thông tin nhóm!");
 
-            kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, currentUser.getAccountId(), "update-group", null, null));
+            kafkaProducerService.sendMessageEvent(messageEventDto,group,true);
 
             return savedGroup;
         } catch (Exception e) {
@@ -818,7 +859,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 } else {
                     String fullName = (account.getFirstName() != null ? account.getFirstName() : "") +
                             (account.getLastName() != null ? " " + account.getLastName() : "");
-                    dto.setUsername(fullName.trim().isEmpty() ? account.getEmail() : fullName.trim());
+                    dto.setUsername(fullName.trim().isEmpty() ? account.getEmail().split("@")[0] : fullName.trim());
                     dto.setProfilePicture(account.getProfilePicture());
                 }
                 return dto;

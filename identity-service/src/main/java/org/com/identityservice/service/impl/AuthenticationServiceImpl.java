@@ -67,6 +67,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .listRoles(accountDto.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
                 .profilePicture(accountDto.getProfilePicture())
                 .username((accountDto.getFirstName()==null || accountDto.getLastName() == null) ? null : accountDto.getFirstName()+" "+accountDto.getLastName())
+                .email(accountDto.getEmail())
                 .follower(accountStatisticsDto.getTotalFollowers().intValue())
                 .following(accountStatisticsDto.getTotalFollowing().intValue())
                 .upload(accountStatisticsDto.getTotalUploadedDocuments().intValue())
