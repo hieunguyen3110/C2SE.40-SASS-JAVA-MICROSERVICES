@@ -9,6 +9,5 @@ import lombok.*;
 @AllArgsConstructor
 public class SubjectDto {
     private Long subjectId;
-    private String subjectCode;
     private String subjectName;
 }
