@@ -33,7 +33,8 @@ public class SecurityConfig {
             "/auth/clear-token",
             "/ws/**",
             "/cronjob/**",
-            "/actuator/**"
+            "/actuator/**",
+            "/stats/type"
     };
     @Bean
     public PasswordEncoder passwordEncoder(){
