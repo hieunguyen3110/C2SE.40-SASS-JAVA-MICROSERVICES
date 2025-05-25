@@ -9,6 +9,7 @@ import org.com.studygroupservice.enums.GroupMemberRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -47,7 +48,7 @@ public interface StudyGroupService {
     Page<GroupResponse> listMembers(Long groupId, Pageable pageable);
 
     @Transactional
-    StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, int memberLimited, boolean isPrivate);
+    StudyGroup editGroup(Long groupId, String groupName, String description, Long subjectId, String picture, Integer memberLimited, Boolean isPrivate, MultipartFile file);
 
     @Transactional
     StudyGroup updatePrivacySetting(Long groupId, boolean isPrivate);

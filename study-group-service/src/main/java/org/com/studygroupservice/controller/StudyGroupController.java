@@ -22,6 +22,7 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -125,7 +126,8 @@ public class StudyGroupController {
 
     @PutMapping("/{groupId}")
     public ApiResponse<StudyGroup> editGroup(@PathVariable Long groupId,
-                                             @Valid @RequestBody CreateGroupRequest request) {
+                                             @Valid @RequestBody CreateGroupRequest request,
+                                             @RequestParam("file") MultipartFile file) {
         StudyGroup updatedGroup = groupService.editGroup(
                 groupId,
                 request.getGroupName(),
@@ -133,7 +135,8 @@ public class StudyGroupController {
                 request.getSubjectId(),
                 request.getPicture(),
                 request.getMemberLimited(),
-                request.getIsPrivate()
+                request.getIsPrivate(),
+                file
         );
         return CreateApiResponse.createResponse(updatedGroup, false);
     }

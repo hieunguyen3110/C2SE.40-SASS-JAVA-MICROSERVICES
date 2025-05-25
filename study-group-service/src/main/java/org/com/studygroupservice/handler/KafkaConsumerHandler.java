@@ -19,6 +19,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -46,18 +48,26 @@ public class KafkaConsumerHandler {
                     .documentLink(false)
                     .isPinned(false)
                     .build();
-            LocalDateTime timeStamp= LocalDateTime.parse(messageRequest.getTimestamp()).plusHours(Long.parseLong(timeUtc));
-            newMessage.setCreatedAt(timeStamp);
-            newMessage.setUpdatedAt(timeStamp);
+            LocalDateTime timeStamp= LocalDateTime.parse(messageRequest.getTimestamp());
+            ZonedDateTime utcZdt = timeStamp.atZone(ZoneId.of("UTC"));
+            ZonedDateTime hanoiZdt = utcZdt.withZoneSameInstant(ZoneId.of("Asia/Ho_Chi_Minh"));
+            newMessage.setCreatedAt(hanoiZdt.toLocalDateTime());
+            newMessage.setUpdatedAt(hanoiZdt.toLocalDateTime());
             Message message= messageRepository.save(newMessage);
+            String splitUsername;
+            if(messageRequest.getUsername().contains("@")){
+                splitUsername = messageRequest.getUsername().split("@")[0];
+            }else{
+                splitUsername = messageRequest.getUsername();
+            }
             MessageResponse response= MessageResponse.builder()
                     .senderId(Long.parseLong(senderId))
                     .content(message.getContent())
                     .groupId(messageRequest.getGroupId())
                     .profilePicture(messageRequest.getProfilePicture())
-                    .username(messageRequest.getUsername())
+                    .username(splitUsername)
                     .messageId(message.getId())
-                    .timestamp(timeStamp.toString())
+                    .timestamp(hanoiZdt.toLocalDateTime().toString())
                     .build();
             String responseJson= objectMapper.writeValueAsString(response);
             kafkaTemplate.send("send-message-ws-topic",response.getGroupId().toString(),responseJson);
