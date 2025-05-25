@@ -707,6 +707,10 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 }
             }
             if (memberLimited > 0) {
+                List<GroupMember> groupMembers = groupMemberRepository.findByStudyGroupId(groupId);
+                if(memberLimited<groupMembers.size()){
+                    throw new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Member limit not valid");
+                }
                 group.setMemberLimited(memberLimited);
             }
 
@@ -808,7 +812,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 } else {
                     String fullName = (account.getFirstName() != null ? account.getFirstName() : "") +
                             (account.getLastName() != null ? " " + account.getLastName() : "");
-                    dto.setUsername(fullName.trim().isEmpty() ? "Unknown" : fullName.trim());
+                    dto.setUsername(fullName.trim().isEmpty() ? account.getEmail().split("@")[0] : fullName.trim());
                     dto.setProfilePicture(account.getProfilePicture());
                 }
                 return dto;

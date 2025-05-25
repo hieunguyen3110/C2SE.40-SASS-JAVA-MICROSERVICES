@@ -24,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 @RestController
@@ -126,16 +127,21 @@ public class StudyGroupController {
 
     @PutMapping("/{groupId}")
     public ApiResponse<StudyGroup> editGroup(@PathVariable Long groupId,
-                                             @Valid @RequestBody CreateGroupRequest request,
-                                             @RequestParam("file") MultipartFile file) {
+                                             @RequestPart("file") MultipartFile file,
+                                             @RequestPart("groupName") String groupName,
+                                             @Nullable @RequestPart("description") String description,
+                                             @Nullable @RequestPart("isPrivate") Boolean isPrivate,
+                                             @RequestPart("memberLimited") Integer memberLimited,
+                                             @RequestPart("subjectCode") Long subjectId,
+                                             @Nullable @RequestPart("picture") String picture) {
         StudyGroup updatedGroup = groupService.editGroup(
                 groupId,
-                request.getGroupName(),
-                request.getDescription(),
-                request.getSubjectId(),
-                request.getPicture(),
-                request.getMemberLimited(),
-                request.getIsPrivate(),
+                groupName,
+                description,
+                subjectId,
+                picture,
+                memberLimited,
+                isPrivate,
                 file
         );
         return CreateApiResponse.createResponse(updatedGroup, false);
