@@ -130,18 +130,18 @@ public class StudyGroupController {
                                              @RequestPart("file") MultipartFile file,
                                              @RequestPart("groupName") String groupName,
                                              @Nullable @RequestPart("description") String description,
-                                             @Nullable @RequestPart("isPrivate") Boolean isPrivate,
-                                             @RequestPart("memberLimited") Integer memberLimited,
-                                             @RequestPart("subjectCode") Long subjectId,
+                                             @Nullable @RequestPart("isPrivate") String isPrivate,
+                                             @RequestPart("memberLimited") String memberLimited,
+                                             @RequestPart("subjectId") String subjectId,
                                              @Nullable @RequestPart("picture") String picture) {
         StudyGroup updatedGroup = groupService.editGroup(
                 groupId,
                 groupName,
                 description,
-                subjectId,
+                Long.parseLong(subjectId),
                 picture,
-                memberLimited,
-                isPrivate,
+                Integer.parseInt(memberLimited),
+                Boolean.parseBoolean(isPrivate),
                 file
         );
         return CreateApiResponse.createResponse(updatedGroup, false);
