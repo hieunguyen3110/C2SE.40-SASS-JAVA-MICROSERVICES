@@ -686,7 +686,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             }
             if(file!=null){
                 if(group.getPicture()!=null){
-                    String filePath = picture.replaceFirst(firebaseUrl, "");
+                    String pictureGroup = group.getPicture();
+                    String filePath = pictureGroup.replaceFirst(firebaseUrl, "");
                     firebaseService.delete(filePath);
                 }
                 try {
