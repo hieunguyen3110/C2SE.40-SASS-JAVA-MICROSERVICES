@@ -269,7 +269,7 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
-    public GradeDto submitSession(Long subjectId, List<String> userAnswers, boolean isAssignment) {
+    public GradeDto submitSession(Long subjectId, List<String> userAnswers, Boolean isAssignment, Long docId) {
         try {
             Long accountId = getCurrentAccountId();
             validateSubjectId(subjectId);
@@ -300,6 +300,7 @@ public class QuizServiceImpl implements QuizService {
             result.setTotalQuestions(userAnswers.size());
             result.setCreatedAt(LocalDateTime.now());
             result.setType(isAssignment ? ResultType.ASSIGNMENT : ResultType.QUIZ);
+            result.setDocId(docId);
 
             List<GradeQuestion> gradeQuestions = new ArrayList<>();
             for (int i = 0; i < session.getQuestions().size(); i++) {

@@ -12,7 +12,7 @@ public interface QuizService {
     QuizSessionDTO startSession(Long subjectId, int numberOfQuestions, int duration, boolean isAssignment);
     QuizSessionDTO startAssignmentWithDoc(StartAssignmentRequest request) throws Exception;
     QuizSessionDTO restoreSession(boolean isAssignment);
-    GradeDto submitSession(Long subjectId, List<String> userAnswers, boolean isAssignment);
+    GradeDto submitSession(Long subjectId, List<String> userAnswers, Boolean isAssignment, Long docId);
     List<GradeDto> getHistory();
     QuizSessionDTO updateSessionAnswer(int index, String userAnswers, boolean isAssignment);
 }

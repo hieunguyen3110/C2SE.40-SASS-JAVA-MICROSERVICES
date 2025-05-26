@@ -28,7 +28,7 @@ public class StudentLearnTrendAnalyzeStep {
                                        ItemWriter<MessageAnalyze> studentLearnTrendAnalyzeWriter)
     {
         return new StepBuilder("studentLearnTrendAnalyzeStep", jobRepository)
-                .<AnalyzeData, MessageAnalyze>chunk(10, transactionManager)
+                .<AnalyzeData, MessageAnalyze>chunk(4, transactionManager)
                 .reader(studentLearnTrendAnalyzeReader)
                 .processor(studentLearnTrendAnalyzeProcessor)
                 .writer(studentLearnTrendAnalyzeWriter)

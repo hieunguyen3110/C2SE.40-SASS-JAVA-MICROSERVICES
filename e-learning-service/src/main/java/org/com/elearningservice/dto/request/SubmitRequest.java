@@ -13,4 +13,5 @@ public class SubmitRequest {
     private Long subjectId;
     private Boolean isAssignment;
     private List<String> userAnswers;
+    private Long docId;
 }

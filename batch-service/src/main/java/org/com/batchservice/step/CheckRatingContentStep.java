@@ -27,7 +27,7 @@ public class CheckRatingContentStep {
                                        ItemWriter<RatingDto> checkingRatingContentWriter)
     {
         return new StepBuilder("CheckRatingContentStep", jobRepository)
-                .<RatingDto, RatingDto>chunk(10, transactionManager)
+                .<RatingDto, RatingDto>chunk(4, transactionManager)
                 .reader(checkingRatingContentReader)
                 .processor(checkingRatingContentProcessor)
                 .writer(checkingRatingContentWriter)

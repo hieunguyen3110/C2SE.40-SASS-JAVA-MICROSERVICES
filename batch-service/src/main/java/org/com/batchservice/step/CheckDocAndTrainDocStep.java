@@ -31,7 +31,7 @@ public class CheckDocAndTrainDocStep {
                                        ItemWriter<DocumentDto> checkingDocAndTrainDocWriter)
     {
         return new StepBuilder("CheckDocAndTrainDocStep", jobRepository)
-                .<DocumentDto, DocumentDto>chunk(10, transactionManager)
+                .<DocumentDto, DocumentDto>chunk(4, transactionManager)
                 .reader(checkingDocAndTrainDocReader)
                 .processor(checkingDocAndTrainDocProcessor)
                 .writer(checkingDocAndTrainDocWriter)
