@@ -22,6 +22,7 @@ import org.com.studygroupservice.repository.httpClient.IdentityClient;
 import org.com.studygroupservice.service.FirebaseService;
 import org.com.studygroupservice.service.RedisService;
 import org.com.studygroupservice.service.StudyGroupService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -60,6 +61,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
     private final DocumentClient documentClient;
     private final GroupMemberRepository groupMemberRepository;
     private final FirebaseService firebaseService;
+    private final String firebaseUrl = "https://storage.googleapis.com/popsocket-c5b28.appspot.com/";
 
     @Transactional
     @Override
@@ -684,9 +686,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             }
             if(file!=null){
                 if(group.getPicture()!=null){
-                    String originalFileName = file.getOriginalFilename();
-                    String fileName= firebaseService.generateFileName(originalFileName);
-                    firebaseService.delete(fileName);
+                    String pictureGroup = group.getPicture();
+                    String filePath = pictureGroup.replaceFirst(firebaseUrl, "");
+                    firebaseService.delete(filePath);
                 }
                 try {
                     String originalFileName = file.getOriginalFilename();
