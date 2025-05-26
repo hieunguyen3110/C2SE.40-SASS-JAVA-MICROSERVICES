@@ -1,5 +1,6 @@
 package com.capstone1.sasscapstone1.controller.ChatbotController;
 
+import com.capstone1.sasscapstone1.dto.ChatbotDTO.ChatbotDto;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;

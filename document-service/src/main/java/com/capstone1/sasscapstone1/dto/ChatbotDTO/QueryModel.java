@@ -5,13 +5,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter
 @AllArgsConstructor
 @Setter
 @NoArgsConstructor
-public class ChatbotResponse {
-    private QueryModel query;
-    private List<String> file_source;
+public class QueryModel {
+    private String improved_answer;
+    private String reference_document;
 }

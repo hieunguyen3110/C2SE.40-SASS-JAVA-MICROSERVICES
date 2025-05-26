@@ -11,7 +11,12 @@ import java.util.List;
 @AllArgsConstructor
 @Setter
 @NoArgsConstructor
-public class ChatbotResponse {
-    private QueryModel query;
+public class ChatbotDto {
+    private String responseText;
     private List<String> file_source;
+    private String filePath;
+    private String fileName;
+    private String subjectName;
+    private String userName;
+    private Long docId;
 }
