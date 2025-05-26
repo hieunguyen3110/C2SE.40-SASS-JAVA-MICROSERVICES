@@ -684,7 +684,9 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             }
             if(file!=null){
                 if(group.getPicture()!=null){
-                    firebaseService.delete(group.getPicture());
+                    String originalFileName = file.getOriginalFilename();
+                    String fileName= firebaseService.generateFileName(originalFileName);
+                    firebaseService.delete(fileName);
                 }
                 try {
                     String originalFileName = file.getOriginalFilename();

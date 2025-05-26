@@ -25,7 +25,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             stats.setTotalStudents(identityClient.countStatsByRoleName("STUDENT").getData());
 
 //            // Tổng số giảng viên
-            stats.setTotalStudents(identityClient.countStatsByRoleName("LECTURER").getData());
+            stats.setTotalLecturers(identityClient.countStatsByRoleName("LECTURE").getData());
 
             // Tổng số tài liệu
             stats.setTotalDocuments(documentsRepository.count());
