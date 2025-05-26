@@ -31,7 +31,7 @@ public class GenerateQuestionStep {
                                        ItemWriter<Map<Long,List<QuestionDto>>> generateQuestionWriter)
     {
         return new StepBuilder("generateQuestionStep", jobRepository)
-                .<DocumentDto, Map<Long,List<QuestionDto>>>chunk(10, transactionManager)
+                .<DocumentDto, Map<Long,List<QuestionDto>>>chunk(4, transactionManager)
                 .reader(generateQuestionReader)
                 .processor(generateQuestionProcessor)
                 .writer(generateQuestionWriter)

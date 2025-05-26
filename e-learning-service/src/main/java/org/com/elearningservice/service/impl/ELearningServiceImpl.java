@@ -110,6 +110,7 @@ public class ELearningServiceImpl implements ELearningService {
                         AssignmentCompletionRequest request = AssignmentCompletionRequest.builder()
                                 .subject_id(subjectId)
                                 .subject_name(subjectName)
+                                .assigment_grades(new ArrayList<>())
                                 .build();
                         request.getAssigment_grades().add(AssignmentGradeRequest.builder()
                                         .docId(grade.getDocId())

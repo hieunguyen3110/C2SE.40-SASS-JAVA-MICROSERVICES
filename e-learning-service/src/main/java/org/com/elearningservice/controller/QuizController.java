@@ -55,7 +55,7 @@ public class QuizController {
 
     @PostMapping("/submit")
     public ApiResponse<GradeDto> submit(@RequestBody SubmitRequest request) {
-        GradeDto result = quizService.submitSession(request.getSubjectId(), request.getUserAnswers(), request.getIsAssignment());
+        GradeDto result = quizService.submitSession(request.getSubjectId(), request.getUserAnswers(), request.getIsAssignment(), request.getDocId());
         return CreateApiResponse.createResponse(result, true);
     }
 

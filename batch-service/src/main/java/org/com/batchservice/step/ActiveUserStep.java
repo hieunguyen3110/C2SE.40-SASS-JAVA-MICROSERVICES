@@ -31,7 +31,7 @@ public class ActiveUserStep {
                                            ItemWriter<AccountDto> activeUserWriter)
     {
         return new StepBuilder("ActiveUserStep", jobRepository)
-                .<AccountDto, AccountDto>chunk(10, transactionManager)
+                .<AccountDto, AccountDto>chunk(5, transactionManager)
                 .reader(activeUserReader)
                 .processor(activeUserProcessor)
                 .writer(activeUserWriter)

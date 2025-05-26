@@ -27,7 +27,7 @@ public class CollectDataStep {
                                        ItemWriter<MultipleNewData> collectDataWriter)
     {
         return new StepBuilder("collectDataStep", jobRepository)
-                .<MultipleNewData, MultipleNewData>chunk(10, transactionManager)
+                .<MultipleNewData, MultipleNewData>chunk(4, transactionManager)
                 .reader(collectDataReader)
                 .processor(collectDataProcessor)
                 .writer(collectDataWriter)
