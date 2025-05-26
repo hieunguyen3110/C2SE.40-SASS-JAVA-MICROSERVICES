@@ -15,4 +15,8 @@ public class MessageRequest {
     private String timestamp;
     private String username;
     private String profilePicture;
+    private String documentId;
+    private String documentName;
+    private String docFilePath;
+    private String messageType;
 }

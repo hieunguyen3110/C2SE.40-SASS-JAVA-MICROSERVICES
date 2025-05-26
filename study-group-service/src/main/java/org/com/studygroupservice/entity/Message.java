@@ -2,6 +2,7 @@ package org.com.studygroupservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.com.studygroupservice.enums.MessageType;
 
 @Entity
 @Getter
@@ -18,6 +19,11 @@ public class Message extends AbstractDefault {
     private Boolean isPinned;
     private Boolean documentLink;
     private String documentId;
+    private String documentName;
+    private String docFilePath;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "message_type")
+    private MessageType messageType;
     @ManyToOne
     @JoinColumn(name = "group_id")
     private StudyGroup group;

@@ -810,7 +810,8 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
                 AccountDto account = userDetailsMap.get(message.getSenderId());
                 if (account == null) {
-                    log.warn("Account not found for sender ID: {}", message.getSenderId());
+                    if(message.getSenderId()!=0)
+                        log.warn("Account not found for sender ID: {}", message.getSenderId());
                     dto.setUsername("Unknown");
                     dto.setProfilePicture(null);
                 } else {
@@ -858,10 +859,15 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 dto.setSenderId(message.getSenderId());
                 dto.setContent(message.getContent());
                 dto.setCreatedAt(message.getCreatedAt());
+                dto.setDocumentId(message.getDocumentId());
+                dto.setDocumentName(message.getDocumentName());
+                dto.setDocFilePath(message.getDocFilePath());
+                dto.setMessageType(message.getMessageType().getMessageType());
 
                 AccountDto account = userDetailsMap.get(message.getSenderId());
                 if (account == null) {
-                    log.warn("Account not found for sender ID: {}", message.getSenderId());
+                    if(message.getSenderId()!=0)
+                        log.warn("Account not found for sender ID: {}", message.getSenderId());
                     dto.setUsername("Unknown");
                     dto.setProfilePicture(null);
                 } else {

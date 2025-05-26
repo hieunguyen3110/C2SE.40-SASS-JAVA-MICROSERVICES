@@ -12,6 +12,7 @@ import org.com.studygroupservice.entity.JoinRequest;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.com.studygroupservice.enums.GroupMemberRole;
+import org.com.studygroupservice.enums.MessageType;
 import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.repository.GroupMemberRepository;
 import org.com.studygroupservice.repository.MessageRepository;
@@ -97,6 +98,10 @@ public class KafkaProducerService {
                     .group(studyGroup)
                     .content(message)
                     .documentId(null)
+                    .messageType(MessageType.NOTIFICATION)
+                    .documentName(null)
+                    .docFilePath(null)
+                    .documentId(null)
                     .build();
             Message messageResult = messageRepository.save(messageSave);
             MessageResponse messageResponse = MessageResponse.builder()
@@ -107,6 +112,10 @@ public class KafkaProducerService {
                     .timestamp(LocalDateTime.now().toString())
                     .username(username!=null? username : "")
                     .profilePicture(getAccount.getProfilePicture())
+                    .messageType(messageResult.getMessageType().getMessageType())
+                    .documentName(messageResult.getDocumentName())
+                    .docFilePath(messageResult.getDocFilePath())
+                    .documentId(messageResult.getDocumentId())
                     .build();
             String jsonMessage = objectMapper.writeValueAsString(messageResponse);
             NotificationEventRequest request = NotificationEventRequest.builder()

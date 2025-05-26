@@ -10,6 +10,7 @@ import org.com.studygroupservice.dto.response.MessageResponse;
 import org.com.studygroupservice.entity.Message;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.com.studygroupservice.enums.ErrorCode;
+import org.com.studygroupservice.enums.MessageType;
 import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.repository.MessageRepository;
 import org.com.studygroupservice.repository.StudyGroupRepository;
@@ -47,6 +48,10 @@ public class KafkaConsumerHandler {
                     .content(messageRequest.getContent())
                     .documentLink(false)
                     .isPinned(false)
+                    .messageType(MessageType.valueOf(messageRequest.getMessageType()))
+                    .documentId(messageRequest.getDocumentId())
+                    .docFilePath(messageRequest.getDocFilePath())
+                    .documentName(messageRequest.getDocumentName())
                     .build();
             LocalDateTime timeStamp= LocalDateTime.parse(messageRequest.getTimestamp());
             ZonedDateTime utcZdt = timeStamp.atZone(ZoneId.of("UTC"));
@@ -68,6 +73,10 @@ public class KafkaConsumerHandler {
                     .username(splitUsername)
                     .messageId(message.getId())
                     .timestamp(hanoiZdt.toLocalDateTime().toString())
+                    .documentId(message.getDocumentId())
+                    .documentName(message.getDocumentName())
+                    .docFilePath(message.getDocFilePath())
+                    .messageType(message.getMessageType().getMessageType())
                     .build();
             String responseJson= objectMapper.writeValueAsString(response);
             kafkaTemplate.send("send-message-ws-topic",response.getGroupId().toString(),responseJson);
