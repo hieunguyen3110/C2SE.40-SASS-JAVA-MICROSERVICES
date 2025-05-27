@@ -77,5 +77,5 @@ public interface StudyGroupService {
 
     void rejectJoinRequest(Long joinRequestId);
 
-    void setRoleForMember(Long groupId, Long userId, GroupMemberRole role);
+    void setRoleForMember(Long groupId, Long userId, String role);
 }
