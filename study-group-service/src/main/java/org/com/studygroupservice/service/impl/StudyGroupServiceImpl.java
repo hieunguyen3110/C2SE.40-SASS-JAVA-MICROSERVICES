@@ -179,9 +179,12 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             if (subject == null) {
                 throw new ApiException(404, "Subject with ID " + group.getSubjectId() + " not found.");
             }
-
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            AccountDto currentUser = (AccountDto) authentication.getPrincipal();
             List<JoinRequest> joinRequests = joinRequestRepository.findByStudyGroupIdAndStatus(groupId, JoinRequest.RequestStatus.PENDING);
             List<JoinRequestDto> joinRequestDtos = Collections.emptyList();
+            GroupMember member = memberRepository.findByStudyGroupIdAndAccountId(group.getId(),currentUser.getAccountId())
+                    .orElseThrow(()-> new ApiException(ErrorCode.BAD_REQUEST.getStatusCode().value(),"Member not found"));
 
             if (!joinRequests.isEmpty()) {
                 Set<Long> userIds = joinRequests.stream()
@@ -213,20 +216,21 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         })
                         .collect(Collectors.toList());
             }
-
-            return new StudyGroupEventDto(
-                    group.getId(),
-                    group.getOwnerId(),
-                    group.getIsPrivate(),
-                    group.getName(),
-                    group.getDescription(),
-                    subject.getSubjectName(),
-                    group.getPicture(),
-                    group.getMemberLimited(),
-                    joinRequestDtos,
-                    groupRepository.getMemberCount(group.getId()),
-                    group.getCreatedAt()
-            );
+            int memberCount = groupRepository.getMemberCount(group.getId());
+            return StudyGroupEventDto.builder()
+                    .groupId(group.getId())
+                    .userId(group.getOwnerId())
+                    .isPrivate(group.getIsPrivate())
+                    .groupName(group.getName())
+                    .description(group.getDescription())
+                    .subjectName(subject.getSubjectName())
+                    .picture(group.getPicture())
+                    .memberLimited(group.getMemberLimited())
+                    .joinRequests(joinRequestDtos)
+                    .memberCount(memberCount)
+                    .createdAt(group.getCreatedAt())
+                    .role(member.getRole().name())
+                    .build();
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -1053,6 +1057,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                         dto.setUserId(group.getOwnerId());
                         dto.setMemberLimited(group.getMemberLimited());
                         dto.setMemberCount(groupRepository.getMemberCount(group.getId()));
+                        dto.setRole(groupMember.getRole().name());
                         return dto;
                     })
                     .collect(Collectors.toList());

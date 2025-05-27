@@ -24,6 +24,7 @@ public class StudyGroupEventDto {
     private int memberCount;
     private List<JoinRequestDto> joinRequests;
     private LocalDateTime createdAt;
+    private String role;
 
     public StudyGroupEventDto(Long groupId, Long userId, String message, Boolean isPrivate) {
         this.groupId = groupId;
