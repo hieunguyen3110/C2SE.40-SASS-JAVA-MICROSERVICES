@@ -113,13 +113,13 @@ public class ELearningServiceImpl implements ELearningService {
                                 .assigment_grades(new ArrayList<>())
                                 .build();
                         request.getAssigment_grades().add(AssignmentGradeRequest.builder()
-                                        .docId(grade.getDocId())
+                                        .doc_id(grade.getDocId())
                                         .grade(grade.getScore())
                                 .build());
                         assignmentMap.put(subjectId,request);
                     }else{
                         isExist.getAssigment_grades().add(AssignmentGradeRequest.builder()
-                                .docId(grade.getDocId())
+                                .doc_id(grade.getDocId())
                                 .grade(grade.getScore())
                                 .build());
                     }

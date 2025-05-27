@@ -184,7 +184,7 @@ public class AccountServiceImpl implements AccountService {
     public List<AccountDto> getAllAccountIsAnalyze() throws Exception {
         try{
             LocalDate now= LocalDate.now();
-            if(now.getDayOfWeek().getValue() == 1){
+            if(now.getDayOfWeek().getValue() == 4){
                 List<Account> accountList= accountRepository.findAllByIsAnalyzeIsTrue();
                 return accountList.stream()
                         .map(account->AccountDto.builder()
