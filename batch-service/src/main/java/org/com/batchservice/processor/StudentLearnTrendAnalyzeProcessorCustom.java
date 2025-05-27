@@ -53,36 +53,49 @@ public class StudentLearnTrendAnalyzeProcessorCustom implements ItemProcessor<An
                     .assignment_completion_rate(item.getAssignment_completion_rate())
                     .course_period(item.getCourse_period())
                     .build();
-            LearningAnalyzeResponse response= recommendationClient.predictStudentLearningTrending(request).getData();
-            List<AssignmentCompletionRequest> subjectWeakens = response.getSubject_weakens();
-            List<Long> subjectIds = subjectWeakens.stream().map(AssignmentCompletionRequest::getSubject_id).toList();
-            List<DocumentDto> documentDtos = documentClient.getAllDocumentsBySubjectIds(subjectIds).getData();
-            List<Long> docIds = new ArrayList<>();
-            response.getSubject_weakens().forEach(assignRequest -> {
-                List<AssignmentGradeRequest> assignGradeReqs = assignRequest.getAssigment_grades();
-                if(!assignGradeReqs.isEmpty()){
-                    for(AssignmentGradeRequest assignGradeReq : assignGradeReqs){
-                        if(assignGradeReq.getGrade() <= weakenThreshold){
-                            docIds.add(assignGradeReq.getDocId());
+            LearningAnalyzeResponse response;
+            response = recommendationClient.predictStudentLearningTrending(request).getData();
+            if(response == null){
+                response = new LearningAnalyzeResponse();
+                response.setDocument_read_again(new ArrayList<>());
+                response.setDocument_recommend(new ArrayList<>());
+                response.setGeneral_assessment(null);
+                response.setProgress_tracking(null);
+                response.setWeekly_study_plan(null);
+                response.setSubject_weakens(new ArrayList<>());
+                response.setImprovement_suggestions(new ArrayList<>());
+            }else{
+                List<AssignmentCompletionRequest> subjectWeakens = response.getSubject_weakens();
+                List<Long> subjectIds = subjectWeakens.stream().map(AssignmentCompletionRequest::getSubject_id).toList();
+                List<DocumentDto> documentDtos = documentClient.getAllDocumentsBySubjectIds(subjectIds).getData();
+                List<Long> docIds = new ArrayList<>();
+                response.getSubject_weakens().forEach(assignRequest -> {
+                    List<AssignmentGradeRequest> assignGradeReqs = assignRequest.getAssigment_grades();
+                    if(!assignGradeReqs.isEmpty()){
+                        for(AssignmentGradeRequest assignGradeReq : assignGradeReqs){
+                            if(assignGradeReq.getGrade() <= weakenThreshold){
+                                docIds.add(assignGradeReq.getDoc_id());
+                            }
                         }
                     }
+                });
+                List<DocumentDto> documentNeedReadAgain = documentDtos.stream()
+                        .filter(document -> docIds.contains(document.getDocId()))
+                        .toList();
+                List<DocumentDto> documentRecommend = new ArrayList<>();
+                for(DocumentDto documentDto : documentDtos){
+                    if(!documentNeedReadAgain.contains(documentDto)){
+                        documentRecommend.add(documentDto);
+                    }
                 }
-            });
-            List<DocumentDto> documentNeedReadAgain = documentDtos.stream()
-                    .filter(document -> docIds.contains(document.getDocId()))
-                    .toList();
-            List<DocumentDto> documentRecommend = new ArrayList<>();
-            for(DocumentDto documentDto : documentDtos){
-                if(!documentNeedReadAgain.contains(documentDto)){
-                    documentRecommend.add(documentDto);
+                if(documentRecommend.size()<=5){
+                    response.setDocument_recommend(documentRecommend);
+                }else{
+                    response.setDocument_recommend(getRandomElements(documentRecommend));
                 }
+                response.setDocument_read_again(documentNeedReadAgain);
             }
-            if(documentRecommend.size()<=5){
-                response.setDocument_recommend(documentRecommend);
-            }else{
-                response.setDocument_recommend(getRandomElements(documentRecommend));
-            }
-            response.setDocument_read_again(documentNeedReadAgain);
+
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.registerModule(new JavaTimeModule());
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

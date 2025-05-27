@@ -8,6 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AssignmentGradeRequest {
-    private Long docId;
+    private Long doc_id;
     private Float grade;
 }
