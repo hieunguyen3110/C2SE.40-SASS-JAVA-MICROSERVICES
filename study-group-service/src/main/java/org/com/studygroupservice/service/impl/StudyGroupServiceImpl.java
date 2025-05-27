@@ -11,6 +11,7 @@ import org.com.studygroupservice.entity.GroupMember;
 import org.com.studygroupservice.entity.StudyGroup;
 import org.com.studygroupservice.enums.ErrorCode;
 import org.com.studygroupservice.enums.GroupMemberRole;
+import org.com.studygroupservice.enums.MessageType;
 import org.com.studygroupservice.exception.ApiException;
 import org.com.studygroupservice.handler.KafkaProducerService;
 import org.com.studygroupservice.repository.GroupMemberRepository;
@@ -641,7 +642,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     if (account == null) {
                         throw new ApiException(404, "Account not found for member ID: " + member.getAccountId());
                     }
-                    return new GroupResponse(member.getAccountId(), account.getUsername(), account.getEmail(), account.getProfilePicture());
+                    return new GroupResponse(member.getAccountId(), account.getUsername(), account.getEmail(), account.getProfilePicture(),member.getRole().name());
                 } catch (Exception e) {
                     log.error("Error fetching account details: {}", e.getMessage(), e);
                     throw new ApiException(500, "Error fetching account details for member ID " + member.getAccountId());
@@ -1063,7 +1064,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
 
     @Transactional
     @Override
-    public void setRoleForMember(Long groupId, Long userId, GroupMemberRole role) {
+    public void setRoleForMember(Long groupId, Long userId, String role) {
         if (groupId == null || groupId <= 0) {
             throw new ApiException(400, "Invalid group ID");
         }
@@ -1074,30 +1075,46 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             throw new ApiException(400, "Role cannot be null");
         }
 
+
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             AccountDto currentUser = (AccountDto) authentication.getPrincipal();
             StudyGroup group = groupRepository.findById(groupId)
                     .orElseThrow(() -> new ApiException(404, "Group not found"));
             if (!group.getOwnerId().equals(currentUser.getAccountId())) {
-                GroupMember membership = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUser.getAccountId())
-                        .orElseThrow(() -> new ApiException(403, "User is not a member of this group"));
-                if (!membership.getRole().equals(GroupMemberRole.ADMIN)) {
-                    throw new ApiException(403, "Only owner or admin can set member roles");
-                }
+                throw new ApiException(403, "Only owner or admin can set member roles");
             }
 
             GroupMember member = memberRepository.findByStudyGroupIdAndAccountId(groupId, userId)
                     .orElseThrow(() -> new ApiException(404, "Member not found"));
-            member.setRole(role);
+
+            if(role.equals("OWNER")){
+                GroupMember oldOwner = memberRepository.findByStudyGroupIdAndAccountId(groupId, currentUser.getAccountId())
+                        .orElseThrow(() -> new ApiException(404, "Owner not found"));
+                group.setOwnerId(userId);
+                member.setRole(GroupMemberRole.OWNER);
+                oldOwner.setRole(GroupMemberRole.MEMBER);
+                groupRepository.save(group);
+                memberRepository.save(oldOwner);
+            }else{
+                member.setRole(GroupMemberRole.valueOf(role));
+            }
+
             memberRepository.save(member);
 
-            String cacheKey = "group:member:" + groupId + ":" + userId;
-            redisService.deleteData(cacheKey);
-            log.info("Updated role {} for user {} in group {}", role, userId, groupId);
-
             AccountDto user = identityClient.getAccountId(userId).getData();
-            kafkaProducerService.sendRoleUpdateNotification(groupId, userId, role, group.getName(), user);
+            String splitUsername;
+            if(user.getUsername().contains("@")){
+                splitUsername = user.getEmail().split("@")[0];
+            }else{
+                splitUsername = user.getUsername();
+            }
+            MessageEventDto messageEventDto = new MessageEventDto();
+            messageEventDto.setSenderId(0L);
+            messageEventDto.setGroupId(groupId);
+            messageEventDto.setEventType(MessageType.NOTIFICATION.getMessageType());
+            messageEventDto.setContent(splitUsername+ " vừa thay đổi vai trò thành "+ GroupMemberRole.valueOf(role));
+            kafkaProducerService.sendRoleUpdateNotification(messageEventDto,group);
 
         } catch (DataIntegrityViolationException e) {
             log.error("Data integrity violation for group {} user {}: {}", groupId, userId, e.getMessage(), e);

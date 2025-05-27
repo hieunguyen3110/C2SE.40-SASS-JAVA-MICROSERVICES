@@ -147,16 +147,39 @@ public class KafkaProducerService {
         }
     }
 
-    public void sendRoleUpdateNotification(Long groupId, Long userId, GroupMemberRole role, String groupName, AccountDto user) {
+    public void sendRoleUpdateNotification(MessageEventDto messageEventDto, StudyGroup group) {
         try {
-            String userMessage = String.format("Vai trò của bạn trong nhóm %s đã được cập nhật thành %s.", groupName, role);
-            NotificationEventRequest userNotification = new NotificationEventRequest(userId, userMessage, "ROLE_UPDATED");
-            String userJson = objectMapper.writeValueAsString(userNotification);
-            kafkaTemplate.send("save-notification-topic", userId.toString(), userJson);
-            log.info("Sent role update notification to user {} for group {}", userId, groupId);
+            Message messageSave = Message.builder()
+                    .senderId(messageEventDto.getSenderId())
+                    .isPinned(false)
+                    .documentLink(false)
+                    .group(group)
+                    .content(messageEventDto.getContent())
+                    .documentId(null)
+                    .messageType(MessageType.NOTIFICATION)
+                    .documentName(null)
+                    .docFilePath(null)
+                    .documentId(null)
+                    .build();
+            Message messageResult = messageRepository.save(messageSave);
+            MessageResponse messageResponse = MessageResponse.builder()
+                    .senderId(0L)
+                    .groupId(messageEventDto.getGroupId())
+                    .content(messageEventDto.getContent())
+                    .messageId(messageResult.getId())
+                    .timestamp(LocalDateTime.now().toString())
+                    .username(null)
+                    .profilePicture(null)
+                    .messageType(messageResult.getMessageType().getMessageType())
+                    .documentName(messageResult.getDocumentName())
+                    .docFilePath(messageResult.getDocFilePath())
+                    .documentId(messageResult.getDocumentId())
+                    .build();
+            String jsonMessage = objectMapper.writeValueAsString(messageResponse);
+            kafkaTemplate.send("send-message-ws-topic",messageEventDto.getGroupId().toString(),jsonMessage);
 
         } catch (JsonProcessingException e) {
-            log.error("Failed to serialize notification for user {} in group {}: {}", userId, groupId, e.getMessage(), e);
+//            log.error("Failed to serialize notification for user {} in group {}: {}", userId, groupId, e.getMessage(), e);
             throw new ApiException(500, "Failed to send notification");
         }
     }

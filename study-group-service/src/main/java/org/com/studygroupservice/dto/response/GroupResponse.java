@@ -1,10 +1,10 @@
 package org.com.studygroupservice.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class GroupResponse {
@@ -12,4 +12,5 @@ public class GroupResponse {
     private String name;
     private String email;
     private String profilePicture;
+    private String role;
 }

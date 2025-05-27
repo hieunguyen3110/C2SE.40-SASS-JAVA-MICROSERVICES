@@ -212,10 +212,10 @@ public class StudyGroupController {
     }
 
     @PutMapping("/groups/{groupId}/members/{userId}/role")
-    public ApiResponse<Void> setRoleForMember(@PathVariable Long groupId, @PathVariable Long userId,
-                                              @RequestParam GroupMemberRole role) {
+    public ApiResponse<String> setRoleForMember(@PathVariable Long groupId, @PathVariable Long userId,
+                                              @RequestParam("role") String role) {
         groupService.setRoleForMember(groupId, userId, role);
-        return CreateApiResponse.createResponse(null, false);
+        return CreateApiResponse.createResponse("Change role is success", false);
     }
 
 }
