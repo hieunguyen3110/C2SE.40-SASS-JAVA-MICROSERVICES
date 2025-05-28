@@ -1,9 +1,11 @@
 package com.capstone1.sasscapstone1.repository.httpClient;
 
 import com.capstone1.sasscapstone1.dto.ChatbotDTO.ChatbotResponse;
+import com.capstone1.sasscapstone1.dto.CheckFileResponse.CheckFileResponse;
 import com.capstone1.sasscapstone1.dto.response.ApiResponse;
 import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
+import com.capstone1.sasscapstone1.request.CheckFileRequest;
 import com.capstone1.sasscapstone1.request.SendMessageRequest;
 import com.capstone1.sasscapstone1.request.TrainDocumentRequest;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -16,6 +18,8 @@ public interface ChatbotClient {
     @CircuitBreaker(name="chatbot-service", fallbackMethod = "fallbackChatbot")
     @Retry(name = "chatbot-service")
     ApiResponse<String> trainFile(@RequestBody TrainDocumentRequest request);
+    @PostExchange("/check-file")
+    ApiResponse<CheckFileResponse> checkFile(@RequestBody CheckFileRequest request);
 
     @PostExchange("/search")
     ApiResponse<ChatbotResponse> sendMessage(@RequestBody SendMessageRequest request);

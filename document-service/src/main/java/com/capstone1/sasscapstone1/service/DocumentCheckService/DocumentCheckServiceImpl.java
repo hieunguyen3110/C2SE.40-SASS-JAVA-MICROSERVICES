@@ -7,6 +7,7 @@ import com.capstone1.sasscapstone1.enums.ErrorCode;
 import com.capstone1.sasscapstone1.exception.ApiException;
 import com.capstone1.sasscapstone1.repository.Documents.DocumentsRepository;
 import com.capstone1.sasscapstone1.repository.httpClient.ChatbotClient;
+import com.capstone1.sasscapstone1.request.CheckFileRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,9 +24,7 @@ import java.util.Map;
 public class DocumentCheckServiceImpl implements DocumentCheckService {
 
     private final DocumentsRepository documentsRepository;
-    private final RestTemplate restTemplate;
-    @Value("${chatbot.url}")
-    private String chatbotUrl;
+    private final ChatbotClient chatbotClient;
 
     @Override
     public void checkDocument(Long docId) {
@@ -37,26 +36,17 @@ public class DocumentCheckServiceImpl implements DocumentCheckService {
                 throw new Exception("Tài liệu đã được check");
             }
             // Đọc nội dung file
-            HttpHeaders httpHeaders= new HttpHeaders();
-            Map<String,String> request= new HashMap<>();
-            request.put("filePath",document.getFilePath());
-            httpHeaders.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-            HttpEntity<Map<String,String>> entity= new HttpEntity<>(request,httpHeaders);
-            String uri = chatbotUrl+"/check-file";
-            ResponseEntity<ApiResponse<CheckFileResponse>> response = restTemplate.exchange(
-                    uri,
-                    HttpMethod.POST,
-                    entity,
-                    new ParameterizedTypeReference<>() {}
-            );
-
-            CheckFileResponse result = response.getBody().getData();
-            if((!result.isContainsSensitiveWords() && result.getSensitiveWords().isEmpty()) ||
-                    (result.isContainsSensitiveWords() && result.getSensitiveWords().size()<10)){
+            CheckFileResponse response= chatbotClient.checkFile(CheckFileRequest.builder()
+                    .filePath(document.getFilePath())
+                    .build()).getData();
+            if((!response.isContainsSensitiveWords() && response.getSensitiveWords()==null) ||
+                    (response.isContainsSensitiveWords() && response.getSensitiveWords().size()<10)){
+                document.setIsCheck(true);
+                documentsRepository.save(document);
+            }else{
                 throw new Exception("File chứa từ nhạy cảm quá nhiều!");
             }
-            document.setIsCheck(true);
-            documentsRepository.save(document);
+
 
         } catch (ApiException e) {
             throw new ApiException(e.getCode(),"Document error: " + e.getMessage());

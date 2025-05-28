@@ -5,10 +5,8 @@ import lombok.*;
 @Getter
 @Setter
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class TrainDocumentRequest {
-    private String fileName;
+@AllArgsConstructor
+public class CheckFileRequest {
     private String filePath;
-    private Long docId;
 }
