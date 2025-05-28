@@ -127,7 +127,7 @@ public class StudyGroupController {
 
     @PutMapping("/{groupId}")
     public ApiResponse<StudyGroup> editGroup(@PathVariable Long groupId,
-                                             @RequestPart("file") MultipartFile file,
+                                             @Nullable @RequestPart("file") MultipartFile file,
                                              @RequestPart("groupName") String groupName,
                                              @Nullable @RequestPart("description") String description,
                                              @Nullable @RequestPart("isPrivate") String isPrivate,

@@ -37,7 +37,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             stats.setTotalSubjects(subjectRepository.count());
 
             // Tổng số quản trị viên
-            stats.setTotalStudents(identityClient.countStatsByRoleName("ADMIN").getData());
+            stats.setTotalAdmins(identityClient.countStatsByRoleName("ADMIN").getData());
 
             return stats;
         } catch (Exception e) {
