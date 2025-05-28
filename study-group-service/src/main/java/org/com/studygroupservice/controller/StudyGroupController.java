@@ -128,11 +128,11 @@ public class StudyGroupController {
     @PutMapping("/{groupId}")
     public ApiResponse<StudyGroup> editGroup(@PathVariable Long groupId,
                                              @Nullable @RequestPart("file") MultipartFile file,
-                                             @RequestPart("groupName") String groupName,
+                                             @Nullable @RequestPart("groupName") String groupName,
                                              @Nullable @RequestPart("description") String description,
                                              @Nullable @RequestPart("isPrivate") String isPrivate,
-                                             @RequestPart("memberLimited") String memberLimited,
-                                             @RequestPart("subjectId") String subjectId,
+                                             @Nullable @RequestPart("memberLimited") String memberLimited,
+                                             @Nullable @RequestPart("subjectId") String subjectId,
                                              @Nullable @RequestPart("picture") String picture) {
         StudyGroup updatedGroup = groupService.editGroup(
                 groupId,
