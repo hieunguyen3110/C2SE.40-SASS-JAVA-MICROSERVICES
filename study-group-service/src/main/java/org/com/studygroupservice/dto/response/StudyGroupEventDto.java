@@ -18,6 +18,7 @@ public class StudyGroupEventDto {
     private Boolean isPrivate;
     private String groupName;
     private String description;
+    private Long subjectId;
     private String subjectName;
     private String picture;
     private int memberLimited;

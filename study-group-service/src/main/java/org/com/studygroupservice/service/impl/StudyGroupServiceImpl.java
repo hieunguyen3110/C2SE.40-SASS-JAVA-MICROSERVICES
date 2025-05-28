@@ -223,6 +223,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                     .isPrivate(group.getIsPrivate())
                     .groupName(group.getName())
                     .description(group.getDescription())
+                    .subjectId(group.getSubjectId())
                     .subjectName(subject.getSubjectName())
                     .picture(group.getPicture())
                     .memberLimited(group.getMemberLimited())
@@ -624,7 +625,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
             messageRepository.deleteByGroupId(groupId);
             memberRepository.deleteByStudyGroupId(groupId);
             groupRepository.delete(group);
-
+            joinRequestRepository.deleteJoinRequestsByStudyGroup_Id(groupId);
             kafkaProducerService.sendMessageEvent(new MessageEventDto(groupId, currentUser.getAccountId(), "delete", null, null));
         } catch (Exception e) {
             log.error("Failed to delete group: {}", e.getMessage(), e);
