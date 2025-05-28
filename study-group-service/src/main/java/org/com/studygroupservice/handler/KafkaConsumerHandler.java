@@ -53,11 +53,12 @@ public class KafkaConsumerHandler {
                     .docFilePath(messageRequest.getDocFilePath())
                     .documentName(messageRequest.getDocumentName())
                     .build();
-            LocalDateTime timeStamp= LocalDateTime.parse(messageRequest.getTimestamp());
-            ZonedDateTime utcZdt = timeStamp.atZone(ZoneId.of("UTC"));
-            ZonedDateTime hanoiZdt = utcZdt.withZoneSameInstant(ZoneId.of("Asia/Ho_Chi_Minh"));
-            newMessage.setCreatedAt(hanoiZdt.toLocalDateTime());
-            newMessage.setUpdatedAt(hanoiZdt.toLocalDateTime());
+            System.out.println("time receive: "+ messageRequest.getTimestamp());
+//            LocalDateTime timeStamp= LocalDateTime.parse(messageRequest.getTimestamp());
+//            ZonedDateTime utcZdt = timeStamp.atZone(ZoneId.of("UTC"));
+//            ZonedDateTime hanoiZdt = utcZdt.withZoneSameInstant(ZoneId.of("Asia/Ho_Chi_Minh"));
+//            newMessage.setCreatedAt(timeStamp);
+//            newMessage.setUpdatedAt(timeStamp);
             Message message= messageRepository.save(newMessage);
             String splitUsername;
             if(messageRequest.getUsername().contains("@")){
@@ -72,7 +73,7 @@ public class KafkaConsumerHandler {
                     .profilePicture(messageRequest.getProfilePicture())
                     .username(splitUsername)
                     .messageId(message.getId())
-                    .timestamp(hanoiZdt.toLocalDateTime().toString())
+                    .timestamp(message.getCreatedAt().plusHours(7).toString())
                     .documentId(message.getDocumentId())
                     .documentName(message.getDocumentName())
                     .docFilePath(message.getDocFilePath())

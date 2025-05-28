@@ -812,7 +812,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 dto.setGroupId(message.getGroup().getId());
                 dto.setSenderId(message.getSenderId());
                 dto.setContent(message.getContent());
-                dto.setCreatedAt(message.getCreatedAt());
+                dto.setCreatedAt(message.getCreatedAt().plusHours(7));
 
                 AccountDto account = userDetailsMap.get(message.getSenderId());
                 if (account == null) {
@@ -864,7 +864,7 @@ public class StudyGroupServiceImpl implements StudyGroupService {
                 dto.setGroupId(message.getGroup().getId());
                 dto.setSenderId(message.getSenderId());
                 dto.setContent(message.getContent());
-                dto.setCreatedAt(message.getCreatedAt());
+                dto.setCreatedAt(message.getCreatedAt().plusHours(7));
                 dto.setDocumentId(message.getDocumentId());
                 dto.setDocumentName(message.getDocumentName());
                 dto.setDocFilePath(message.getDocFilePath());
