@@ -316,8 +316,9 @@ public class QuizServiceImpl implements QuizService {
                     question = questionRepository.save(question);
                 } else {
                     // Nếu là quiz, câu hỏi đã tồn tại trong DB
-                    question = questionRepository.findByQuestionTextAndSubjectId(questionDTO.getQuestion(), subjectId)
-                            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND.value(), "Question not found in DB"));
+                    List<Question> questionExist = questionRepository.findByQuestionTextAndSubjectId(questionDTO.getQuestion(), subjectId);
+                    question = questionExist.stream().filter(ques-> (ques.getQuestionText().equals(questionDTO.getQuestion()) &&
+                            ques.getCorrectAnswer().equals(questionDTO.getCorrectAnswer()))).toList().get(0);
                 }
 
                 GradeQuestion gradeQuestion = new GradeQuestion();
@@ -356,7 +357,7 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
-    public QuizSessionDTO updateSessionAnswer(int index, String userAnswer, boolean isAssignment) {
+     public QuizSessionDTO updateSessionAnswer(int index, String userAnswer, boolean isAssignment) {
         try {
             Long accountId = getCurrentAccountId();
             String sessionKey = "session:" + accountId + ":" + (isAssignment ? "assignment" : "quiz");
